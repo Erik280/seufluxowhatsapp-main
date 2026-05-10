@@ -151,8 +151,7 @@ export default function ChatView() {
     setSelectedContact({ ...selectedContact, chat_status: newStatus });
     setContacts(contacts.map(c => c.id === selectedContact.id ? { ...c, chat_status: newStatus } : c));
 
-    const API_URL = (window as any).__CONFIG__?.VITE_API_BASE_URL || 'http://localhost:8000';
-    await fetch(`${API_URL}/api/contacts/${selectedContact.id}/status`, {
+    await fetch(`${API_BASE_URL}/api/contacts/${selectedContact.id}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_status: newStatus })
@@ -231,7 +230,33 @@ export default function ChatView() {
               <div ref={messagesEndRef} />
             </div>
             <footer className="message-input-area">
-              <button className="attach-btn">+</button>
+              <label className="attach-btn" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <input 
+                  type="file" 
+                  style={{ display: 'none' }} 
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file || !selectedContact || !companyId) return;
+                    
+                    const formData = new FormData();
+                    formData.append("contact_id", selectedContact.id);
+                    formData.append("company_id", companyId);
+                    formData.append("file", file);
+
+                    try {
+                      await fetch(`${API_BASE_URL}/api/messages/send/media`, {
+                        method: 'POST',
+                        body: formData
+                      });
+                      e.target.value = ''; // reset
+                    } catch (error) {
+                      console.error("Upload falhou", error);
+                    }
+                  }}
+                  accept="image/*,audio/*,video/*"
+                />
+                📎
+              </label>
               <input 
                 type="text" 
                 placeholder="Digite uma mensagem..." 

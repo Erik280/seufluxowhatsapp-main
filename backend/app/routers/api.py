@@ -226,6 +226,81 @@ async def send_manual_message(body: SendMessageRequest):
     
     return msg_result.data[0] if msg_result.data else {"status": "sent"}
 
+from fastapi import UploadFile, File, Form
+from app.services.storage import StorageService
+import uuid
+
+@router.post("/messages/send/media")
+async def send_manual_media(
+    contact_id: str = Form(...),
+    company_id: str = Form(...),
+    file: UploadFile = File(...)
+):
+    """Envia mídia (imagem, áudio, vídeo) pelo painel e salva no banco."""
+    db = get_supabase()
+    
+    company_res = db.table("companies").select("evolution_instance, evolution_apikey").eq("id", company_id).execute()
+    if not company_res.data:
+        raise HTTPException(status_code=404, detail="Company not found")
+        
+    company = company_res.data[0]
+    instance = company.get("evolution_instance")
+    apikey = company.get("evolution_apikey")
+    
+    contact_res = db.table("contacts").select("phone").eq("id", contact_id).execute()
+    if not contact_res.data:
+        raise HTTPException(status_code=404, detail="Contact not found")
+        
+    phone = contact_res.data[0]["phone"]
+    
+    # 1. Upload to MinIO
+    content = await file.read()
+    filename = f"{company_id}/{uuid.uuid4()}_{file.filename}"
+    
+    storage = StorageService()
+    media_url = storage.upload_file(content, filename, file.content_type)
+    
+    # 2. Determine media type
+    content_type = file.content_type or ""
+    if content_type.startswith("image/"):
+        media_type = "image"
+    elif content_type.startswith("audio/"):
+        media_type = "audio"
+    elif content_type.startswith("video/"):
+        media_type = "video"
+    else:
+        media_type = "document"
+
+    # 3. Send via Evolution API
+    from app.services.evolution import EvolutionAPI
+    evolution = EvolutionAPI(instance, apikey)
+    
+    if media_type == "audio":
+        await evolution.send_presence(phone, composing=False)
+        resp = await evolution.send_audio(phone, media_url)
+    elif media_type == "image":
+        resp = await evolution.send_image(phone, media_url)
+    elif media_type == "video":
+        resp = await evolution.send_video(phone, media_url)
+    else:
+        # evolution wrapper might not support generic document yet, fallback to text or add generic sendMedia
+        raise HTTPException(status_code=400, detail="Unsupported media type")
+        
+    if "error" in resp:
+        raise HTTPException(status_code=500, detail=f"Evolution API Error: {resp['error']}")
+        
+    # 4. Save to Database
+    msg_result = db.table("messages").insert({
+        "company_id": company_id,
+        "contact_id": contact_id,
+        "direction": "out",
+        "content": f"[{media_type.upper()}] enviado.",
+        "media_url": media_url,
+        "media_type": media_type
+    }).execute()
+    
+    return msg_result.data[0] if msg_result.data else {"status": "sent"}
+
 # ========================
 # KANBAN STAGES & TAGS
 # ========================
