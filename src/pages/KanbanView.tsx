@@ -1,89 +1,161 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
+import { supabase } from '../supabaseClient';
 import './KanbanView.css';
 
-// Mock Data
-const initialColumns = {
-  'col-1': { id: 'col-1', title: 'Novos Leads', color: '#00E5CC', taskIds: ['task-1', 'task-2'] },
-  'col-2': { id: 'col-2', title: 'Em Atendimento', color: '#00FF88', taskIds: ['task-3'] },
-  'col-3': { id: 'col-3', title: 'Fechado', color: '#8892b0', taskIds: [] },
-};
+interface KanbanStage {
+  id: string;
+  name: string;
+  color: string;
+  order_index: number;
+}
 
-const initialTasks = {
-  'task-1': { id: 'task-1', name: 'João Silva', phone: '+55 11 99999-9999', lastMessage: 'Olá, gostaria de saber mais.', time: '10:42' },
-  'task-2': { id: 'task-2', name: 'Maria Souza', phone: '+55 21 98888-8888', lastMessage: 'Qual o valor?', time: '09:15' },
-  'task-3': { id: 'task-3', name: 'Carlos Tech', phone: '+55 31 97777-7777', lastMessage: 'Entendido, obrigado.', time: 'Ontem' },
-};
+interface Contact {
+  id: string;
+  name: string;
+  phone: string;
+  last_message: string;
+  stage_id: string | null;
+  created_at: string;
+}
 
 export default function KanbanView() {
-  const [columns, setColumns] = useState(initialColumns);
-  const [tasks] = useState(initialTasks);
+  const [stages, setStages] = useState<KanbanStage[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [companyId, setCompanyId] = useState<string>('');
 
-  const onDragEnd = (result: DropResult) => {
-    const { destination, source, draggableId } = result;
+  useEffect(() => {
+    const init = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      
+      const { data: userData } = await supabase
+        .from('users')
+        .select('company_id')
+        .eq('auth_id', session.user.id)
+        .single();
+        
+      if (userData) {
+        setCompanyId(userData.company_id);
+        
+        // Fetch Stages
+        const { data: stagesData } = await supabase
+          .from('kanban_stages')
+          .select('*')
+          .eq('company_id', userData.company_id)
+          .order('order_index', { ascending: true });
+          
+        if (stagesData) setStages(stagesData);
 
+        // Fetch Contacts
+        const { data: contactsData } = await supabase
+          .from('contacts')
+          .select('*')
+          .eq('company_id', userData.company_id)
+          .order('last_message', { ascending: false });
+          
+        if (contactsData) setContacts(contactsData);
+
+        // Subscribe to Realtime Updates
+        const sub = supabase.channel('public:kanban')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts', filter: `company_id=eq.${userData.company_id}` }, () => {
+            // Refresh contacts
+            supabase.from('contacts').select('*').eq('company_id', userData.company_id).order('last_message', { ascending: false })
+              .then(({data}) => { if (data) setContacts(data); });
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'kanban_stages', filter: `company_id=eq.${userData.company_id}` }, () => {
+             // Refresh stages
+            supabase.from('kanban_stages').select('*').eq('company_id', userData.company_id).order('order_index', { ascending: true })
+              .then(({data}) => { if (data) setStages(data); });
+          })
+          .subscribe();
+
+        return () => {
+          supabase.removeChannel(sub);
+        };
+      }
+    };
+    init();
+  }, []);
+
+  const onDragEnd = async (result: DropResult) => {
+    const { destination, draggableId } = result;
     if (!destination) return;
-    if (destination.droppableId === source.droppableId && destination.index === source.index) return;
 
-    const sourceCol = columns[source.droppableId as keyof typeof columns];
-    const destCol = columns[destination.droppableId as keyof typeof columns];
+    const newStageId = destination.droppableId;
+    
+    // Optimistic UI update
+    setContacts(prev => prev.map(c => c.id === draggableId ? { ...c, stage_id: newStageId } : c));
 
-    if (sourceCol === destCol) {
-      const newTaskIds = Array.from(sourceCol.taskIds);
-      newTaskIds.splice(source.index, 1);
-      newTaskIds.splice(destination.index, 0, draggableId);
-
-      setColumns({
-        ...columns,
-        [sourceCol.id]: { ...sourceCol, taskIds: newTaskIds }
+    try {
+      const API_URL = (window as any).__CONFIG__?.VITE_API_BASE_URL || 'http://localhost:8000';
+      await fetch(`${API_URL}/api/contacts/${draggableId}/stage`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stage_id: newStageId })
       });
-      return;
+    } catch (error) {
+      console.error("Failed to update contact stage", error);
     }
+  };
 
-    // Moving between columns
-    const startTaskIds = Array.from(sourceCol.taskIds);
-    startTaskIds.splice(source.index, 1);
-
-    const finishTaskIds = Array.from(destCol.taskIds);
-    finishTaskIds.splice(destination.index, 0, draggableId);
-
-    setColumns({
-      ...columns,
-      [sourceCol.id]: { ...sourceCol, taskIds: startTaskIds },
-      [destCol.id]: { ...destCol, taskIds: finishTaskIds },
+  const handleCreateStage = async () => {
+    const name = prompt("Nome da nova coluna:");
+    if (!name || !companyId) return;
+    
+    const API_URL = (window as any).__CONFIG__?.VITE_API_BASE_URL || 'http://localhost:8000';
+    await fetch(`${API_URL}/api/kanban_stages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        company_id: companyId,
+        name: name,
+        order_index: stages.length + 1,
+        color: '#00E5CC'
+      })
     });
-
-    // TODO: Call API to update contact stage
-    console.log(`Moved ${draggableId} to ${destCol.id}`);
   };
 
   return (
     <div className="kanban-view-root">
-      <header className="kanban-header">
+      <header className="kanban-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <h2>Gestão de Funil</h2>
+        <button onClick={handleCreateStage} style={{ padding: '8px 16px', background: '#00FF8820', color: '#00FF88', border: '1px solid #00FF88', borderRadius: '8px', cursor: 'pointer' }}>
+          + Nova Coluna
+        </button>
       </header>
 
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="kanban-board">
-          {Object.values(columns).map(column => (
-            <div key={column.id} className="kanban-column">
-              <div className="column-header" style={{ borderTopColor: column.color }}>
-                <h3>{column.title}</h3>
-                <span className="task-count">{column.taskIds.length}</span>
-              </div>
+          {stages.map(stage => {
+            const stageContacts = contacts.filter(c => c.stage_id === stage.id);
+            return (
+              <div key={stage.id} className="kanban-column">
+                <div className="column-header" style={{ borderTopColor: stage.color }}>
+                  <h3 onClick={async () => {
+                    const newName = prompt("Renomear coluna:", stage.name);
+                    if (newName && newName !== stage.name) {
+                       const API_URL = (window as any).__CONFIG__?.VITE_API_BASE_URL || 'http://localhost:8000';
+                       await fetch(`${API_URL}/api/kanban_stages/${stage.id}`, {
+                         method: 'PATCH',
+                         headers: { 'Content-Type': 'application/json' },
+                         body: JSON.stringify({ name: newName })
+                       });
+                    }
+                  }} style={{ cursor: 'pointer' }}>{stage.name}</h3>
+                  <span className="task-count">{stageContacts.length}</span>
+                </div>
 
-              <Droppable droppableId={column.id}>
-                {(provided, snapshot) => (
-                  <div
-                    className={`task-list ${snapshot.isDraggingOver ? 'dragging-over' : ''}`}
-                    ref={provided.innerRef}
-                    {...provided.droppableProps}
-                  >
-                    {column.taskIds.map((taskId, index) => {
-                      const task = tasks[taskId as keyof typeof tasks];
-                      return (
-                        <Draggable key={task.id} draggableId={task.id} index={index}>
+                <Droppable droppableId={stage.id}>
+                  {(provided, snapshot) => (
+                    <div
+                      className={`task-list ${snapshot.isDraggingOver ? 'dragging-over' : ''}`}
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                    >
+                      {stageContacts.map((contact, index) => (
+                        <Draggable key={contact.id} draggableId={contact.id} index={index}>
                           {(provided, snapshot) => (
                             <div
                               className={`task-card ${snapshot.isDragging ? 'dragging' : ''}`}
@@ -91,22 +163,23 @@ export default function KanbanView() {
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
                             >
-                              <div className="task-name">{task.name}</div>
-                              <div className="task-msg">{task.lastMessage}</div>
+                              <div className="task-name">{contact.name || contact.phone}</div>
                               <div className="task-footer">
-                                <span className="task-time">{task.time}</span>
+                                <span className="task-time">
+                                  {contact.last_message ? new Date(contact.last_message).toLocaleDateString() : 'Novo'}
+                                </span>
                               </div>
                             </div>
                           )}
                         </Draggable>
-                      );
-                    })}
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
-            </div>
-          ))}
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </div>
+            );
+          })}
         </div>
       </DragDropContext>
     </div>

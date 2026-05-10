@@ -164,3 +164,34 @@ class EvolutionWebhookData(BaseModel):
 
     class Config:
         extra = "allow"   # aceita campos extras sem quebrar
+
+# ========================
+# Kanban & Tags
+# ========================
+
+class KanbanStageBase(BaseModel):
+    name: str
+    color: str = "#8892b0"
+    order_index: int = 0
+    trigger_flow_id: Optional[str] = None
+
+class KanbanStageCreate(KanbanStageBase):
+    company_id: str
+
+class KanbanStageResponse(KanbanStageBase):
+    id: str
+    company_id: str
+
+class TagBase(BaseModel):
+    name: str
+    color: str = "#00FF88"
+
+class TagCreate(TagBase):
+    company_id: str
+
+class TagResponse(TagBase):
+    id: str
+    company_id: str
+
+class ContactStageUpdate(BaseModel):
+    stage_id: Optional[str] = None

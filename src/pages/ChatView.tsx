@@ -23,6 +23,7 @@ interface Message {
 export default function ChatView() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [stages, setStages] = useState<any[]>([]);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [inputValue, setInputValue] = useState('');
   const [companyId, setCompanyId] = useState<string>('');
@@ -62,6 +63,14 @@ export default function ChatView() {
           .order('last_message', { ascending: false, nullsFirst: false });
           
         if (contactsData) setContacts(contactsData);
+
+        // Fetch Stages
+        const { data: stagesData } = await supabase
+          .from('kanban_stages')
+          .select('*')
+          .eq('company_id', userData.company_id)
+          .order('order_index', { ascending: true });
+        if (stagesData) setStages(stagesData);
 
         // 3. Subscribe to Realtime Contacts
         const contactSub = supabase
@@ -266,12 +275,24 @@ export default function ChatView() {
             
             <div className="crm-section">
               <h3>Estágio Kanban</h3>
-              <select className="crm-select" value={selectedContact.stage_id || ''} onChange={(_e) => {
-                 // To implement stage update
+              <select className="crm-select" value={selectedContact.stage_id || ''} onChange={async (e) => {
+                 const newStageId = e.target.value || null;
+                 const API_URL = (window as any).__CONFIG__?.VITE_API_BASE_URL || 'http://localhost:8000';
+                 
+                 // Optimistic Update
+                 setSelectedContact({ ...selectedContact, stage_id: newStageId });
+                 setContacts(contacts.map(c => c.id === selectedContact.id ? { ...c, stage_id: newStageId } : c));
+
+                 await fetch(`${API_URL}/api/contacts/${selectedContact.id}/stage`, {
+                   method: 'PATCH',
+                   headers: { 'Content-Type': 'application/json' },
+                   body: JSON.stringify({ stage_id: newStageId })
+                 });
               }}>
                 <option value="">Sem estágio</option>
-                <option value="1">Novos Leads</option>
-                <option value="2">Em Atendimento</option>
+                {stages.map(stage => (
+                  <option key={stage.id} value={stage.id}>{stage.name}</option>
+                ))}
               </select>
             </div>
 

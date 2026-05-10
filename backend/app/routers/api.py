@@ -225,3 +225,98 @@ async def send_manual_message(body: SendMessageRequest):
     }).execute()
     
     return msg_result.data[0] if msg_result.data else {"status": "sent"}
+
+# ========================
+# KANBAN STAGES & TAGS
+# ========================
+from app.models.schemas import (
+    KanbanStageCreate, KanbanStageResponse,
+    TagCreate, TagResponse, ContactStageUpdate
+)
+
+@router.post("/kanban_stages", response_model=KanbanStageResponse, status_code=201)
+async def create_kanban_stage(body: KanbanStageCreate):
+    db = get_supabase()
+    result = db.table("kanban_stages").insert(body.model_dump()).execute()
+    return result.data[0]
+
+@router.patch("/kanban_stages/{stage_id}")
+async def update_kanban_stage(stage_id: str, body: dict):
+    """Atualiza o nome, cor ou trigger_flow_id do estágio."""
+    db = get_supabase()
+    result = db.table("kanban_stages").update(body).eq("id", stage_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Stage not found")
+    return result.data[0]
+
+@router.delete("/kanban_stages/{stage_id}", status_code=204)
+async def delete_kanban_stage(stage_id: str):
+    db = get_supabase()
+    db.table("kanban_stages").delete().eq("id", stage_id).execute()
+    return None
+
+@router.post("/tags", response_model=TagResponse, status_code=201)
+async def create_tag(body: TagCreate):
+    db = get_supabase()
+    result = db.table("tags").insert(body.model_dump()).execute()
+    return result.data[0]
+
+@router.patch("/tags/{tag_id}")
+async def update_tag(tag_id: str, body: dict):
+    db = get_supabase()
+    result = db.table("tags").update(body).eq("id", tag_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Tag not found")
+    return result.data[0]
+
+@router.delete("/tags/{tag_id}", status_code=204)
+async def delete_tag(tag_id: str):
+    db = get_supabase()
+    db.table("tags").delete().eq("id", tag_id).execute()
+    return None
+
+@router.patch("/contacts/{contact_id}/stage")
+async def update_contact_stage(contact_id: str, body: ContactStageUpdate):
+    """
+    Atualiza o estágio do Kanban de um contato.
+    Se o novo estágio tiver um trigger_flow_id, dispara o fluxo de atendimento.
+    """
+    db = get_supabase()
+    
+    # Atualiza o stage_id
+    update_res = db.table("contacts").update({"stage_id": body.stage_id}).eq("id", contact_id).execute()
+    if not update_res.data:
+        raise HTTPException(status_code=404, detail="Contact not found")
+        
+    contact = update_res.data[0]
+    
+    # Verifica se há um gatilho de fluxo associado ao estágio
+    if body.stage_id:
+        stage_res = db.table("kanban_stages").select("trigger_flow_id").eq("id", body.stage_id).execute()
+        if stage_res.data and stage_res.data[0].get("trigger_flow_id"):
+            flow_id = stage_res.data[0]["trigger_flow_id"]
+            
+            # Buscar informações da empresa para EvolutionAPI
+            company_res = db.table("companies").select("evolution_instance, evolution_apikey").eq("id", contact["company_id"]).execute()
+            if company_res.data:
+                company = company_res.data[0]
+                instance = company.get("evolution_instance")
+                apikey = company.get("evolution_apikey")
+                
+                if instance and apikey:
+                    from app.services.evolution import EvolutionAPI
+                    from app.services.bot_engine import execute_flow
+                    import asyncio
+                    
+                    evolution = EvolutionAPI(instance, apikey)
+                    
+                    # Roda o fluxo em background para não travar a requisição
+                    asyncio.create_task(execute_flow(
+                        company_id=contact["company_id"],
+                        contact_id=contact_id,
+                        contact_phone=contact["phone"],
+                        flow_id=flow_id,
+                        evolution=evolution
+                    ))
+                    
+    return contact
