@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
 import './ChatView.css';
 
@@ -31,6 +31,14 @@ export default function ChatView() {
   // Media Library state
   const [showMediaModal, setShowMediaModal] = useState(false);
   const [libraryMedia, setLibraryMedia] = useState<any[]>([]);
+
+  // Voice recording state
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const presenceIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -154,6 +162,127 @@ export default function ChatView() {
     }
   };
 
+  // ── Voice Recording ──────────────────────────────────────────
+
+  const sendPresenceRecording = useCallback(async () => {
+    if (!selectedContact || !companyId) return;
+    try {
+      await fetch(`${API_BASE_URL}/api/contacts/${selectedContact.id}/presence`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company_id: companyId, presence: 'recording' })
+      });
+    } catch (e) {
+      console.error('Presence error', e);
+    }
+  }, [selectedContact, companyId]);
+
+  const startRecording = async () => {
+    if (!selectedContact || !companyId) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      // Choose best supported mime type for PTT
+      const mimeType = MediaRecorder.isTypeSupported('audio/ogg; codecs=opus')
+        ? 'audio/ogg; codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm; codecs=opus')
+          ? 'audio/webm; codecs=opus'
+          : 'audio/webm';
+
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        // Stop all tracks
+        stream.getTracks().forEach(track => track.stop());
+        
+        // Clear timers
+        if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+        if (presenceIntervalRef.current) clearInterval(presenceIntervalRef.current);
+        
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        
+        // Only send if we have audio data
+        if (audioBlob.size > 0) {
+          const ext = mimeType.includes('ogg') ? 'ogg' : 'webm';
+          const audioFile = new File([audioBlob], `voice_note_${Date.now()}.${ext}`, { type: mimeType });
+          
+          const formData = new FormData();
+          formData.append('contact_id', selectedContact!.id);
+          formData.append('company_id', companyId);
+          formData.append('file', audioFile);
+
+          try {
+            const response = await fetch(`${API_BASE_URL}/api/messages/send/media`, {
+              method: 'POST',
+              body: formData
+            });
+            if (!response.ok) {
+              const errData = await response.json();
+              alert(`Erro ao enviar áudio: ${errData.detail || 'Erro desconhecido'}`);
+            }
+          } catch (error) {
+            console.error('Failed to send voice note', error);
+            alert('Falha ao enviar áudio.');
+          }
+        }
+
+        setRecordingTime(0);
+      };
+
+      mediaRecorder.start(250); // Collect data every 250ms
+      setIsRecording(true);
+      setRecordingTime(0);
+
+      // Timer for elapsed time display
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+
+      // Send presence 'recording' every 5 seconds to keep the indicator alive
+      sendPresenceRecording();
+      presenceIntervalRef.current = setInterval(() => {
+        sendPresenceRecording();
+      }, 5000);
+
+    } catch (error) {
+      console.error('Microphone access denied', error);
+      alert('Permissão de microfone negada. Habilite o microfone nas configurações do navegador.');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+    setIsRecording(false);
+  };
+
+  const cancelRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      // Clear chunks before stopping so onstop won't send
+      audioChunksRef.current = [];
+      mediaRecorderRef.current.stop();
+    }
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+    if (presenceIntervalRef.current) clearInterval(presenceIntervalRef.current);
+    setIsRecording(false);
+    setRecordingTime(0);
+  };
+
+  const formatRecordingTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
+
   const handleSendLibraryMedia = async (mediaId: string) => {
     if (!selectedContact || !companyId) return;
     try {
@@ -266,48 +395,88 @@ export default function ChatView() {
               <div ref={messagesEndRef} />
             </div>
             <footer className="message-input-area">
-              <button 
-                className="attach-btn" 
-                onClick={() => setShowMediaModal(true)}
-                title="Abrir Biblioteca de Mídia"
-              >
-                📁
-              </button>
-              <label className="attach-btn" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <input 
-                  type="file" 
-                  style={{ display: 'none' }} 
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file || !selectedContact || !companyId) return;
-                    
-                    const formData = new FormData();
-                    formData.append("contact_id", selectedContact.id);
-                    formData.append("company_id", companyId);
-                    formData.append("file", file);
+              {isRecording ? (
+                /* ── Recording UI ── */
+                <div className="recording-bar">
+                  <button className="recording-cancel-btn" onClick={cancelRecording} title="Cancelar gravação">
+                    🗑️
+                  </button>
+                  <div className="recording-indicator">
+                    <span className="recording-dot"></span>
+                    <span className="recording-timer">{formatRecordingTime(recordingTime)}</span>
+                    <div className="recording-waveform">
+                      <span></span><span></span><span></span><span></span><span></span>
+                      <span></span><span></span><span></span><span></span><span></span>
+                    </div>
+                  </div>
+                  <button className="recording-send-btn" onClick={stopRecording} title="Enviar áudio">
+                    ➤
+                  </button>
+                </div>
+              ) : (
+                /* ── Normal Input UI ── */
+                <>
+                  <button 
+                    className="attach-btn" 
+                    onClick={() => setShowMediaModal(true)}
+                    title="Abrir Biblioteca de Mídia"
+                  >
+                    📁
+                  </button>
+                  <label className="attach-btn" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <input 
+                      type="file" 
+                      style={{ display: 'none' }} 
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file || !selectedContact || !companyId) return;
+                        
+                        const formData = new FormData();
+                        formData.append("contact_id", selectedContact.id);
+                        formData.append("company_id", companyId);
+                        formData.append("file", file);
 
-                    try {
-                      await fetch(`${API_BASE_URL}/api/messages/send/media`, {
-                        method: 'POST',
-                        body: formData
-                      });
-                      e.target.value = ''; // reset
-                    } catch (error) {
-                      console.error("Upload falhou", error);
-                    }
-                  }}
-                  accept="image/*,audio/*,video/*"
-                />
-                📎
-              </label>
-              <input 
-                type="text" 
-                placeholder="Digite uma mensagem..." 
-                value={inputValue}
-                onChange={e => setInputValue(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSend()}
-              />
-              <button className="send-btn" onClick={handleSend}>Enviar</button>
+                        try {
+                          await fetch(`${API_BASE_URL}/api/messages/send/media`, {
+                            method: 'POST',
+                            body: formData
+                          });
+                          e.target.value = ''; // reset
+                        } catch (error) {
+                          console.error("Upload falhou", error);
+                        }
+                      }}
+                      accept="image/*,audio/*,video/*"
+                    />
+                    📎
+                  </label>
+                  {inputValue.trim() ? (
+                    <>
+                      <input 
+                        type="text" 
+                        placeholder="Digite uma mensagem..." 
+                        value={inputValue}
+                        onChange={e => setInputValue(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && handleSend()}
+                      />
+                      <button className="send-btn" onClick={handleSend}>Enviar</button>
+                    </>
+                  ) : (
+                    <>
+                      <input 
+                        type="text" 
+                        placeholder="Digite uma mensagem..." 
+                        value={inputValue}
+                        onChange={e => setInputValue(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && handleSend()}
+                      />
+                      <button className="mic-btn" onClick={startRecording} title="Gravar áudio">
+                        🎤
+                      </button>
+                    </>
+                  )}
+                </>
+              )}
             </footer>
           </>
         ) : (

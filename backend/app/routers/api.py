@@ -51,6 +51,42 @@ async def update_contact_status(contact_id: str, body: ContactStatusUpdate):
     return result.data[0]
 
 
+class PresenceRequest(BaseModel):
+    company_id: str
+    presence: str = "recording"  # 'composing' ou 'recording'
+
+@router.post("/contacts/{contact_id}/presence")
+async def send_contact_presence(contact_id: str, body: PresenceRequest):
+    """Envia presença (digitando/gravando) para o contato via Evolution API."""
+    db = get_supabase()
+    
+    # 1. Obter instância da empresa
+    company_res = db.table("companies").select("evolution_instance, evolution_apikey").eq("id", body.company_id).execute()
+    if not company_res.data:
+        raise HTTPException(status_code=404, detail="Company not found")
+    
+    company = company_res.data[0]
+    instance = company.get("evolution_instance")
+    apikey = company.get("evolution_apikey")
+    
+    if not instance or not apikey:
+        raise HTTPException(status_code=400, detail="Evolution API not configured")
+    
+    # 2. Obter telefone do contato
+    contact_res = db.table("contacts").select("phone").eq("id", contact_id).execute()
+    if not contact_res.data:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    
+    phone = contact_res.data[0]["phone"]
+    
+    # 3. Enviar presença
+    from app.services.evolution import EvolutionAPI
+    evolution = EvolutionAPI(instance, apikey)
+    is_composing = body.presence == "composing"
+    await evolution.send_presence(phone, composing=is_composing)
+    
+    return {"status": "ok", "presence": body.presence}
+
 # ========================
 # CHAT FLOWS
 # ========================
