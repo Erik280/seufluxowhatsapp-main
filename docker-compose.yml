@@ -2,7 +2,7 @@ version: "3.7"
 
 services:
 
-## --------------------------- SEUFLUXO FRONT --------------------------- ##
+## --------------------------- SEUFLUXO FRONTEND --------------------------- ##
 
   seufluxo_front:
     image: ghcr.io/erik280/seufluxowhatsapp-main:latest
@@ -30,7 +30,59 @@ services:
         - traefik.http.services.seufluxo_front.loadbalancer.server.port=80
         - traefik.http.services.seufluxo_front.loadbalancer.passHostHeader=1
 
-## --------------------------- SEUFLUXO FRONT --------------------------- ##
+## --------------------------- SEUFLUXO API (BACKEND) ---------------------- ##
+
+  seufluxo_api:
+    image: ghcr.io/erik280/seufluxowhatsapp-api:latest
+
+    networks:
+      - network
+
+    environment:
+      ## --- Supabase ---
+      - SUPABASE_URL=https://pamhgjhijftcnfbhjoyk.supabase.co
+      - SUPABASE_KEY=${SUPABASE_KEY}
+
+      ## --- Evolution API ---
+      - EVOLUTION_API_URL=https://evo.transformafuturo.com.br
+      - EVOLUTION_API_GLOBAL_KEY=${EVOLUTION_API_GLOBAL_KEY}
+
+      ## --- MinIO ---
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - MINIO_BUCKET=whatsapp-storage
+      - MINIO_SECURE=false
+
+      ## --- CORS ---
+      - CORS_ORIGINS=https://seufluxowhatsapp.transformafuturo.com.br
+
+      ## --- App ---
+      - APP_ENV=production
+      - LOG_LEVEL=info
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+      labels:
+        - traefik.enable=true
+        ## API responde no MESMO domínio, mas com PathPrefix — prioridade MAIOR que o front
+        - traefik.http.routers.seufluxo_api.rule=Host(`seufluxowhatsapp.transformafuturo.com.br`) && PathPrefix(`/webhook`, `/api`, `/docs`, `/redoc`, `/openapi.json`)
+        - traefik.http.routers.seufluxo_api.entrypoints=websecure
+        - traefik.http.routers.seufluxo_api.priority=10
+        - traefik.http.routers.seufluxo_api.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.seufluxo_api.service=seufluxo_api
+        - traefik.http.services.seufluxo_api.loadbalancer.server.port=8000
+        - traefik.http.services.seufluxo_api.loadbalancer.passHostHeader=1
+
+## -------------------------------------------------------------------- ##
 
 networks:
   network:

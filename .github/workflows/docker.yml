@@ -1,4 +1,4 @@
-name: Build & Push Docker Image
+name: Build & Push Docker Images
 
 on:
   push:
@@ -7,30 +7,55 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build-and-push:
+
+  # ── Build Frontend (Nginx) ──
+  build-frontend:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Log in to GitHub Container Registry
+      - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push Docker image
+      - name: Build and push Frontend image
         run: |
-          IMAGE_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          IMAGE_TAG="${{ env.REGISTRY }}/${{ github.repository }}"
           IMAGE_TAG=$(echo "$IMAGE_TAG" | tr '[:upper:]' '[:lower:]')
           docker build -t ${IMAGE_TAG}:latest -t ${IMAGE_TAG}:${{ github.sha }} .
+          docker push ${IMAGE_TAG}:latest
+          docker push ${IMAGE_TAG}:${{ github.sha }}
+
+  # ── Build Backend (FastAPI) ──
+  build-backend:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Backend image
+        run: |
+          IMAGE_TAG="${{ env.REGISTRY }}/${{ github.repository_owner }}/seufluxowhatsapp-api"
+          IMAGE_TAG=$(echo "$IMAGE_TAG" | tr '[:upper:]' '[:lower:]')
+          docker build -f Dockerfile.backend -t ${IMAGE_TAG}:latest -t ${IMAGE_TAG}:${{ github.sha }} .
           docker push ${IMAGE_TAG}:latest
           docker push ${IMAGE_TAG}:${{ github.sha }}

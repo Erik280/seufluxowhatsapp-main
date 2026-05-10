@@ -1,0 +1,165 @@
+"""
+SeuFluxo WhatsApp — Pydantic Schemas
+Modelos de validação para requests/responses da API.
+"""
+
+from __future__ import annotations
+from pydantic import BaseModel, Field
+from datetime import datetime
+from enum import Enum
+from typing import Optional
+
+
+# ========================
+# Enums
+# ========================
+
+class ChatStatus(str, Enum):
+    bot = "bot"
+    human = "human"
+
+class UserRole(str, Enum):
+    superadmin = "superadmin"
+    admin = "admin"
+    agent = "agent"
+
+class MessageDirection(str, Enum):
+    incoming = "in"
+    outgoing = "out"
+
+class StepType(str, Enum):
+    text = "text"
+    audio = "audio"
+    image = "image"
+
+
+# ========================
+# Company
+# ========================
+
+class CompanyBase(BaseModel):
+    name: str
+    evolution_instance: Optional[str] = None
+    evolution_apikey: Optional[str] = None
+
+class CompanyCreate(CompanyBase):
+    pass
+
+class CompanyResponse(CompanyBase):
+    id: str
+    created_at: datetime
+
+
+# ========================
+# User
+# ========================
+
+class UserBase(BaseModel):
+    email: str
+    name: Optional[str] = None
+    role: UserRole = UserRole.agent
+
+class UserCreate(UserBase):
+    company_id: str
+
+class UserResponse(UserBase):
+    id: str
+    company_id: str
+    is_active: bool
+    created_at: datetime
+
+
+# ========================
+# Contact
+# ========================
+
+class ContactBase(BaseModel):
+    phone: str
+    name: Optional[str] = None
+    chat_status: ChatStatus = ChatStatus.bot
+
+class ContactCreate(ContactBase):
+    company_id: str
+
+class ContactResponse(ContactBase):
+    id: str
+    company_id: str
+    profile_pic: Optional[str] = None
+    assigned_to: Optional[str] = None
+    last_message: Optional[datetime] = None
+    created_at: datetime
+
+class ContactStatusUpdate(BaseModel):
+    chat_status: ChatStatus
+
+
+# ========================
+# Chat Flow
+# ========================
+
+class FlowBase(BaseModel):
+    name: str
+    trigger_keyword: str
+    is_active: bool = True
+
+class FlowCreate(FlowBase):
+    company_id: str
+
+class FlowResponse(FlowBase):
+    id: str
+    company_id: str
+    created_at: datetime
+
+
+# ========================
+# Flow Step
+# ========================
+
+class StepBase(BaseModel):
+    type: StepType = StepType.text
+    content: str
+    delay_duration: int = Field(default=3, ge=0, le=30)
+    order_index: int = 0
+
+class StepCreate(StepBase):
+    flow_id: str
+
+class StepResponse(StepBase):
+    id: str
+    flow_id: str
+    created_at: datetime
+
+
+# ========================
+# Message
+# ========================
+
+class MessageBase(BaseModel):
+    direction: MessageDirection
+    content: Optional[str] = None
+    media_url: Optional[str] = None
+    media_type: Optional[str] = None
+
+class MessageCreate(MessageBase):
+    company_id: str
+    contact_id: str
+
+class MessageResponse(MessageBase):
+    id: str
+    company_id: str
+    contact_id: str
+    created_at: datetime
+
+
+# ========================
+# Evolution Webhook Payload
+# ========================
+
+class EvolutionWebhookData(BaseModel):
+    """Payload parcial do webhook da Evolution API."""
+    instance: Optional[str] = None
+    event: Optional[str] = None
+    data: Optional[dict] = None
+
+    class Config:
+        extra = "allow"   # aceita campos extras sem quebrar
