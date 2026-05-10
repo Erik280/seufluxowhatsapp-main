@@ -1,0 +1,89 @@
+/* ============================================
+   DashboardLayout.css
+   ============================================ */
+
+.dashboard-root {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  background: var(--color-bg-deep);
+  overflow: hidden;
+}
+
+/* ---- Sidebar ---- */
+.dashboard-sidebar {
+  width: 70px;
+  background: rgba(7, 10, 22, 0.98);
+  border-right: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 0;
+  z-index: 10;
+}
+
+.sidebar-logo {
+  margin-bottom: 32px;
+}
+
+.sidebar-logo .logo-ring {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(0, 255, 136, 0.06);
+  border: 1px solid rgba(0, 255, 136, 0.2);
+  box-shadow: var(--glow-green);
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+}
+
+.nav-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.nav-btn:hover {
+  color: var(--color-neon-cyan);
+  background: rgba(0, 229, 204, 0.08);
+}
+
+.nav-btn.active {
+  color: var(--color-neon-green);
+  background: rgba(0, 255, 136, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(0, 255, 136, 0.2);
+}
+
+.sidebar-footer {
+  margin-top: auto;
+}
+
+.logout-btn:hover {
+  color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.08);
+}
+
+/* ---- Content Area ---- */
+.dashboard-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}

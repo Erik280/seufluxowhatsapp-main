@@ -1,0 +1,127 @@
+/* ============================================
+   KanbanView.css
+   ============================================ */
+
+.kanban-view-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background: var(--color-bg-deep);
+  padding: 24px;
+}
+
+.kanban-header {
+  margin-bottom: 24px;
+}
+
+.kanban-header h2 {
+  font-size: 1.5rem;
+  color: var(--color-text-primary);
+}
+
+.kanban-board {
+  display: flex;
+  gap: 20px;
+  flex: 1;
+  overflow-x: auto;
+  align-items: flex-start; /* so columns don't stretch to full height if empty */
+}
+
+.kanban-column {
+  min-width: 300px;
+  width: 300px;
+  background: rgba(11, 15, 30, 0.6);
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  max-height: 100%;
+}
+
+.column-header {
+  padding: 16px;
+  border-top: 3px solid;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.column-header h3 {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-primary);
+}
+
+.task-count {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.task-list {
+  padding: 12px;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 100px;
+  transition: background 0.2s ease;
+}
+
+.task-list.dragging-over {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.task-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  cursor: grab;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.task-card:active {
+  cursor: grabbing;
+}
+
+.task-card:hover {
+  border-color: rgba(0, 255, 136, 0.3);
+}
+
+.task-card.dragging {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  border-color: var(--color-neon-green);
+  background: rgba(7, 10, 22, 0.95);
+}
+
+.task-name {
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: 6px;
+}
+
+.task-msg {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 12px;
+}
+
+.task-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.task-time {
+  font-size: 0.7rem;
+  color: rgba(136, 146, 176, 0.6);
+}

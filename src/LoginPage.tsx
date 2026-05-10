@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './LoginPage.css';
 import { supabase } from './supabaseClient';
 
@@ -81,6 +82,7 @@ export default function LoginPage() {
   const [loading, setLoading]  = useState(false);
   const [shake, setShake]      = useState(false);
   const [error, setError]      = useState('');
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,9 +112,8 @@ export default function LoginPage() {
       }
 
       if (data.session) {
-        // Login OK — redireciona para o dashboard (será implementado na Fase 3)
         console.log('✅ Login realizado com sucesso!', data.user?.email);
-        window.location.href = '/dashboard';
+        navigate('/dashboard');
       }
     } catch (err) {
       setError('Erro de conexão. Tente novamente.');
