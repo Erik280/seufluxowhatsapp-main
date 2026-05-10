@@ -171,3 +171,57 @@ async def list_messages(contact_id: str, limit: int = 50):
     data = result.data or []
     data.reverse()
     return data
+
+from pydantic import BaseModel
+
+class SendMessageRequest(BaseModel):
+    contact_id: str
+    company_id: str
+    text: str
+
+@router.post("/messages/send")
+async def send_manual_message(body: SendMessageRequest):
+    """Envia uma mensagem manual (texto) pelo painel e salva no banco."""
+    db = get_supabase()
+    
+    # 1. Obter os dados da empresa (instância e apikey)
+    company_res = db.table("companies").select("evolution_instance, evolution_apikey").eq("id", body.company_id).execute()
+    if not company_res.data:
+        raise HTTPException(status_code=404, detail="Company not found")
+        
+    company = company_res.data[0]
+    instance = company.get("evolution_instance")
+    apikey = company.get("evolution_apikey")
+    
+    if not instance or not apikey:
+        raise HTTPException(status_code=400, detail="Evolution API not configured for this company")
+        
+    # 2. Obter os dados do contato (telefone)
+    contact_res = db.table("contacts").select("phone").eq("id", body.contact_id).execute()
+    if not contact_res.data:
+        raise HTTPException(status_code=404, detail="Contact not found")
+        
+    phone = contact_res.data[0]["phone"]
+    
+    # 3. Enviar a mensagem pela Evolution API
+    from app.services.evolution import EvolutionAPI
+    evolution = EvolutionAPI(instance, apikey)
+    
+    # Simular digitação
+    await evolution.send_presence(phone, composing=True)
+    
+    # Enviar
+    resp = await evolution.send_text(phone, body.text)
+    
+    if "error" in resp:
+        raise HTTPException(status_code=500, detail=f"Evolution API Error: {resp['error']}")
+        
+    # 4. Salvar no banco
+    msg_result = db.table("messages").insert({
+        "company_id": body.company_id,
+        "contact_id": body.contact_id,
+        "direction": "out",
+        "content": body.text,
+    }).execute()
+    
+    return msg_result.data[0] if msg_result.data else {"status": "sent"}
