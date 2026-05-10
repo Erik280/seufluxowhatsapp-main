@@ -4,8 +4,12 @@ Endpoints para gerenciar contacts, flows, steps e messages.
 """
 
 import logging
-from fastapi import APIRouter, HTTPException
+import uuid
+import re
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from pydantic import BaseModel
 from app.database import get_supabase
+from app.services.storage import StorageService
 from app.models.schemas import (
     ContactResponse, ContactStatusUpdate,
     FlowCreate, FlowResponse,
@@ -208,8 +212,6 @@ async def list_messages(contact_id: str, limit: int = 50):
     data.reverse()
     return data
 
-from pydantic import BaseModel
-
 class SendMessageRequest(BaseModel):
     contact_id: str
     company_id: str
@@ -262,9 +264,6 @@ async def send_manual_message(body: SendMessageRequest):
     
     return msg_result.data[0] if msg_result.data else {"status": "sent"}
 
-from fastapi import UploadFile, File, Form
-from app.services.storage import StorageService
-import uuid
 
 @router.post("/messages/send/media")
 async def send_manual_media(
@@ -291,7 +290,6 @@ async def send_manual_media(
     
     # 1. Upload to MinIO
     content = await file.read()
-    import re
     safe_filename = re.sub(r'[^a-zA-Z0-9._-]', '_', file.filename)
     filename = f"{company_id}/{uuid.uuid4()}_{safe_filename}"
     
@@ -380,7 +378,6 @@ async def upload_media_to_library(
     content = await file.read()
     
     # Sanitizar nome do arquivo (remover espaços e caracteres especiais)
-    import re
     safe_filename = re.sub(r'[^a-zA-Z0-9._-]', '_', file.filename)
     filename = f"{company_id}/lib_{uuid.uuid4()}_{safe_filename}"
     
