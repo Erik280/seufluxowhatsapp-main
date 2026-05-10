@@ -10,6 +10,11 @@ services:
     networks:
       - network
 
+    environment:
+      - VITE_SUPABASE_URL=https://pamhgjhijftcnfbhjoyk.supabase.co
+      - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+      - VITE_API_BASE_URL=https://apiseufluxowhatsapp.transformafuturo.com.br
+
     deploy:
       mode: replicated
       replicas: 1

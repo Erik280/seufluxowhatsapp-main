@@ -215,6 +215,29 @@
   text-shadow: 0 0 8px var(--color-neon-cyan);
 }
 
+/* ---- Error Message ---- */
+.login-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(255, 60, 60, 0.08);
+  border: 1px solid rgba(255, 60, 60, 0.3);
+  border-radius: 10px;
+  color: #ff6b6b;
+  font-size: 0.85rem;
+  font-weight: 500;
+  animation: errorIn 0.3s ease-out;
+}
+.login-error svg {
+  flex-shrink: 0;
+  color: #ff6b6b;
+}
+@keyframes errorIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 /* ---- Login Button ---- */
 .btn-login {
   position: relative;

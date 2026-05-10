@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './LoginPage.css';
+import { supabase } from './supabaseClient';
 
 // --- Sub-components ---
 
@@ -74,22 +75,51 @@ function ParticleCanvas() {
 // --- Main Login Page ---
 
 export default function LoginPage() {
-  const [email, setEmail]     = useState('eriklima.@gmail.com');
+  const [email, setEmail]     = useState('eriklima.me@gmail.com');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading]  = useState(false);
   const [shake, setShake]      = useState(false);
+  const [error, setError]      = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+
     if (!email || !password) {
       setShake(true);
       setTimeout(() => setShake(false), 600);
       return;
     }
+
     setLoading(true);
-    // TODO: integrate real auth endpoint
-    setTimeout(() => setLoading(false), 2000);
+    try {
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (authError) {
+        setError(authError.message === 'Invalid login credentials'
+          ? 'E-mail ou senha incorretos.'
+          : authError.message
+        );
+        setShake(true);
+        setTimeout(() => setShake(false), 600);
+        return;
+      }
+
+      if (data.session) {
+        // Login OK — redireciona para o dashboard (será implementado na Fase 3)
+        console.log('✅ Login realizado com sucesso!', data.user?.email);
+        window.location.href = '/dashboard';
+      }
+    } catch (err) {
+      setError('Erro de conexão. Tente novamente.');
+      console.error('Login error:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -192,6 +222,15 @@ export default function LoginPage() {
           <div className="forgot-row">
             <a href="#" className="forgot-link">Esqueci minha senha</a>
           </div>
+
+          {error && (
+            <div className="login-error" role="alert">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+              </svg>
+              <span>{error}</span>
+            </div>
+          )}
 
           <button
             id="btn-entrar"
