@@ -12,7 +12,7 @@ from app.services.bot_engine import execute_flow, find_matching_flow
 
 logger = logging.getLogger("seufluxo.webhook")
 
-router = APIRouter(prefix="/webhook", tags=["Webhook"])
+router = APIRouter(prefix="/api/webhook", tags=["Webhook"])
 
 
 @router.post("/evolution")
