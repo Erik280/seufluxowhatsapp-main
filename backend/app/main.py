@@ -3,6 +3,7 @@ SeuFluxo WhatsApp — FastAPI Server
 Backend principal para o sistema de automação WhatsApp.
 """
 
+# Trigger build
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
