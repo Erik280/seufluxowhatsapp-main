@@ -47,6 +47,10 @@ async def process_scheduled_messages():
 
     logger.info(f"[Scheduler] {len(pending)} agendamento(s) pendente(s) para processar.")
 
+    # Mark as processing immediately to prevent duplicate runs
+    for msg in pending:
+        db.table("scheduled_messages").update({"status": "processing"}).eq("id", msg["id"]).execute()
+
     for msg in pending:
         msg_id = msg["id"]
         contact = msg.get("contacts") or {}
