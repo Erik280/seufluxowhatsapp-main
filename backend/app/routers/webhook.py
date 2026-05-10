@@ -111,8 +111,6 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
     # ── Extrair dados da mensagem ──
     key = data.get("key", {})
     is_from_me = key.get("fromMe", False)
-    if is_from_me:
-        return {"status": "ignored", "reason": "fromMe"}
 
     remote_jid = key.get("remoteJid", "")
     phone = remote_jid.split("@")[0] if "@" in remote_jid else remote_jid
@@ -128,7 +126,7 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
     )
     push_name = data.get("pushName", "")
 
-    logger.info(f"[{instance_name}] Mensagem de {phone}: {message_text[:80]}")
+    logger.info(f"[{instance_name}] {'→ enviada' if is_from_me else '← recebida'} {phone}: {message_text[:80]}")
 
     db = get_supabase()
 
@@ -148,10 +146,35 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
     company_id = company["id"]
     evolution_apikey = company.get("evolution_apikey", "")
 
-    # ── 2. Buscar o stage padrão da empresa ──
+    # ── 2. Mensagens enviadas por mim (WhatsApp Web / App) ──
+    if is_from_me:
+        # Salvar apenas se o contato JÁ EXISTE no sistema
+        contact_result = (
+            db.table("contacts")
+            .select("id")
+            .eq("company_id", company_id)
+            .eq("phone", phone)
+            .limit(1)
+            .execute()
+        )
+        if contact_result.data and message_text:
+            contact_id = contact_result.data[0]["id"]
+            db.table("messages").insert({
+                "company_id": company_id,
+                "contact_id": contact_id,
+                "direction": "out",
+                "content": message_text,
+            }).execute()
+            db.table("contacts").update({"last_message": "now()"}).eq("id", contact_id).execute()
+            logger.info(f"[fromMe] Mensagem salva para contato {phone} (direction=out)")
+            return {"status": "ok", "mode": "from_me_saved"}
+
+        return {"status": "ignored", "reason": "fromMe_no_contact_or_empty"}
+
+    # ── 3. Buscar o stage padrão da empresa ──
     default_stage_id = _get_or_create_default_stage(db, company_id)
 
-    # ── 3. Buscar ou criar contato ──
+    # ── 4. Buscar ou criar contato ──
     contact_result = (
         db.table("contacts")
         .select("*")
