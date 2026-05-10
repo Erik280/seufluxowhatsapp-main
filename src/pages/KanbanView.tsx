@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
-import { supabase } from '../supabaseClient';
+import { supabase, API_BASE_URL } from '../supabaseClient';
 import './KanbanView.css';
 
 interface KanbanStage {
@@ -89,8 +89,7 @@ export default function KanbanView() {
     setContacts(prev => prev.map(c => c.id === draggableId ? { ...c, stage_id: newStageId } : c));
 
     try {
-      const API_URL = (window as any).__CONFIG__?.VITE_API_BASE_URL || 'http://localhost:8000';
-      await fetch(`${API_URL}/api/contacts/${draggableId}/stage`, {
+      await fetch(`${API_BASE_URL}/api/contacts/${draggableId}/stage`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ stage_id: newStageId })
@@ -104,8 +103,7 @@ export default function KanbanView() {
     const name = prompt("Nome da nova coluna:");
     if (!name || !companyId) return;
     
-    const API_URL = (window as any).__CONFIG__?.VITE_API_BASE_URL || 'http://localhost:8000';
-    await fetch(`${API_URL}/api/kanban_stages`, {
+    await fetch(`${API_BASE_URL}/api/kanban_stages`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -136,8 +134,7 @@ export default function KanbanView() {
                   <h3 onClick={async () => {
                     const newName = prompt("Renomear coluna:", stage.name);
                     if (newName && newName !== stage.name) {
-                       const API_URL = (window as any).__CONFIG__?.VITE_API_BASE_URL || 'http://localhost:8000';
-                       await fetch(`${API_URL}/api/kanban_stages/${stage.id}`, {
+                       await fetch(`${API_BASE_URL}/api/kanban_stages/${stage.id}`, {
                          method: 'PATCH',
                          headers: { 'Content-Type': 'application/json' },
                          body: JSON.stringify({ name: newName })

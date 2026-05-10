@@ -30,7 +30,7 @@ function getConfig() {
 
   const apiBaseUrl = cfg?.API_BASE_URL && !cfg.API_BASE_URL.startsWith('__')
     ? cfg.API_BASE_URL
-    : import.meta.env.VITE_API_BASE_URL || '';
+    : import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
   return { supabaseUrl, supabaseAnonKey, apiBaseUrl };
 }

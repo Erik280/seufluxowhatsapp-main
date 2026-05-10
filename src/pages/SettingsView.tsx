@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
+import { supabase, API_BASE_URL } from '../supabaseClient';
 import { Smartphone, Tags, Zap, Users, ShieldAlert } from 'lucide-react';
 import './SettingsView.css';
 
@@ -53,8 +53,7 @@ export default function SettingsView() {
 
   const checkConnectionStatus = async (instanceName: string) => {
     try {
-      const API_URL = (window as any).__CONFIG__?.VITE_API_BASE_URL || 'http://localhost:8000';
-      const response = await fetch(`${API_URL}/api/evolution/status/${instanceName}`);
+      const response = await fetch(`${API_BASE_URL}/api/evolution/status/${instanceName}`);
       const data = await response.json();
       
       if (data.instance?.state) {
@@ -73,7 +72,6 @@ export default function SettingsView() {
     
     setLoadingQr(true);
     let instanceName = company.evolution_instance;
-    const API_URL = (window as any).__CONFIG__?.VITE_API_BASE_URL || 'http://localhost:8000';
 
     try {
       // Create instance silently if it doesn't exist
@@ -82,7 +80,7 @@ export default function SettingsView() {
         const token = Math.random().toString(36).substring(2, 15);
         
         // 1. Create in Evolution API
-        await fetch(`${API_URL}/api/evolution/create`, {
+        await fetch(`${API_BASE_URL}/api/evolution/create`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ instance_name: instanceName, token: token })
@@ -99,7 +97,7 @@ export default function SettingsView() {
       }
 
       // Generate QR Code for the instance
-      const response = await fetch(`${API_URL}/api/evolution/connect/${instanceName}`);
+      const response = await fetch(`${API_BASE_URL}/api/evolution/connect/${instanceName}`);
       const data = await response.json();
       
       if (data.base64) {

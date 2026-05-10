@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { supabase } from '../supabaseClient';
+import { supabase, API_BASE_URL } from '../supabaseClient';
 import './ChatView.css';
 
 interface Contact {
@@ -139,10 +139,7 @@ export default function ChatView() {
     setMessages(prev => [...prev, tempMsg]);
 
     try {
-      // Get base API URL from config
-      const API_URL = (window as any).__CONFIG__?.VITE_API_BASE_URL || 'http://localhost:8000';
-      
-      await fetch(`${API_URL}/api/messages/send`, {
+      await fetch(`${API_BASE_URL}/api/messages/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -277,13 +274,12 @@ export default function ChatView() {
               <h3>Estágio Kanban</h3>
               <select className="crm-select" value={selectedContact.stage_id || ''} onChange={async (e) => {
                  const newStageId = e.target.value || null;
-                 const API_URL = (window as any).__CONFIG__?.VITE_API_BASE_URL || 'http://localhost:8000';
                  
                  // Optimistic Update
                  setSelectedContact({ ...selectedContact, stage_id: newStageId });
                  setContacts(contacts.map(c => c.id === selectedContact.id ? { ...c, stage_id: newStageId } : c));
 
-                 await fetch(`${API_URL}/api/contacts/${selectedContact.id}/stage`, {
+                 await fetch(`${API_BASE_URL}/api/contacts/${selectedContact.id}/stage`, {
                    method: 'PATCH',
                    headers: { 'Content-Type': 'application/json' },
                    body: JSON.stringify({ stage_id: newStageId })
