@@ -31,6 +31,10 @@ class EvolutionAPI:
                 resp = await client.post(url, json=payload, headers=self.headers)
                 resp.raise_for_status()
                 return resp.json()
+        except httpx.HTTPStatusError as e:
+            error_detail = e.response.text
+            logger.error(f"Evolution API status error [{path}]: {e} - Response: {error_detail}")
+            return {"error": f"{e} - {error_detail}"}
         except httpx.HTTPError as e:
             logger.error(f"Evolution API error [{path}]: {e}")
             return {"error": str(e)}
@@ -121,6 +125,10 @@ class EvolutionAdminAPI:
                 resp = await client.post(url, json=payload, headers=self.headers)
                 resp.raise_for_status()
                 return resp.json()
+        except httpx.HTTPStatusError as e:
+            error_detail = e.response.text
+            logger.error(f"Evolution Admin API status error [{path}]: {e} - Response: {error_detail}")
+            return {"error": f"{e} - {error_detail}"}
         except httpx.HTTPError as e:
             logger.error(f"Evolution Admin API error [{path}]: {e}")
             return {"error": str(e)}
@@ -132,6 +140,10 @@ class EvolutionAdminAPI:
                 resp = await client.get(url, headers=self.headers)
                 resp.raise_for_status()
                 return resp.json()
+        except httpx.HTTPStatusError as e:
+            error_detail = e.response.text
+            logger.error(f"Evolution Admin API status GET error [{path}]: {e} - Response: {error_detail}")
+            return {"error": f"{e} - {error_detail}"}
         except httpx.HTTPError as e:
             logger.error(f"Evolution Admin API get error [{path}]: {e}")
             return {"error": str(e)}
