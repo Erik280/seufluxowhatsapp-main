@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
+import { useState, useEffect, useRef } from 'react';
+import { supabase, API_BASE_URL } from '../supabaseClient';
 import {
   Plus, Trash2, GripVertical, ChevronDown, ChevronUp,
   MessageSquare, Mic, Image, Video, Clock, Keyboard, Radio,
-  Play, Save, ToggleLeft, ToggleRight, X, Tag
+  Play, Save, ToggleLeft, ToggleRight, X, Tag, Upload
 } from 'lucide-react';
 import './FlowBuilderView.css';
 
@@ -66,13 +66,53 @@ export default function FlowBuilderView() {
   const [saving, setSaving] = useState(false);
   const [expandedStep, setExpandedStep] = useState<string | null>(null);
   const [stepSaving, setStepSaving] = useState<string | null>(null);
+  const [stepUploading, setStepUploading] = useState<string | null>(null); // stepId being uploaded
   const [toast, setToast] = useState<{ msg: string; type: 'ok' | 'err' } | null>(null);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  // One hidden file input ref per step (keyed by stepId)
+  const uploadInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const showToast = (msg: string, type: 'ok' | 'err' = 'ok') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
+  };
+
+  // ── Media Upload (inline no step) ──────────────────────────────────────────
+
+  const handleStepUpload = async (stepId: string, file: File) => {
+    if (!companyId) return;
+    // Use the filename (without extension) as the library name, user can rename later
+    const autoName = file.name.replace(/\.[^.]+$/, '');
+    setStepUploading(stepId);
+    try {
+      const formData = new FormData();
+      formData.append('company_id', companyId);
+      formData.append('name', autoName);
+      formData.append('file', file);
+
+      const res = await fetch(`${API_BASE_URL}/api/media`, { method: 'POST', body: formData });
+      if (!res.ok) throw new Error(await res.text());
+      const newItem = await res.json();
+
+      // Add to local media list so library picker updates immediately
+      setMediaItems(prev => [...prev, newItem]);
+
+      // Auto-select it in the step
+      updateStep(stepId, {
+        content: newItem.url,
+        media_library_id: newItem.id,
+      });
+      showToast(`Arquivo "${newItem.name}" enviado e selecionado ✔️`);
+    } catch (e: any) {
+      console.error('[FlowBuilder] upload error:', e);
+      showToast(`Erro no upload: ${e.message}`, 'err');
+    } finally {
+      setStepUploading(null);
+      // Reset the file input
+      const ref = uploadInputRefs.current[stepId];
+      if (ref) ref.value = '';
+    }
   };
 
   // ── Drag handlers ──────────────────────────────────────────────────────────
@@ -440,11 +480,6 @@ export default function FlowBuilderView() {
               const cfg = getStepConfig(step.type);
               const Icon = cfg.icon;
               const isExpanded = expandedStep === step.id;
-              const mediaForType = mediaItems.filter(m =>
-                step.type === 'audio' ? m.media_type === 'audio' :
-                step.type === 'image' ? m.media_type === 'image' :
-                step.type === 'video' ? m.media_type === 'video' : false
-              );
 
               return (
                 <div
@@ -474,7 +509,10 @@ export default function FlowBuilderView() {
                       <span className="fb-step-preview">
                         {step.type === 'delay' || step.type === 'composing' || step.type === 'recording'
                           ? `${step.delay_duration}s`
-                          : step.content?.slice(0, 50) || '(sem conteúdo)'}
+                          : step.media_library_id
+                            // Show library file name when a media item is linked
+                            ? (mediaItems.find(m => m.id === step.media_library_id)?.name || step.content?.slice(0, 50) || '(sem conteúdo)')
+                            : step.content?.slice(0, 50) || '(sem conteúdo)'}
                       </span>
                     </div>
                     <div className="fb-step-actions">
@@ -526,33 +564,74 @@ export default function FlowBuilderView() {
 
                           {(step.type === 'audio' || step.type === 'image' || step.type === 'video') && (
                             <div className="fb-field">
-                              <label>URL da mídia</label>
-                              <input
-                                type="text"
-                                value={step.content}
-                                onChange={e => updateStep(step.id, { content: e.target.value })}
-                                placeholder="https://..."
-                              />
-                              {mediaForType.length > 0 && (
-                                <div className="fb-library-picker">
-                                  <span>Ou escolher da biblioteca:</span>
-                                  <select
-                                    value={step.media_library_id || ''}
-                                    onChange={e => {
-                                      const selected = mediaItems.find(m => m.id === e.target.value);
-                                      updateStep(step.id, {
-                                        media_library_id: e.target.value || null,
-                                        content: selected?.url || step.content,
-                                      });
-                                    }}
+                              <label>Mídia</label>
+
+                              {/* Selected file indicator */}
+                              {step.media_library_id && (
+                                <div className="fb-media-selected">
+                                  <span className="fb-media-filename">
+                                    {mediaItems.find(m => m.id === step.media_library_id)?.name || 'Arquivo selecionado'}
+                                  </span>
+                                  <button
+                                    className="fb-media-clear"
+                                    onClick={() => updateStep(step.id, { content: '', media_library_id: null })}
+                                    title="Remover"
                                   >
-                                    <option value="">Selecionar da biblioteca...</option>
-                                    {mediaForType.map(m => (
-                                      <option key={m.id} value={m.id}>{m.name}</option>
-                                    ))}
-                                  </select>
+                                    <X size={12} />
+                                  </button>
                                 </div>
                               )}
+
+                              {/* Upload button */}
+                              <div className="fb-media-actions">
+                                <button
+                                  className="fb-btn-upload"
+                                  onClick={() => uploadInputRefs.current[step.id]?.click()}
+                                  disabled={stepUploading === step.id}
+                                >
+                                  <Upload size={14} />
+                                  {stepUploading === step.id ? 'Enviando...' : 'Enviar arquivo'}
+                                </button>
+                                <span className="fb-media-or">ou</span>
+                                {/* Library picker */}
+                                <select
+                                  className="fb-media-library-select"
+                                  value={step.media_library_id || ''}
+                                  onChange={e => {
+                                    const selected = mediaItems.find(m => m.id === e.target.value);
+                                    updateStep(step.id, {
+                                      media_library_id: e.target.value || null,
+                                      content: selected?.url || step.content,
+                                    });
+                                  }}
+                                >
+                                  <option value="">Escolher da biblioteca...</option>
+                                  {mediaItems
+                                    .filter(m =>
+                                      step.type === 'audio' ? m.media_type === 'audio' :
+                                      step.type === 'image' ? m.media_type === 'image' :
+                                      step.type === 'video' ? m.media_type === 'video' : false
+                                    )
+                                    .map(m => (
+                                      <option key={m.id} value={m.id}>{m.name}</option>
+                                    ))}
+                                </select>
+                              </div>
+
+                              {/* Hidden file input */}
+                              <input
+                                type="file"
+                                style={{ display: 'none' }}
+                                accept={
+                                  step.type === 'audio' ? 'audio/*' :
+                                  step.type === 'image' ? 'image/*' : 'video/*'
+                                }
+                                ref={el => { uploadInputRefs.current[step.id] = el; }}
+                                onChange={e => {
+                                  const f = e.target.files?.[0];
+                                  if (f) handleStepUpload(step.id, f);
+                                }}
+                              />
                             </div>
                           )}
                         </>

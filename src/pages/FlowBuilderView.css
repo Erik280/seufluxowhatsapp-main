@@ -524,6 +524,92 @@
   min-width: 200px;
 }
 
+/* ── Media upload (inline no step) ── */
+
+.fb-media-selected {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 229, 204, 0.08);
+  border: 1px solid rgba(0, 229, 204, 0.25);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.fb-media-filename {
+  flex: 1;
+  font-size: 0.85rem;
+  color: var(--color-neon-cyan, #00e5cc);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
+.fb-media-clear {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: rgba(0, 229, 204, 0.6);
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.fb-media-clear:hover { color: #ff6b6b; }
+
+.fb-media-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.fb-btn-upload {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 229, 204, 0.1);
+  border: 1px solid rgba(0, 229, 204, 0.35);
+  color: var(--color-neon-cyan, #00e5cc);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.83rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.fb-btn-upload:hover { background: rgba(0, 229, 204, 0.18); transform: translateY(-1px); }
+.fb-btn-upload:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.fb-media-or {
+  font-size: 0.78rem;
+  color: var(--color-text-muted, #8892b0);
+  flex-shrink: 0;
+}
+
+.fb-media-library-select {
+  flex: 1;
+  min-width: 180px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--color-text-primary, #e6f1ff);
+  font-size: 0.875rem;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.fb-media-library-select:focus { border-color: var(--color-neon-cyan, #00e5cc); }
+
 .fb-btn-save-step {
   display: flex;
   align-items: center;
