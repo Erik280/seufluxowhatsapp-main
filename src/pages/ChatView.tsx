@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { FolderOpen, Plus, Mic, Trash2, Send } from 'lucide-react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
 import './ChatView.css';
 
@@ -399,7 +400,7 @@ export default function ChatView() {
                 /* ── Recording UI ── */
                 <div className="recording-bar">
                   <button className="recording-cancel-btn" onClick={cancelRecording} title="Cancelar gravação">
-                    🗑️
+                    <Trash2 size={18} />
                   </button>
                   <div className="recording-indicator">
                     <span className="recording-dot"></span>
@@ -410,7 +411,7 @@ export default function ChatView() {
                     </div>
                   </div>
                   <button className="recording-send-btn" onClick={stopRecording} title="Enviar áudio">
-                    ➤
+                    <Send size={18} />
                   </button>
                 </div>
               ) : (
@@ -421,7 +422,7 @@ export default function ChatView() {
                     onClick={() => setShowMediaModal(true)}
                     title="Abrir Biblioteca de Mídia"
                   >
-                    📁
+                    <FolderOpen size={20} />
                   </button>
                   <label className="attach-btn" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <input 
@@ -448,7 +449,7 @@ export default function ChatView() {
                       }}
                       accept="image/*,audio/*,video/*"
                     />
-                    📎
+                    <Plus size={20} />
                   </label>
                   {inputValue.trim() ? (
                     <>
@@ -471,7 +472,7 @@ export default function ChatView() {
                         onKeyDown={e => e.key === 'Enter' && handleSend()}
                       />
                       <button className="mic-btn" onClick={startRecording} title="Gravar áudio">
-                        🎤
+                        <Mic size={20} />
                       </button>
                     </>
                   )}
