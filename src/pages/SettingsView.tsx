@@ -183,6 +183,30 @@ export default function SettingsView() {
                         {loadingQr ? 'Gerando...' : 'Gerar QR Code'}
                       </button>
                     )}
+                    
+                    {/* Botão para resetar caso a instância tenha quebrado na Evolution API */}
+                    {company?.evolution_instance && (
+                      <div style={{ marginTop: '20px' }}>
+                        <button 
+                          className="btn-primary" 
+                          style={{ backgroundColor: '#ff4444', border: 'none' }}
+                          onClick={async () => {
+                            setLoadingQr(true);
+                            await supabase.from('companies').update({
+                              evolution_instance: null,
+                              evolution_apikey: null
+                            }).eq('id', company.id);
+                            setCompany({ ...company, evolution_instance: null, evolution_apikey: null });
+                            setConnectionStatus('unconfigured');
+                            setQrCode(null);
+                            setLoadingQr(false);
+                          }}
+                        >
+                          Resetar Conexão Travada
+                        </button>
+                        <p style={{ fontSize: '12px', marginTop: '5px', color: '#888' }}>Use isso apenas se o QR Code não quiser gerar de jeito nenhum.</p>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -191,6 +215,26 @@ export default function SettingsView() {
                     <ShieldAlert size={48} color="#00FF88" />
                     <h4>Tudo certo!</h4>
                     <p>Seu WhatsApp está conectado e pronto para enviar/receber mensagens.</p>
+                    
+                    <button 
+                      className="btn-primary" 
+                      style={{ backgroundColor: '#ff4444', border: 'none', marginTop: '20px' }}
+                      onClick={async () => {
+                        if (!company?.evolution_instance) return;
+                        // Chama o backend para deletar da Evolution
+                        await fetch(`${API_BASE_URL}/api/evolution/delete/${company.evolution_instance}`, { method: 'DELETE' });
+                        // Limpa do Supabase
+                        await supabase.from('companies').update({
+                          evolution_instance: null,
+                          evolution_apikey: null
+                        }).eq('id', company.id);
+                        
+                        setCompany({ ...company, evolution_instance: null, evolution_apikey: null });
+                        setConnectionStatus('unconfigured');
+                      }}
+                    >
+                      Desconectar Instância
+                    </button>
                   </div>
                 )}
               </div>
