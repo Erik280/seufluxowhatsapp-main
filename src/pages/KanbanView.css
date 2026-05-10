@@ -64,12 +64,41 @@
   display: flex;
   flex-direction: column;
   max-height: calc(100vh - 180px);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s, opacity 0.2s;
 }
 
 .kanban-column.drop-target {
   border-color: rgba(0, 229, 204, 0.5);
   box-shadow: 0 0 0 2px rgba(0, 229, 204, 0.2), inset 0 0 20px rgba(0, 229, 204, 0.05);
+}
+
+/* Column being dragged */
+.kanban-column.col-dragging {
+  opacity: 0.45;
+  border-style: dashed;
+}
+
+/* Column drop target during reorder */
+.kanban-column.col-drop-target {
+  border-color: rgba(245, 158, 11, 0.6);
+  box-shadow: -4px 0 0 0 rgba(245, 158, 11, 0.5);
+}
+
+/* ── Column drag handle ── */
+.kb-col-drag-handle {
+  color: rgba(255,255,255,0.2);
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  padding: 2px 4px 2px 0;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.kb-col-drag-handle:active { cursor: grabbing; }
+
+.kanban-column:hover .kb-col-drag-handle {
+  color: rgba(255,255,255,0.45);
 }
 
 .column-header {
@@ -478,3 +507,77 @@
 }
 .kb-btn-save:hover { background: rgba(0, 229, 204, 0.2); transform: translateY(-1px); }
 .kb-btn-save:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* ══════════════════════════════════════════════════════════════
+   CONFIRM AUTOMATION MODAL
+══════════════════════════════════════════════════════════════ */
+
+.kb-confirm-modal {
+  max-width: 420px;
+  text-align: center;
+  padding-bottom: 8px;
+}
+
+.kb-confirm-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #F59E0B;
+  margin: 24px auto 16px;
+}
+
+.kb-confirm-modal h3 {
+  font-size: 1.1rem;
+  color: var(--color-text-primary, #e6f1ff);
+  margin-bottom: 12px;
+}
+
+.kb-confirm-text {
+  font-size: 0.9rem;
+  color: var(--color-text-primary, #e6f1ff);
+  line-height: 1.6;
+  padding: 0 24px;
+}
+
+.kb-confirm-text strong { color: #F59E0B; }
+
+.kb-confirm-sub {
+  font-size: 0.8rem;
+  color: var(--color-text-muted, #8892b0);
+  padding: 10px 24px 0;
+  line-height: 1.5;
+}
+
+.kb-confirm-sub strong { color: var(--color-text-primary); }
+
+.kb-confirm-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  padding: 20px 24px 24px;
+}
+
+.kb-btn-confirm {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  color: #F59E0B;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.kb-btn-confirm:hover {
+  background: rgba(245, 158, 11, 0.22);
+  transform: translateY(-1px);
+}

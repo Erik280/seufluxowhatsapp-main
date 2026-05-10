@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
-import { Zap, Settings, X, ToggleLeft, ToggleRight, Plus, Trash2 } from 'lucide-react';
+import { Zap, Settings, X, ToggleLeft, ToggleRight, Plus, Trash2, GripVertical, AlertTriangle } from 'lucide-react';
 import './KanbanView.css';
 
 interface KanbanStage {
@@ -27,9 +27,44 @@ interface Flow {
   is_active: boolean;
 }
 
+// ─── Confirm Automation Modal ────────────────────────────────────────────────
+interface ConfirmAutomationProps {
+  contactName: string;
+  stageName: string;
+  flowName: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+function ConfirmAutomationModal({ contactName, stageName, flowName, onConfirm, onCancel }: ConfirmAutomationProps) {
+  return (
+    <div className="kb-modal-backdrop" onClick={onCancel}>
+      <div className="kb-modal kb-confirm-modal" onClick={e => e.stopPropagation()}>
+        <div className="kb-confirm-icon">
+          <AlertTriangle size={28} />
+        </div>
+        <h3>Confirmar automação</h3>
+        <p className="kb-confirm-text">
+          Ao mover <strong>{contactName}</strong> para a coluna <strong>"{stageName}"</strong>, o fluxo{' '}
+          <strong>"{flowName}"</strong> será disparado automaticamente para esse lead.
+        </p>
+        <p className="kb-confirm-sub">
+          O status do contato será alterado para <strong>Bot</strong> e a automação terá prioridade.
+        </p>
+        <div className="kb-confirm-actions">
+          <button className="kb-btn-cancel" onClick={onCancel}>Cancelar</button>
+          <button className="kb-btn-confirm" onClick={onConfirm}>
+            <Zap size={14} /> Sim, mover e disparar fluxo
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Stage Config Modal ───────────────────────────────────────────────────────
 interface StageModalProps {
-  stage: KanbanStage | null;       // null = creating new
+  stage: KanbanStage | null;
   flows: Flow[];
   companyId: string;
   onClose: () => void;
@@ -100,35 +135,24 @@ function StageModal({ stage, flows, companyId, onClose, onSaved, onDeleted }: St
         </div>
 
         <div className="kb-modal-body">
-          {/* Name */}
           <div className="kb-field">
             <label>Nome da coluna</label>
-            <input
-              type="text"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder="Ex: Proposta enviada"
-              autoFocus
-            />
+            <input type="text" value={name} onChange={e => setName(e.target.value)}
+              placeholder="Ex: Proposta enviada" autoFocus />
           </div>
 
-          {/* Color */}
           <div className="kb-field">
             <label>Cor de destaque</label>
             <div className="kb-color-row">
               {COLOR_PRESETS.map(c => (
-                <button
-                  key={c}
-                  className={`kb-color-dot ${color === c ? 'selected' : ''}`}
-                  style={{ background: c }}
-                  onClick={() => setColor(c)}
-                />
+                <button key={c} className={`kb-color-dot ${color === c ? 'selected' : ''}`}
+                  style={{ background: c }} onClick={() => setColor(c)} />
               ))}
-              <input type="color" value={color} onChange={e => setColor(e.target.value)} className="kb-color-custom" title="Cor personalizada" />
+              <input type="color" value={color} onChange={e => setColor(e.target.value)}
+                className="kb-color-custom" title="Cor personalizada" />
             </div>
           </div>
 
-          {/* Automation toggle */}
           <div className="kb-field">
             <div className="kb-trigger-toggle-row">
               <div>
@@ -136,35 +160,25 @@ function StageModal({ stage, flows, companyId, onClose, onSaved, onDeleted }: St
                   <Zap size={14} style={{ color: '#F59E0B', marginRight: 6 }} />
                   Ativar automação ao entrar nesta coluna?
                 </label>
-                <p className="kb-label-sub">Quando um lead for movido para cá, o fluxo selecionado será disparado automaticamente.</p>
+                <p className="kb-label-sub">O fluxo selecionado será disparado automaticamente após confirmação.</p>
               </div>
-              <button
-                className={`kb-toggle-btn ${isTriggerEnabled ? 'active' : ''}`}
-                onClick={() => setIsTriggerEnabled(p => !p)}
-              >
-                {isTriggerEnabled
-                  ? <><ToggleRight size={20} /> Ativado</>
-                  : <><ToggleLeft size={20} /> Desativado</>}
+              <button className={`kb-toggle-btn ${isTriggerEnabled ? 'active' : ''}`}
+                onClick={() => setIsTriggerEnabled(p => !p)}>
+                {isTriggerEnabled ? <><ToggleRight size={20} /> Ativado</> : <><ToggleLeft size={20} /> Desativado</>}
               </button>
             </div>
           </div>
 
-          {/* Flow selector — only visible when trigger is ON */}
           {isTriggerEnabled && (
             <div className="kb-field kb-flow-selector">
               <label>Fluxo de resposta automática</label>
               {flows.length === 0 ? (
-                <p className="kb-no-flows">Nenhum fluxo criado. Crie um fluxo primeiro na tela de Automação.</p>
+                <p className="kb-no-flows">Nenhum fluxo criado. Crie um fluxo na tela de Automação.</p>
               ) : (
-                <select
-                  value={triggerFlowId}
-                  onChange={e => setTriggerFlowId(e.target.value)}
-                >
+                <select value={triggerFlowId} onChange={e => setTriggerFlowId(e.target.value)}>
                   <option value="">Selecionar fluxo...</option>
                   {flows.map(f => (
-                    <option key={f.id} value={f.id}>
-                      {f.name}{!f.is_active ? ' (inativo)' : ''}
-                    </option>
+                    <option key={f.id} value={f.id}>{f.name}{!f.is_active ? ' (inativo)' : ''}</option>
                   ))}
                 </select>
               )}
@@ -203,14 +217,30 @@ export default function KanbanView() {
   const [flows, setFlows] = useState<Flow[]>([]);
   const [companyId, setCompanyId] = useState<string>('');
 
-  // Modal state
-  const [modalStage, setModalStage] = useState<KanbanStage | null | 'new'>('hidden' as any);
+  // Stage config modal
+  const [modalStage, setModalStage] = useState<KanbanStage | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  // Drag state
-  const [draggedContactId, setDraggedContactId] = useState<string | null>(null);
+  // Automation confirm modal
+  const [confirmPending, setConfirmPending] = useState<{
+    contactId: string;
+    stageId: string;
+    prevStageId: string | null;
+    contactName: string;
+    stageName: string;
+    flowName: string;
+  } | null>(null);
+
+  // ── Card drag state ────────────────────────────────────────────────────────
+  const [draggedCardId, setDraggedCardId] = useState<string | null>(null);
   const [dragOverStageId, setDragOverStageId] = useState<string | null>(null);
 
+  // ── Column drag state ──────────────────────────────────────────────────────
+  const [draggedColIdx, setDraggedColIdx] = useState<number | null>(null);
+  const [dragOverColIdx, setDragOverColIdx] = useState<number | null>(null);
+  const colSaveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── Init ───────────────────────────────────────────────────────────────────
   useEffect(() => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -218,8 +248,8 @@ export default function KanbanView() {
 
       const { data: userData } = await supabase
         .from('users').select('company_id').eq('auth_id', session.user.id).single();
-
       if (!userData) return;
+
       setCompanyId(userData.company_id);
 
       const [stagesRes, contactsRes, flowsRes] = await Promise.all([
@@ -232,7 +262,6 @@ export default function KanbanView() {
       if (contactsRes.data) setContacts(contactsRes.data);
       if (flowsRes.data) setFlows(flowsRes.data);
 
-      // Realtime subscriptions
       const sub = supabase.channel('public:kanban')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts', filter: `company_id=eq.${userData.company_id}` }, () => {
           supabase.from('contacts').select('*').eq('company_id', userData.company_id).order('last_message', { ascending: false })
@@ -249,63 +278,160 @@ export default function KanbanView() {
     init();
   }, []);
 
-  // ── Drag handlers ──────────────────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════════════════════
+  // CARD DRAG & DROP
+  // ══════════════════════════════════════════════════════════════════════════
 
-  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, contactId: string) => {
-    setDraggedContactId(contactId);
-    e.dataTransfer.setData('text/plain', contactId);
+  const handleCardDragStart = (e: React.DragEvent<HTMLDivElement>, contactId: string) => {
+    e.dataTransfer.setData('drag-type', 'card');
+    e.dataTransfer.setData('contact-id', contactId);
     e.dataTransfer.effectAllowed = 'move';
+    setDraggedCardId(contactId);
     setTimeout(() => {
       document.getElementById(`card-${contactId}`)?.classList.add('dragging');
     }, 0);
   };
 
-  const handleDragEnd = (_e: React.DragEvent<HTMLDivElement>, contactId: string) => {
-    setDraggedContactId(null);
+  const handleCardDragEnd = (_e: React.DragEvent<HTMLDivElement>, contactId: string) => {
+    setDraggedCardId(null);
     setDragOverStageId(null);
     document.getElementById(`card-${contactId}`)?.classList.remove('dragging');
   };
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>, stageId: string) => {
+  const handleStageDragOver = (e: React.DragEvent<HTMLDivElement>, stageId: string) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    setDragOverStageId(stageId);
+    if (draggedCardId) {
+      e.dataTransfer.dropEffect = 'move';
+      setDragOverStageId(stageId);
+    }
   };
 
-  const handleDrop = async (e: React.DragEvent<HTMLDivElement>, stageId: string) => {
+  const handleStageDrop = async (e: React.DragEvent<HTMLDivElement>, stageId: string) => {
     e.preventDefault();
     setDragOverStageId(null);
-    const contactId = e.dataTransfer.getData('text/plain');
+
+    const dragType = e.dataTransfer.getData('drag-type');
+    if (dragType !== 'card') return;
+
+    const contactId = e.dataTransfer.getData('contact-id');
     const contact = contacts.find(c => c.id === contactId);
     if (!contact || contact.stage_id === stageId) return;
 
+    const targetStage = stages.find(s => s.id === stageId);
+    if (!targetStage) return;
+
+    // ── Check if target stage has automation ──────────────────────────────
+    if (targetStage.is_trigger_enabled && targetStage.trigger_flow_id) {
+      const flow = flows.find(f => f.id === targetStage.trigger_flow_id);
+      // Show confirmation before doing anything
+      setConfirmPending({
+        contactId,
+        stageId,
+        prevStageId: contact.stage_id,
+        contactName: contact.name || contact.phone,
+        stageName: targetStage.name,
+        flowName: flow?.name ?? 'fluxo desconhecido',
+      });
+      return; // Wait for user confirmation
+    }
+
+    // No automation — move directly
+    await performCardMove(contactId, stageId, contact.stage_id);
+  };
+
+  const performCardMove = async (contactId: string, stageId: string, prevStageId: string | null) => {
     // Optimistic update
     setContacts(prev => prev.map(c => c.id === contactId ? { ...c, stage_id: stageId } : c));
-
     try {
-      await fetch(`${API_BASE_URL}/api/contacts/${contactId}/stage`, {
+      const res = await fetch(`${API_BASE_URL}/api/contacts/${contactId}/stage`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ stage_id: stageId }),
       });
-    } catch (err) {
-      console.error('[Kanban] Failed to update stage', err);
-      // Revert optimistic update on error
-      setContacts(prev => prev.map(c => c.id === contactId ? { ...c, stage_id: contact.stage_id } : c));
+      if (!res.ok) throw new Error();
+    } catch {
+      // Revert on error
+      setContacts(prev => prev.map(c => c.id === contactId ? { ...c, stage_id: prevStageId } : c));
     }
+  };
+
+  // Automation confirmed
+  const handleAutomationConfirm = async () => {
+    if (!confirmPending) return;
+    const { contactId, stageId, prevStageId } = confirmPending;
+    setConfirmPending(null);
+    await performCardMove(contactId, stageId, prevStageId);
+  };
+
+  // Automation cancelled
+  const handleAutomationCancel = () => {
+    setConfirmPending(null);
+  };
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // COLUMN DRAG & DROP (reordering)
+  // ══════════════════════════════════════════════════════════════════════════
+
+  const handleColDragStart = (e: React.DragEvent<HTMLDivElement>, colIdx: number) => {
+    e.dataTransfer.setData('drag-type', 'column');
+    e.dataTransfer.setData('col-idx', String(colIdx));
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggedColIdx(colIdx);
+    // Don't let column drag bubble to stage drop handler
+    e.stopPropagation();
+  };
+
+  const handleColDragOver = (e: React.DragEvent<HTMLDivElement>, colIdx: number) => {
+    if (draggedColIdx !== null) {
+      e.preventDefault();
+      e.stopPropagation();
+      setDragOverColIdx(colIdx);
+    }
+  };
+
+  const handleColDrop = async (e: React.DragEvent<HTMLDivElement>, dropIdx: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (draggedColIdx === null || draggedColIdx === dropIdx) {
+      setDraggedColIdx(null);
+      setDragOverColIdx(null);
+      return;
+    }
+
+    // Reorder locally
+    const newStages = [...stages];
+    const [moved] = newStages.splice(draggedColIdx, 1);
+    newStages.splice(dropIdx, 0, moved);
+    newStages.forEach((s, i) => (s.order_index = i));
+    setStages(newStages);
+    setDraggedColIdx(null);
+    setDragOverColIdx(null);
+
+    // Debounce persist — save after 500ms of inactivity
+    if (colSaveTimeout.current) clearTimeout(colSaveTimeout.current);
+    colSaveTimeout.current = setTimeout(async () => {
+      await Promise.all(
+        newStages.map(s =>
+          fetch(`${API_BASE_URL}/api/kanban_stages/${s.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order_index: s.order_index }),
+          })
+        )
+      );
+    }, 500);
+  };
+
+  const handleColDragEnd = () => {
+    setDraggedColIdx(null);
+    setDragOverColIdx(null);
   };
 
   // ── Modal helpers ──────────────────────────────────────────────────────────
 
-  const openNewStageModal = () => {
-    setModalStage(null);
-    setModalOpen(true);
-  };
-
-  const openEditStageModal = (stage: KanbanStage) => {
-    setModalStage(stage);
-    setModalOpen(true);
-  };
+  const openNewStageModal = () => { setModalStage(null); setModalOpen(true); };
+  const openEditStageModal = (stage: KanbanStage) => { setModalStage(stage); setModalOpen(true); };
 
   const handleModalSaved = (saved: KanbanStage) => {
     setStages(prev => {
@@ -333,33 +459,50 @@ export default function KanbanView() {
       </header>
 
       <div className="kanban-board">
-        {stages.map(stage => {
+        {stages.map((stage, colIdx) => {
           const stageContacts = contacts.filter(c => c.stage_id === stage.id);
-          const isDragTarget = dragOverStageId === stage.id && draggedContactId !== null;
+          const isCardTarget = dragOverStageId === stage.id && draggedCardId !== null;
+          const isColDragged = draggedColIdx === colIdx;
+          const isColTarget  = dragOverColIdx === colIdx && draggedColIdx !== null && draggedColIdx !== colIdx;
+
           return (
             <div
               key={stage.id}
-              className={`kanban-column ${isDragTarget ? 'drop-target' : ''}`}
-              onDragOver={e => handleDragOver(e, stage.id)}
-              onDragLeave={() => setDragOverStageId(null)}
-              onDrop={e => handleDrop(e, stage.id)}
+              className={`kanban-column ${isCardTarget ? 'drop-target' : ''} ${isColDragged ? 'col-dragging' : ''} ${isColTarget ? 'col-drop-target' : ''}`}
+              onDragOver={e => {
+                if (draggedColIdx !== null) handleColDragOver(e, colIdx);
+                else handleStageDragOver(e, stage.id);
+              }}
+              onDragLeave={() => { setDragOverStageId(null); setDragOverColIdx(null); }}
+              onDrop={e => {
+                if (draggedColIdx !== null) handleColDrop(e, colIdx);
+                else handleStageDrop(e, stage.id);
+              }}
+              onDragEnd={handleColDragEnd}
             >
               <div className="column-header" style={{ borderTopColor: stage.color }}>
+                {/* Column drag handle */}
+                <div
+                  className="kb-col-drag-handle"
+                  draggable
+                  onDragStart={e => handleColDragStart(e, colIdx)}
+                  title="Arrastar para reordenar coluna"
+                >
+                  <GripVertical size={15} />
+                </div>
+
                 <div className="column-title-row">
                   <h3>{stage.name}</h3>
                   {stage.is_trigger_enabled && (
-                    <span className="kb-trigger-badge" title={`Fluxo automático ativado`}>
+                    <span className="kb-trigger-badge" title="Fluxo automático ativado">
                       <Zap size={11} />
                     </span>
                   )}
                 </div>
+
                 <div className="column-header-right">
                   <span className="task-count">{stageContacts.length}</span>
-                  <button
-                    className="kb-settings-btn"
-                    onClick={() => openEditStageModal(stage)}
-                    title="Configurar coluna"
-                  >
+                  <button className="kb-settings-btn" onClick={() => openEditStageModal(stage)} title="Configurar coluna">
                     <Settings size={14} />
                   </button>
                 </div>
@@ -371,8 +514,8 @@ export default function KanbanView() {
                     id={`card-${contact.id}`}
                     key={contact.id}
                     draggable
-                    onDragStart={e => handleDragStart(e, contact.id)}
-                    onDragEnd={e => handleDragEnd(e, contact.id)}
+                    onDragStart={e => handleCardDragStart(e, contact.id)}
+                    onDragEnd={e => handleCardDragEnd(e, contact.id)}
                     className="task-card"
                   >
                     <div className="task-name">{contact.name || contact.phone}</div>
@@ -393,7 +536,6 @@ export default function KanbanView() {
           );
         })}
 
-        {/* Placeholder if no stages */}
         {stages.length === 0 && (
           <div className="kb-no-stages">
             <p>Nenhuma coluna criada.</p>
@@ -407,12 +549,23 @@ export default function KanbanView() {
       {/* Stage config modal */}
       {modalOpen && (
         <StageModal
-          stage={modalStage as KanbanStage | null}
+          stage={modalStage}
           flows={flows}
           companyId={companyId}
           onClose={() => setModalOpen(false)}
           onSaved={handleModalSaved}
           onDeleted={handleModalDeleted}
+        />
+      )}
+
+      {/* Automation confirmation modal */}
+      {confirmPending && (
+        <ConfirmAutomationModal
+          contactName={confirmPending.contactName}
+          stageName={confirmPending.stageName}
+          flowName={confirmPending.flowName}
+          onConfirm={handleAutomationConfirm}
+          onCancel={handleAutomationCancel}
         />
       )}
     </div>
