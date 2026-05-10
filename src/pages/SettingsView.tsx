@@ -69,12 +69,37 @@ export default function SettingsView() {
   };
 
   const handleGenerateQR = async () => {
-    if (!company?.evolution_instance) return;
+    if (!company) return;
     
     setLoadingQr(true);
+    let instanceName = company.evolution_instance;
+    const API_URL = (window as any).__CONFIG__?.VITE_API_BASE_URL || 'http://localhost:8000';
+
     try {
-      const API_URL = (window as any).__CONFIG__?.VITE_API_BASE_URL || 'http://localhost:8000';
-      const response = await fetch(`${API_URL}/api/evolution/connect/${company.evolution_instance}`);
+      // Create instance silently if it doesn't exist
+      if (!instanceName) {
+        instanceName = `inst_${Math.random().toString(36).substring(2, 9)}`;
+        const token = Math.random().toString(36).substring(2, 15);
+        
+        // 1. Create in Evolution API
+        await fetch(`${API_URL}/api/evolution/create`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ instance_name: instanceName, token: token })
+        });
+        
+        // 2. Update Supabase Company
+        await supabase.from('companies').update({
+          evolution_instance: instanceName,
+          evolution_apikey: token
+        }).eq('id', company.id);
+        
+        // Refresh local state
+        setCompany({ ...company, evolution_instance: instanceName, evolution_apikey: token });
+      }
+
+      // Generate QR Code for the instance
+      const response = await fetch(`${API_URL}/api/evolution/connect/${instanceName}`);
       const data = await response.json();
       
       if (data.base64) {
@@ -85,7 +110,7 @@ export default function SettingsView() {
         setQrCode(null);
       }
     } catch (e) {
-      console.error(e);
+      console.error("Failed to generate QR or create instance", e);
     }
     setLoadingQr(false);
   };
@@ -144,7 +169,7 @@ export default function SettingsView() {
                   {connectionStatus === 'loading' && <span className="badge badge-neutral">Verificando...</span>}
                 </div>
 
-                {(connectionStatus === 'close' || connectionStatus === 'disconnected' || connectionStatus === 'connecting') && (
+                {(connectionStatus === 'close' || connectionStatus === 'disconnected' || connectionStatus === 'connecting' || connectionStatus === 'unconfigured') && (
                   <div className="qr-section">
                     {qrCode ? (
                       <div className="qr-display">
@@ -160,51 +185,6 @@ export default function SettingsView() {
                         {loadingQr ? 'Gerando...' : 'Gerar QR Code'}
                       </button>
                     )}
-                  </div>
-                )}
-
-                {connectionStatus === 'unconfigured' && (
-                  <div className="qr-section" style={{ background: 'transparent', padding: 0 }}>
-                     <p style={{marginBottom: '16px', color: '#8892b0'}}>Você ainda não configurou uma instância. Clique no botão abaixo para criar uma automaticamente na Evolution API.</p>
-                     <button 
-                        className="btn-primary" 
-                        onClick={async () => {
-                           if (!company) return;
-                           const instanceName = prompt("Digite um nome para sua instância (ex: empresa123):");
-                           if (!instanceName) return;
-                           
-                           setLoadingQr(true);
-                           const token = Math.random().toString(36).substring(2, 15);
-                           const API_URL = (window as any).__CONFIG__?.VITE_API_BASE_URL || 'http://localhost:8000';
-                           
-                           try {
-                             // 1. Create in Evolution API
-                             await fetch(`${API_URL}/api/evolution/create`, {
-                               method: 'POST',
-                               headers: { 'Content-Type': 'application/json' },
-                               body: JSON.stringify({ instance_name: instanceName, token: token })
-                             });
-                             
-                             // 2. Update Supabase Company
-                             await supabase.from('companies').update({
-                               evolution_instance: instanceName,
-                               evolution_apikey: token
-                             }).eq('id', company.id);
-                             
-                             // Refresh
-                             setCompany({ ...company, evolution_instance: instanceName, evolution_apikey: token });
-                             setConnectionStatus('disconnected');
-                             
-                           } catch (e) {
-                             console.error(e);
-                             alert("Erro ao criar instância.");
-                           }
-                           setLoadingQr(false);
-                        }}
-                        disabled={loadingQr}
-                      >
-                        {loadingQr ? 'Criando...' : 'Criar Instância'}
-                      </button>
                   </div>
                 )}
 
