@@ -1,0 +1,625 @@
+ine 1387, in _gcd_import
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 1133, in get_code
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 1063, in source_to_code
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "/app/app/main.py", line 50
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |     app.add_middleware(
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |                       ^
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    | SyntaxError: '(' was never closed
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    | Process SpawnProcess-266:
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    | Traceback (most recent call last):
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "/usr/local/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |     self.run()
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "/usr/local/lib/python3.12/multiprocessing/process.py", line 108, in run
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |     self._target(*self._args, **self._kwargs)
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/_subprocess.py", line 80, in subprocess_started
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |     target(sockets=sockets)
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/supervisors/multiprocess.py", line 63, in target
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |     return self.real_target(sockets)
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 65, in run
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |     return asyncio.run(self.serve(sockets=sockets))
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 195, in run
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |     return runner.run(main)
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |            ^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 118, in run
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |     return self._loop.run_until_complete(task)
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 69, in serve
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |     await self._serve(sockets)
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 76, in _serve
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |     config.load()
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/config.py", line 434, in load
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |     self.loaded_app = import_from_string(self.app)
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |     module = importlib.import_module(module_str)
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |     return _bootstrap._gcd_import(name[level:], package, level)
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 1133, in get_code
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 1063, in source_to_code
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "/app/app/main.py", line 50
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |     app.add_middleware(
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |                       ^
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    | SyntaxError: '(' was never closed
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    | INFO:     Waiting for child process [535]
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    | INFO:     Child process [535] died
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    | INFO:     Waiting for child process [536]
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    | INFO:     Child process [536] died
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    | INFO:     Received SIGTERM, exiting.
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    | INFO:     Terminated child process [541]
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    | INFO:     Waiting for child process [536]
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    | INFO:     Waiting for child process [541]
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    | INFO:     Stopping parent process [1]
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    | Process SpawnProcess-267:
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    | Traceback (most recent call last):
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "/usr/local/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |     self.run()
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "/usr/local/lib/python3.12/multiprocessing/process.py", line 108, in run
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |     self._target(*self._args, **self._kwargs)
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/_subprocess.py", line 80, in subprocess_started
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |     target(sockets=sockets)
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/supervisors/multiprocess.py", line 63, in target
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |     return self.real_target(sockets)
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 65, in run
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |     return asyncio.run(self.serve(sockets=sockets))
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 195, in run
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |     return runner.run(main)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 65, in run
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     return asyncio.run(self.serve(sockets=sockets))
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 195, in run
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     return runner.run(main)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |            ^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 118, in run
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     return self._loop.run_until_complete(task)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 69, in serve
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     await self._serve(sockets)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 76, in _serve
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     config.load()
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/config.py", line 434, in load
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     self.loaded_app = import_from_string(self.app)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     module = importlib.import_module(module_str)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     return _bootstrap._gcd_import(name[level:], package, level)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 1133, in get_code
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 1063, in source_to_code
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/app/app/main.py", line 50
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     app.add_middleware(
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |                       ^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    | SyntaxError: '(' was never closed
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    | INFO:     Waiting for child process [507]
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    | INFO:     Child process [507] died
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    | INFO:     Waiting for child process [508]
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    | INFO:     Child process [508] died
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    | INFO:     Waiting for child process [508]
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    | INFO:     Child process [508] died
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    | Process SpawnProcess-253:
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    | Process SpawnProcess-254:
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    | Traceback (most recent call last):
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     self.run()
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/multiprocessing/process.py", line 108, in run
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     self._target(*self._args, **self._kwargs)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/_subprocess.py", line 80, in subprocess_started
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     target(sockets=sockets)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/supervisors/multiprocess.py", line 63, in target
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     return self.real_target(sockets)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 65, in run
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     return asyncio.run(self.serve(sockets=sockets))
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 195, in run
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     return runner.run(main)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |            ^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 118, in run
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     return self._loop.run_until_complete(task)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 69, in serve
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     await self._serve(sockets)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 76, in _serve
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     config.load()
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/config.py", line 434, in load
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     self.loaded_app = import_from_string(self.app)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     module = importlib.import_module(module_str)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     return _bootstrap._gcd_import(name[level:], package, level)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 1133, in get_code
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 1063, in source_to_code
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/app/app/main.py", line 50
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     app.add_middleware(
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |                       ^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    | SyntaxError: '(' was never closed
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    | Traceback (most recent call last):
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     self.run()
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/multiprocessing/process.py", line 108, in run
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     self._target(*self._args, **self._kwargs)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/_subprocess.py", line 80, in subprocess_started
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     target(sockets=sockets)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/supervisors/multiprocess.py", line 63, in target
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     return self.real_target(sockets)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 65, in run
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     return asyncio.run(self.serve(sockets=sockets))
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 195, in run
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     return runner.run(main)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |            ^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 118, in run
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     return self._loop.run_until_complete(task)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 69, in serve
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     await self._serve(sockets)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 76, in _serve
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     config.load()
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/config.py", line 434, in load
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     self.loaded_app = import_from_string(self.app)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     module = importlib.import_module(module_str)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     return _bootstrap._gcd_import(name[level:], package, level)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 1133, in get_code
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 1063, in source_to_code
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/app/app/main.py", line 50
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     app.add_middleware(
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |                       ^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    | SyntaxError: '(' was never closed
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    | Process SpawnProcess-255:
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    | Traceback (most recent call last):
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     self.run()
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/multiprocessing/process.py", line 108, in run
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     self._target(*self._args, **self._kwargs)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/_subprocess.py", line 80, in subprocess_started
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     target(sockets=sockets)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/supervisors/multiprocess.py", line 63, in target
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     return self.real_target(sockets)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 65, in run
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     return asyncio.run(self.serve(sockets=sockets))
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 195, in run
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     return runner.run(main)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |            ^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 118, in run
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     return self._loop.run_until_complete(task)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 69, in serve
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     await self._serve(sockets)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 76, in _serve
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     config.load()
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/config.py", line 434, in load
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     self.loaded_app = import_from_string(self.app)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     module = importlib.import_module(module_str)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     return _bootstrap._gcd_import(name[level:], package, level)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 1133, in get_code
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 1063, in source_to_code
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/app/app/main.py", line 50
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     app.add_middleware(
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |                       ^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    | SyntaxError: '(' was never closed
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    | INFO:     Waiting for child process [513]
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    | INFO:     Child process [513] died
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    | INFO:     Waiting for child process [514]
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    | INFO:     Child process [514] died
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    | INFO:     Waiting for child process [514]
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    | INFO:     Child process [514] died
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    | Process SpawnProcess-256:
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    | Traceback (most recent call last):
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     self.run()
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/multiprocessing/process.py", line 108, in run
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     self._target(*self._args, **self._kwargs)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/_subprocess.py", line 80, in subprocess_started
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     target(sockets=sockets)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/supervisors/multiprocess.py", line 63, in target
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     return self.real_target(sockets)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 65, in run
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     return asyncio.run(self.serve(sockets=sockets))
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 195, in run
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     return runner.run(main)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |            ^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 118, in run
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     return self._loop.run_until_complete(task)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 69, in serve
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     await self._serve(sockets)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 76, in _serve
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     config.load()
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/config.py", line 434, in load
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     self.loaded_app = import_from_string(self.app)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     module = importlib.import_module(module_str)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     return _bootstrap._gcd_import(name[level:], package, level)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 1133, in get_code
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 1063, in source_to_code
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/app/app/main.py", line 50
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     app.add_middleware(
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |                       ^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    | SyntaxError: '(' was never closed
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    | Process SpawnProcess-257:
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    | Traceback (most recent call last):
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     self.run()
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/multiprocessing/process.py", line 108, in run
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     self._target(*self._args, **self._kwargs)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/_subprocess.py", line 80, in subprocess_started
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     target(sockets=sockets)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/supervisors/multiprocess.py", line 63, in target
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     return self.real_target(sockets)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 65, in run
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     return asyncio.run(self.serve(sockets=sockets))
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 195, in run
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     return runner.run(main)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |            ^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 118, in run
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     return self._loop.run_until_complete(task)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 69, in serve
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     await self._serve(sockets)
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 76, in _serve
+seufluxo-front_seufluxo_api.1.3h46dzlvjfh0@srv1093234    |     config.load()
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 1133, in get_code
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 1063, in source_to_code
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/app/app/main.py", line 50
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     app.add_middleware(
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |                       ^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    | SyntaxError: '(' was never closed
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    | Process SpawnProcess-254:
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    | Traceback (most recent call last):
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     self.run()
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/multiprocessing/process.py", line 108, in run
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     self._target(*self._args, **self._kwargs)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/_subprocess.py", line 80, in subprocess_started
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     target(sockets=sockets)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/supervisors/multiprocess.py", line 63, in target
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     return self.real_target(sockets)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 65, in run
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     return asyncio.run(self.serve(sockets=sockets))
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 195, in run
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     return runner.run(main)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |            ^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 118, in run
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     return self._loop.run_until_complete(task)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 69, in serve
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     await self._serve(sockets)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 76, in _serve
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     config.load()
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/config.py", line 434, in load
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     self.loaded_app = import_from_string(self.app)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     module = importlib.import_module(module_str)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     return _bootstrap._gcd_import(name[level:], package, level)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 1133, in get_code
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 1063, in source_to_code
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/app/app/main.py", line 50
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     app.add_middleware(
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |                       ^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    | SyntaxError: '(' was never closed
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    | Process SpawnProcess-256:
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    | Traceback (most recent call last):
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     self.run()
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/multiprocessing/process.py", line 108, in run
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     self._target(*self._args, **self._kwargs)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/_subprocess.py", line 80, in subprocess_started
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     target(sockets=sockets)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/supervisors/multiprocess.py", line 63, in target
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     return self.real_target(sockets)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 65, in run
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     return asyncio.run(self.serve(sockets=sockets))
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 195, in run
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     return runner.run(main)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |            ^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 118, in run
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     return self._loop.run_until_complete(task)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 69, in serve
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     await self._serve(sockets)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 76, in _serve
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     config.load()
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/config.py", line 434, in load
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     self.loaded_app = import_from_string(self.app)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     module = importlib.import_module(module_str)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     return _bootstrap._gcd_import(name[level:], package, level)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 1133, in get_code
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 1063, in source_to_code
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/app/app/main.py", line 50
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     app.add_middleware(
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |                       ^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    | SyntaxError: '(' was never closed
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    | INFO:     Waiting for child process [514]
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    | INFO:     Child process [514] died
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    | INFO:     Waiting for child process [515]
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    | INFO:     Child process [515] died
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    | INFO:     Waiting for child process [515]
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    | INFO:     Child process [515] died
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    | Process SpawnProcess-258:
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    | Traceback (most recent call last):
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     self.run()
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/multiprocessing/process.py", line 108, in run
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     self._target(*self._args, **self._kwargs)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/_subprocess.py", line 80, in subprocess_started
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     target(sockets=sockets)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/supervisors/multiprocess.py", line 63, in target
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     return self.real_target(sockets)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 65, in run
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     return asyncio.run(self.serve(sockets=sockets))
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 195, in run
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     return runner.run(main)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |            ^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 118, in run
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     return self._loop.run_until_complete(task)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 69, in serve
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     await self._serve(sockets)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 76, in _serve
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     config.load()
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/config.py", line 434, in load
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     self.loaded_app = import_from_string(self.app)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     module = importlib.import_module(module_str)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     return _bootstrap._gcd_import(name[level:], package, level)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 1133, in get_code
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 1063, in source_to_code
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/app/app/main.py", line 50
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     app.add_middleware(
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |                       ^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    | SyntaxError: '(' was never closed
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    | Process SpawnProcess-257:
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    | Traceback (most recent call last):
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     self.run()
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/multiprocessing/process.py", line 108, in run
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     self._target(*self._args, **self._kwargs)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/_subprocess.py", line 80, in subprocess_started
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     target(sockets=sockets)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/supervisors/multiprocess.py", line 63, in target
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     return self.real_target(sockets)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 65, in run
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     return asyncio.run(self.serve(sockets=sockets))
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 195, in run
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     return runner.run(main)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |            ^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 118, in run
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     return self._loop.run_until_complete(task)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 69, in serve
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     await self._serve(sockets)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 76, in _serve
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     config.load()
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/config.py", line 434, in load
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     self.loaded_app = import_from_string(self.app)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     module = importlib.import_module(module_str)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     return _bootstrap._gcd_import(name[level:], package, level)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 1133, in get_code
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 1063, in source_to_code
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/app/app/main.py", line 50
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     app.add_middleware(
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |                       ^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    | SyntaxError: '(' was never closed
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    | Process SpawnProcess-259:
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    | Traceback (most recent call last):
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     self.run()
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/multiprocessing/process.py", line 108, in run
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     self._target(*self._args, **self._kwargs)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/_subprocess.py", line 80, in subprocess_started
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     target(sockets=sockets)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/supervisors/multiprocess.py", line 63, in target
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     return self.real_target(sockets)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 65, in run
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     return asyncio.run(self.serve(sockets=sockets))
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 195, in run
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     return runner.run(main)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |            ^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 118, in run
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     return self._loop.run_until_complete(task)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 69, in serve
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     await self._serve(sockets)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 76, in _serve
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     config.load()
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/config.py", line 434, in load
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     self.loaded_app = import_from_string(self.app)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     module = importlib.import_module(module_str)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     return _bootstrap._gcd_import(name[level:], package, level)
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 1133, in get_code
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 1063, in source_to_code
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |   File "/app/app/main.py", line 50
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |     app.add_middleware(
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    |                       ^
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    | SyntaxError: '(' was never closed
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    | INFO:     Waiting for child process [520]
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    | INFO:     Child process [520] died
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    | INFO:     Waiting for child process [521]
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    | INFO:     Child process [521] died
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    | INFO:     Received SIGTERM, exiting.
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    | INFO:     Terminated child process [526]
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    | INFO:     Waiting for child process [521]
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    | INFO:     Waiting for child process [526]
+seufluxo-front_seufluxo_api.1.ocmgb787gxsv@srv1093234    | INFO:     Stopping parent process [1]
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |            ^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 118, in run
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |     return self._loop.run_until_complete(task)
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 69, in serve
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |     await self._serve(sockets)
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 76, in _serve
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |     config.load()
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/config.py", line 434, in load
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |     self.loaded_app = import_from_string(self.app)
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "/usr/local/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |     module = importlib.import_module(module_str)
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |     return _bootstrap._gcd_import(name[level:], package, level)
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 1133, in get_code
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "<frozen importlib._bootstrap_external>", line 1063, in source_to_code
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |   File "/app/app/main.py", line 50
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |     app.add_middleware(
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    |                       ^
+seufluxo-front_seufluxo_api.1.1y1rmsm4hjkg@srv1093234    | SyntaxError: '(' was never closed
