@@ -2,6 +2,41 @@
    FlowBuilderView.css
    ============================================ */
 
+/* ── Toast Notification ── */
+.fb-toast {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 9999;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  animation: fb-slide-in 0.25s ease;
+  max-width: 380px;
+}
+
+.fb-toast.ok {
+  background: rgba(0, 255, 136, 0.12);
+  border: 1px solid rgba(0, 255, 136, 0.4);
+  color: #00ff88;
+}
+
+.fb-toast.err {
+  background: rgba(255, 60, 60, 0.12);
+  border: 1px solid rgba(255, 60, 60, 0.4);
+  color: #ff6b6b;
+}
+
+@keyframes fb-slide-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 .fb-root {
   display: flex;
   height: 100%;

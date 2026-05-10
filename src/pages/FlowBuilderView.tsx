@@ -65,6 +65,13 @@ export default function FlowBuilderView() {
   const [keywordInput, setKeywordInput] = useState('');
   const [saving, setSaving] = useState(false);
   const [expandedStep, setExpandedStep] = useState<string | null>(null);
+  const [stepSaving, setStepSaving] = useState<string | null>(null); // stepId being saved
+  const [toast, setToast] = useState<{ msg: string; type: 'ok' | 'err' } | null>(null);
+
+  const showToast = (msg: string, type: 'ok' | 'err' = 'ok') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3500);
+  };
 
   // Init
   useEffect(() => {
@@ -103,32 +110,76 @@ export default function FlowBuilderView() {
 
   const createFlow = async () => {
     if (!newFlowName.trim() || !companyId) return;
-    const { data } = await supabase.from('chat_flows').insert({
+    // Try with keywords column; fall back without it if column doesn't exist yet
+    let result = await supabase.from('chat_flows').insert({
       company_id: companyId,
       name: newFlowName.trim(),
       trigger_keyword: newFlowName.trim().toLowerCase(),
       keywords: [],
       is_active: false,
     }).select().single();
-    if (data) {
-      setFlows(prev => [...prev, data]);
-      setSelectedFlow(data);
+
+    if (result.error?.message?.includes('keywords')) {
+      // Migration not yet run — retry without keywords
+      result = await supabase.from('chat_flows').insert({
+        company_id: companyId,
+        name: newFlowName.trim(),
+        trigger_keyword: newFlowName.trim().toLowerCase(),
+        is_active: false,
+      }).select().single();
+    }
+
+    if (result.error) {
+      console.error('[FlowBuilder] createFlow error:', result.error);
+      showToast(`Erro ao criar fluxo: ${result.error.message}`, 'err');
+      return;
+    }
+    if (result.data) {
+      setFlows(prev => [...prev, result.data!]);
+      setSelectedFlow(result.data);
       setNewFlowName('');
       setShowNewFlow(false);
       setSteps([]);
+      showToast('Fluxo criado!');
     }
   };
 
   const saveFlowMeta = async () => {
     if (!selectedFlow) return;
     setSaving(true);
-    await supabase.from('chat_flows').update({
-      name: selectedFlow.name,
-      keywords: selectedFlow.keywords,
-      description: selectedFlow.description,
-      is_active: selectedFlow.is_active,
-    }).eq('id', selectedFlow.id);
-    setSaving(false);
+    try {
+      // Try with keywords first
+      let { error } = await supabase.from('chat_flows').update({
+        name: selectedFlow.name,
+        keywords: selectedFlow.keywords,
+        description: selectedFlow.description,
+        is_active: selectedFlow.is_active,
+      }).eq('id', selectedFlow.id);
+
+      // Fallback: keywords column may not exist yet (migration pending)
+      if (error?.message?.includes('keywords') || error?.message?.includes('column')) {
+        console.warn('[FlowBuilder] keywords column not found, saving without it. Run migration_007.');
+        const fallback = await supabase.from('chat_flows').update({
+          name: selectedFlow.name,
+          is_active: selectedFlow.is_active,
+        }).eq('id', selectedFlow.id);
+        error = fallback.error;
+      }
+
+      if (error) {
+        console.error('[FlowBuilder] saveFlowMeta error:', error);
+        showToast(`Erro ao salvar: ${error.message}`, 'err');
+      } else {
+        // Update local list
+        setFlows(prev => prev.map(f => f.id === selectedFlow.id ? selectedFlow : f));
+        showToast('Fluxo salvo com sucesso ✔️');
+      }
+    } catch (e: any) {
+      console.error('[FlowBuilder] saveFlowMeta exception:', e);
+      showToast(`Erro inesperado: ${e.message}`, 'err');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const deleteFlow = async (flowId: string) => {
@@ -181,19 +232,46 @@ export default function FlowBuilderView() {
   };
 
   const saveStep = async (step: FlowStep) => {
-    await supabase.from('flow_steps').update({
-      type: step.type,
-      content: step.content || '',
-      delay_duration: step.delay_duration,
-      media_library_id: step.media_library_id || null,
-    }).eq('id', step.id);
+    setStepSaving(step.id);
+    try {
+      // Try with media_library_id first (may not exist if migration pending)
+      let { error } = await supabase.from('flow_steps').update({
+        type: step.type,
+        content: step.content || '',
+        delay_duration: step.delay_duration,
+        media_library_id: step.media_library_id || null,
+      }).eq('id', step.id);
+
+      // Fallback: media_library_id column may not exist yet
+      if (error?.message?.includes('media_library_id') || error?.message?.includes('column')) {
+        console.warn('[FlowBuilder] media_library_id column not found, saving without it. Run migration_007.');
+        const fallback = await supabase.from('flow_steps').update({
+          type: step.type,
+          content: step.content || '',
+          delay_duration: step.delay_duration,
+        }).eq('id', step.id);
+        error = fallback.error;
+      }
+
+      if (error) {
+        console.error('[FlowBuilder] saveStep error:', error);
+        showToast(`Erro ao salvar passo: ${error.message}`, 'err');
+      } else {
+        showToast('Passo salvo ✔️');
+      }
+    } catch (e: any) {
+      console.error('[FlowBuilder] saveStep exception:', e);
+      showToast(`Erro inesperado: ${e.message}`, 'err');
+    } finally {
+      setStepSaving(null);
+    }
   };
 
   const deleteStep = async (stepId: string) => {
-    await supabase.from('flow_steps').delete().eq('id', stepId);
+    const { error } = await supabase.from('flow_steps').delete().eq('id', stepId);
+    if (error) { showToast(`Erro ao deletar: ${error.message}`, 'err'); return; }
     const newSteps = steps.filter(s => s.id !== stepId).map((s, i) => ({ ...s, order_index: i }));
     setSteps(newSteps);
-    // Update order_index in DB
     for (const s of newSteps) {
       await supabase.from('flow_steps').update({ order_index: s.order_index }).eq('id', s.id);
     }
@@ -207,15 +285,24 @@ export default function FlowBuilderView() {
     [newSteps[index], newSteps[target]] = [newSteps[target], newSteps[index]];
     newSteps.forEach((s, i) => s.order_index = i);
     setSteps(newSteps);
-    for (const s of newSteps) {
-      await supabase.from('flow_steps').update({ order_index: s.order_index }).eq('id', s.id);
-    }
+    const results = await Promise.all(
+      newSteps.map(s => supabase.from('flow_steps').update({ order_index: s.order_index }).eq('id', s.id))
+    );
+    const err = results.find(r => r.error)?.error;
+    if (err) showToast(`Erro ao reordenar: ${err.message}`, 'err');
   };
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
     <div className="fb-root">
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`fb-toast ${toast.type}`}>
+          {toast.type === 'ok' ? '✅' : '❌'} {toast.msg}
+        </div>
+      )}
 
       {/* ── Sidebar: Lista de Fluxos ── */}
       <aside className="fb-sidebar">
@@ -416,8 +503,10 @@ export default function FlowBuilderView() {
                       <button
                         className="fb-btn-save-step"
                         onClick={() => saveStep(step)}
+                        disabled={stepSaving === step.id}
                       >
-                        <Save size={14} /> Salvar passo
+                        <Save size={14} />
+                        {stepSaving === step.id ? 'Salvando...' : 'Salvar passo'}
                       </button>
                     </div>
                   )}
