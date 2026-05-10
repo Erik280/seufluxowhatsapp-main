@@ -74,7 +74,7 @@ export default function ChatView() {
 
         // 3. Subscribe to Realtime Contacts
         const contactSub = supabase
-          .channel('public:contacts')
+          .channel(`contacts-${userData.company_id}-${Math.random()}`)
           .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts', filter: `company_id=eq.${userData.company_id}` }, (_payload) => {
             // Very simple refresh for now
             supabase.from('contacts').select('*').eq('company_id', userData.company_id).order('last_message', { ascending: false, nullsFirst: false })
@@ -110,7 +110,7 @@ export default function ChatView() {
 
     // Subscribe to messages for this contact
     const msgSub = supabase
-      .channel(`public:messages:${selectedContact.id}`)
+      .channel(`messages-${selectedContact.id}-${Math.random()}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `contact_id=eq.${selectedContact.id}` }, (payload) => {
         setMessages(prev => [...prev, payload.new as Message]);
       })
@@ -126,17 +126,6 @@ export default function ChatView() {
 
     const text = inputValue.trim();
     setInputValue('');
-    
-    // Add optimistic message
-    const tempMsg: Message = {
-      id: Math.random().toString(),
-      direction: 'out',
-      content: text,
-      media_type: null,
-      media_url: null,
-      created_at: new Date().toISOString()
-    };
-    setMessages(prev => [...prev, tempMsg]);
 
     try {
       await fetch(`${API_BASE_URL}/api/messages/send`, {
