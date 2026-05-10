@@ -255,7 +255,9 @@ async def send_manual_media(
     
     # 1. Upload to MinIO
     content = await file.read()
-    filename = f"{company_id}/{uuid.uuid4()}_{file.filename}"
+    import re
+    safe_filename = re.sub(r'[^a-zA-Z0-9._-]', '_', file.filename)
+    filename = f"{company_id}/{uuid.uuid4()}_{safe_filename}"
     
     storage = StorageService()
     media_url = storage.upload_file(content, filename, file.content_type)
@@ -340,7 +342,11 @@ async def upload_media_to_library(
     
     # 1. Upload to MinIO
     content = await file.read()
-    filename = f"{company_id}/lib_{uuid.uuid4()}_{file.filename}"
+    
+    # Sanitizar nome do arquivo (remover espaços e caracteres especiais)
+    import re
+    safe_filename = re.sub(r'[^a-zA-Z0-9._-]', '_', file.filename)
+    filename = f"{company_id}/lib_{uuid.uuid4()}_{safe_filename}"
     
     storage = StorageService()
     media_url = storage.upload_file(content, filename, file.content_type)
