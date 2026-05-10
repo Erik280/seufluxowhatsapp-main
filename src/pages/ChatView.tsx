@@ -7,6 +7,8 @@ interface Contact {
   id: string;
   name: string;
   phone: string;
+  email: string | null;
+  notes: string | null;
   chat_status: 'bot' | 'human';
   last_message: string;
   stage_id: string | null;
@@ -30,6 +32,12 @@ export default function ChatView() {
   const [companyId, setCompanyId] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   
+  // CRM Form state
+  const [crmName, setCrmName] = useState('');
+  const [crmEmail, setCrmEmail] = useState('');
+  const [crmNotes, setCrmNotes] = useState('');
+  const [isSavingCrm, setIsSavingCrm] = useState(false);
+
   // Media Library state
   const [showMediaModal, setShowMediaModal] = useState(false);
   const [libraryMedia, setLibraryMedia] = useState<any[]>([]);
@@ -119,6 +127,11 @@ export default function ChatView() {
   // Fetch Messages when Contact is Selected
   useEffect(() => {
     if (!selectedContact) return;
+
+    // Sync CRM form state
+    setCrmName(selectedContact.name || '');
+    setCrmEmail(selectedContact.email || '');
+    setCrmNotes(selectedContact.notes || '');
 
     const fetchMessages = async () => {
       const { data } = await supabase
@@ -348,17 +361,50 @@ export default function ChatView() {
 
   const toggleBot = async () => {
     if (!selectedContact) return;
-    const newStatus = selectedContact.chat_status === 'bot' ? 'human' : 'bot';
+    const newStatus: 'bot' | 'human' = selectedContact.chat_status === 'bot' ? 'human' : 'bot';
     
-    // Optimistic update
-    setSelectedContact({ ...selectedContact, chat_status: newStatus });
-    setContacts(contacts.map(c => c.id === selectedContact.id ? { ...c, chat_status: newStatus } : c));
+    const updatedContact = { ...selectedContact, chat_status: newStatus };
+    setSelectedContact(updatedContact);
+    setContacts(contacts.map(c => c.id === selectedContact.id ? updatedContact : c));
 
     await fetch(`${API_BASE_URL}/api/contacts/${selectedContact.id}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_status: newStatus })
     });
+  };
+
+  const handleSaveCRM = async () => {
+    if (!selectedContact) return;
+    setIsSavingCrm(true);
+
+    try {
+      const payload = {
+        name: crmName,
+        email: crmEmail,
+        notes: crmNotes
+      };
+
+      const res = await fetch(`${API_BASE_URL}/api/contacts/${selectedContact.id}/crm`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        const updatedContact = { ...selectedContact, name: crmName, email: crmEmail, notes: crmNotes };
+        setSelectedContact(updatedContact);
+        setContacts(contacts.map(c => c.id === selectedContact.id ? updatedContact : c));
+        alert('Dados salvos com sucesso!');
+      } else {
+        alert('Erro ao salvar os dados.');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Erro ao salvar os dados.');
+    } finally {
+      setIsSavingCrm(false);
+    }
   };
 
   return (
@@ -572,6 +618,47 @@ export default function ChatView() {
                   <option key={stage.id} value={stage.id}>{stage.name}</option>
                 ))}
               </select>
+            </div>
+
+            <div className="crm-section">
+              <h3>Detalhes do Contato</h3>
+              <div className="crm-field">
+                <label>Nome</label>
+                <input 
+                  type="text" 
+                  className="crm-input"
+                  value={crmName} 
+                  onChange={e => setCrmName(e.target.value)} 
+                  placeholder="Nome do lead"
+                />
+              </div>
+              <div className="crm-field">
+                <label>E-mail</label>
+                <input 
+                  type="email" 
+                  className="crm-input"
+                  value={crmEmail} 
+                  onChange={e => setCrmEmail(e.target.value)} 
+                  placeholder="email@exemplo.com"
+                />
+              </div>
+              <div className="crm-field">
+                <label>Observações</label>
+                <textarea 
+                  className="crm-textarea"
+                  value={crmNotes} 
+                  onChange={e => setCrmNotes(e.target.value)} 
+                  placeholder="Anotações sobre o lead..."
+                  rows={4}
+                />
+              </div>
+              <button 
+                className="crm-save-btn" 
+                onClick={handleSaveCRM} 
+                disabled={isSavingCrm}
+              >
+                {isSavingCrm ? 'Salvando...' : 'Salvar Dados'}
+              </button>
             </div>
 
             <div className="crm-section">

@@ -457,3 +457,63 @@
   transform: scale(1.1);
   box-shadow: 0 4px 16px rgba(0, 229, 204, 0.5);
 }
+
+/* ── CRM Edit Fields ── */
+.crm-field {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.crm-field label {
+  font-size: 0.8rem;
+  color: var(--color-text-muted, #8892b0);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.crm-input, .crm-textarea {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--color-text-primary, #e6f1ff);
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+}
+
+.crm-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.crm-input:focus, .crm-textarea:focus {
+  border-color: var(--color-neon-cyan, #00E5CC);
+  box-shadow: 0 0 0 2px rgba(0, 229, 204, 0.15);
+}
+
+.crm-save-btn {
+  background: rgba(0, 229, 204, 0.1);
+  border: 1px solid rgba(0, 229, 204, 0.3);
+  color: var(--color-neon-cyan, #00E5CC);
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.2s;
+}
+
+.crm-save-btn:hover:not(:disabled) {
+  background: rgba(0, 229, 204, 0.2);
+  transform: translateY(-1px);
+}
+
+.crm-save-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
