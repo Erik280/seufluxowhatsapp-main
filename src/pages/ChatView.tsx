@@ -37,6 +37,12 @@ export default function ChatView() {
   const [crmEmail, setCrmEmail] = useState('');
   const [crmNotes, setCrmNotes] = useState('');
   const [isSavingCrm, setIsSavingCrm] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   // Media Library state
   const [showMediaModal, setShowMediaModal] = useState(false);
@@ -395,13 +401,13 @@ export default function ChatView() {
         const updatedContact = { ...selectedContact, name: crmName, email: crmEmail, notes: crmNotes };
         setSelectedContact(updatedContact);
         setContacts(contacts.map(c => c.id === selectedContact.id ? updatedContact : c));
-        alert('Dados salvos com sucesso!');
+        showToast('Dados salvos com sucesso!');
       } else {
-        alert('Erro ao salvar os dados.');
+        showToast('Erro ao salvar os dados.', 'error');
       }
     } catch (error) {
       console.error(error);
-      alert('Erro ao salvar os dados.');
+      showToast('Erro ao salvar os dados.', 'error');
     } finally {
       setIsSavingCrm(false);
     }
@@ -716,6 +722,12 @@ export default function ChatView() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {toast && (
+        <div className={`chat-toast ${toast.type}`}>
+          {toast.message}
         </div>
       )}
     </div>
