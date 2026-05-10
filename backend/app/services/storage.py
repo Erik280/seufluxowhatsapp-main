@@ -57,18 +57,12 @@ class StorageService:
             # Vamos usar um presigned URL se o endpoint for interno, mas como a Evolution API e o frontend precisam ver,
             # vamos gerar uma URL baseada no hostname público se possível, ou um presigned URL de 7 dias.
             
-            # Gerando Presigned URL temporária para que a Evolution consiga baixar
-            url = self.s3.generate_presigned_url(
-                ClientMethod="get_object",
-                Params={"Bucket": self.bucket, "Key": filename},
-                ExpiresIn=604800 # 7 dias
-            )
+            # Retorna a URL pública limpa (sem parâmetros de assinatura)
+            # Já que configuramos a policy do bucket como pública no _ensure_bucket_exists
+            protocol = "https" if self.settings.minio_secure else "http"
+            public_url = f"{protocol}://{self.settings.minio_endpoint}/{self.bucket}/{filename}"
             
-            # Se for necessário URL limpa para painel: 
-            # return f"https://{seu_dominio}/bucket/{filename}" 
-            # Mas como não sabemos o proxy do minio, o presigned url garante o acesso.
-            
-            return url
+            return public_url
         except Exception as e:
             logger.error(f"Erro no upload do MinIO: {e}")
             raise e

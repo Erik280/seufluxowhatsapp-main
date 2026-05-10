@@ -82,9 +82,10 @@ class EvolutionAPI:
         )
 
     # ── Imagem ───────────────────────────────────────────────────
-
+ 
     async def send_image(self, phone: str, image_url: str, caption: str = "") -> dict:
         """Envia imagem com legenda opcional."""
+        filename = image_url.split("/")[-1]
         return await self._post(
             f"/message/sendMedia/{self.instance}",
             {
@@ -92,13 +93,15 @@ class EvolutionAPI:
                 "mediatype": "image",
                 "media": image_url,
                 "caption": caption,
+                "fileName": filename
             }
         )
-
+ 
     # ── Vídeo ────────────────────────────────────────────────
-
+ 
     async def send_video(self, phone: str, video_url: str, caption: str = "") -> dict:
         """Envia vídeo com legenda opcional."""
+        filename = video_url.split("/")[-1]
         return await self._post(
             f"/message/sendMedia/{self.instance}",
             {
@@ -106,6 +109,7 @@ class EvolutionAPI:
                 "mediatype": "video",
                 "media": video_url,
                 "caption": caption,
+                "fileName": filename
             }
         )
 
