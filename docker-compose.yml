@@ -1,0 +1,45 @@
+version: "3.8"
+
+services:
+  seufluxo_front:
+    image: seufluxowhatsapp_front:latest   # nome da imagem gerada pelo build no Portainer
+    build:
+      context: .
+      dockerfile: Dockerfile
+    networks:
+      - network
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+      labels:
+        # ── Traefik: habilitar ──────────────────────────────────────
+        - "traefik.enable=true"
+
+        # ── Router HTTPS ────────────────────────────────────────────
+        - "traefik.http.routers.seufluxo_front.rule=Host(`seufluxowhatsapp.transformafuturo.com.br`)"
+        - "traefik.http.routers.seufluxo_front.entrypoints=websecure"
+        - "traefik.http.routers.seufluxo_front.tls=true"
+        - "traefik.http.routers.seufluxo_front.tls.certresolver=letsencryptresolver"
+
+        # ── Redirect HTTP → HTTPS ────────────────────────────────────
+        - "traefik.http.routers.seufluxo_front_http.rule=Host(`seufluxowhatsapp.transformafuturo.com.br`)"
+        - "traefik.http.routers.seufluxo_front_http.entrypoints=web"
+        - "traefik.http.routers.seufluxo_front_http.middlewares=redirect-to-https@docker"
+
+        # ── Service (porta interna do container Nginx) ──────────────
+        - "traefik.http.services.seufluxo_front.loadbalancer.server.port=80"
+
+        # ── Middleware de redirect ──────────────────────────────────
+        - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+        - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
+
+networks:
+  network:
+    external: true

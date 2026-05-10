@@ -1,0 +1,64 @@
+/* ============================================
+   SeuFluxo WhatsApp — Global Styles
+   Design System: Transforma Futuro
+   ============================================ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* Color Tokens */
+  --color-bg-deep:      #050810;
+  --color-bg-card:      #0b0f1e;
+  --color-bg-overlay:   rgba(5, 8, 16, 0.85);
+  --color-neon-green:   #00FF88;
+  --color-neon-cyan:    #00E5CC;
+  --color-neon-blue:    #0066FF;
+  --color-text-primary: #EDF2FF;
+  --color-text-muted:   #7a8ba8;
+  --color-border:       rgba(0, 229, 204, 0.15);
+  --color-border-hover: rgba(0, 255, 136, 0.45);
+
+  /* Glow Shadows */
+  --glow-green: 0 0 12px rgba(0, 255, 136, 0.55), 0 0 30px rgba(0, 255, 136, 0.25);
+  --glow-cyan:  0 0 12px rgba(0, 229, 204, 0.55), 0 0 30px rgba(0, 229, 204, 0.25);
+  --glow-btn:   0 0 20px rgba(0, 255, 136, 0.6),  0 0 55px rgba(0, 255, 136, 0.3);
+
+  /* Typography */
+  --font-primary: 'Outfit', system-ui, sans-serif;
+
+  /* Transitions */
+  --transition-fast: 0.2s ease;
+  --transition-med:  0.35s ease;
+}
+
+html, body {
+  height: 100%;
+  font-family: var(--font-primary);
+  background-color: var(--color-bg-deep);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}
+
+#root {
+  height: 100%;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--color-bg-deep); }
+::-webkit-scrollbar-thumb {
+  background: var(--color-neon-cyan);
+  border-radius: 3px;
+}
+
+/* Selection */
+::selection {
+  background: rgba(0, 255, 136, 0.25);
+  color: var(--color-text-primary);
+}
