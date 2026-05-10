@@ -504,6 +504,31 @@ export default function ChatView() {
     }
   };
 
+  const handleDeleteContact = async (contactId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!window.confirm("Tem certeza que deseja apagar essa conversa e todo o histórico do lead? Essa ação não pode ser desfeita.")) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/contacts/${contactId}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        showToast('Conversa apagada com sucesso!');
+        setContacts(contacts.filter(c => c.id !== contactId));
+        if (selectedContact?.id === contactId) {
+          setSelectedContact(null);
+        }
+      } else {
+        showToast('Erro ao apagar conversa.', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Erro ao apagar conversa.', 'error');
+    }
+  };
+
   return (
     <div className="chat-view-root">
       {/* Column 1: Chat List */}
@@ -559,6 +584,13 @@ export default function ChatView() {
                   }}>
                     {contact.chat_status === 'bot' ? 'Bot Ativo' : 'Humano'}
                   </span>
+                  <button 
+                    className="delete-contact-btn"
+                    title="Apagar conversa"
+                    onClick={(e) => handleDeleteContact(contact.id, e)}
+                  >
+                    <Trash2 size={14} />
+                  </button>
                 </div>
               </div>
             </div>

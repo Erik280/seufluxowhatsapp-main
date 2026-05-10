@@ -727,6 +727,16 @@ async def get_contact_crm(contact_id: str):
 
     return contact
 
+@router.delete("/contacts/{contact_id}", status_code=204)
+async def delete_contact(contact_id: str):
+    """Apaga um contato completamente do sistema e todo o seu histórico."""
+    db = get_supabase()
+    result = db.table("contacts").delete().eq("id", contact_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    return None
+
+
 
 # ========================
 # Agendamento de Mensagens / Fluxos

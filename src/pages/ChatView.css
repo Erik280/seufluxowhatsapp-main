@@ -132,6 +132,32 @@
   font-weight: 500;
 }
 
+.chat-tags {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.delete-contact-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.5;
+  transition: all 0.2s;
+}
+
+.delete-contact-btn:hover {
+  opacity: 1;
+  color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.1);
+}
+
 /* ---- Column 2: Message Window ---- */
 .message-window-col {
   flex: 1;
