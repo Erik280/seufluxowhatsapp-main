@@ -155,7 +155,8 @@ class EvolutionAdminAPI:
             {
                 "instanceName": instance_name,
                 "token": token,
-                "qrcode": True
+                "qrcode": True,
+                "integration": "WHATSAPP-BAILEYS"
             }
         )
 
