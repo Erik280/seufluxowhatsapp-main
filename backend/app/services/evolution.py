@@ -77,6 +77,7 @@ class EvolutionAPI:
             {
                 "number": phone,
                 "audio": audio_url,
+                "ptt": True,
             }
         )
 

@@ -157,7 +157,7 @@ export default function ChatView() {
   const handleSendLibraryMedia = async (mediaId: string) => {
     if (!selectedContact || !companyId) return;
     try {
-      await fetch(`${API_BASE_URL}/api/messages/send/media_library`, {
+      const response = await fetch(`${API_BASE_URL}/api/messages/send/media_library`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -166,9 +166,16 @@ export default function ChatView() {
           media_id: mediaId
         })
       });
-      setShowMediaModal(false);
+
+      if (response.ok) {
+        setShowMediaModal(false);
+      } else {
+        const errData = await response.json();
+        alert(`Erro ao enviar: ${errData.detail || 'Erro desconhecido'}`);
+      }
     } catch (error) {
       console.error("Failed to send media from library", error);
+      alert("Falha na conexão com o servidor.");
     }
   };
 

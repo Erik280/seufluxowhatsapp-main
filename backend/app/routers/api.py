@@ -414,6 +414,8 @@ async def send_media_library(body: SendMediaLibraryRequest):
     from app.services.evolution import EvolutionAPI
     evolution = EvolutionAPI(instance, apikey)
     
+    logger.info(f"Enviando mídia da biblioteca: {media_type} para {phone}. URL: {media_url}")
+    
     if media_type == "audio":
         await evolution.send_presence(phone, composing=False) # recording
         resp = await evolution.send_audio(phone, media_url)
@@ -425,6 +427,7 @@ async def send_media_library(body: SendMediaLibraryRequest):
         raise HTTPException(status_code=400, detail="Unsupported media type")
         
     if "error" in resp:
+        logger.error(f"Erro Evolution API ao enviar mídia da biblioteca: {resp['error']}")
         raise HTTPException(status_code=500, detail=f"Evolution API Error: {resp['error']}")
         
     # 5. Salvar histórico
