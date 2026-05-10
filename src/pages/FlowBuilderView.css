@@ -365,6 +365,17 @@
   box-shadow: 0 4px 24px rgba(0,0,0,0.3);
 }
 
+/* Drag and drop states */
+.fb-step[draggable] {
+  cursor: default;
+}
+
+.fb-step.drag-over {
+  outline: 2px solid var(--color-neon-cyan, #00e5cc);
+  outline-offset: 2px;
+  background: rgba(0, 229, 204, 0.05);
+}
+
 .fb-step-header {
   display: flex;
   align-items: center;
@@ -375,9 +386,19 @@
 }
 
 .fb-step-drag {
-  color: rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.25);
   cursor: grab;
   flex-shrink: 0;
+  padding: 2px;
+  transition: color 0.15s;
+}
+
+.fb-step-drag:active {
+  cursor: grabbing;
+}
+
+.fb-step:hover .fb-step-drag {
+  color: rgba(255,255,255,0.5);
 }
 
 .fb-step-icon {

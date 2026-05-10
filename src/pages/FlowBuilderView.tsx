@@ -65,12 +65,52 @@ export default function FlowBuilderView() {
   const [keywordInput, setKeywordInput] = useState('');
   const [saving, setSaving] = useState(false);
   const [expandedStep, setExpandedStep] = useState<string | null>(null);
-  const [stepSaving, setStepSaving] = useState<string | null>(null); // stepId being saved
+  const [stepSaving, setStepSaving] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; type: 'ok' | 'err' } | null>(null);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   const showToast = (msg: string, type: 'ok' | 'err' = 'ok') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
+  };
+
+  // ── Drag handlers ──────────────────────────────────────────────────────────
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDragIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(index));
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverIndex(index);
+  };
+
+  const handleDrop = async (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    if (dragIndex === null || dragIndex === dropIndex) {
+      setDragIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+
+    const newSteps = [...steps];
+    const [moved] = newSteps.splice(dragIndex, 1);
+    newSteps.splice(dropIndex, 0, moved);
+    newSteps.forEach((s, i) => (s.order_index = i));
+    setSteps(newSteps);
+    setDragIndex(null);
+    setDragOverIndex(null);
+
+    // Persist new order
+    const results = await Promise.all(
+      newSteps.map(s => supabase.from('flow_steps').update({ order_index: s.order_index }).eq('id', s.id))
+    );
+    const err = results.find(r => r.error)?.error;
+    if (err) showToast(`Erro ao salvar ordem: ${err.message}`, 'err');
   };
 
   // Init
@@ -148,27 +188,30 @@ export default function FlowBuilderView() {
     if (!selectedFlow) return;
     setSaving(true);
     try {
-      // Try with keywords first
-      let { error } = await supabase.from('chat_flows').update({
+      // Try with keywords first — use .select() to detect RLS blocks
+      let result = await supabase.from('chat_flows').update({
         name: selectedFlow.name,
         keywords: selectedFlow.keywords,
         description: selectedFlow.description,
         is_active: selectedFlow.is_active,
-      }).eq('id', selectedFlow.id);
+      }).eq('id', selectedFlow.id).select();
 
       // Fallback: keywords column may not exist yet (migration pending)
-      if (error?.message?.includes('keywords') || error?.message?.includes('column')) {
+      if (result.error?.message?.includes('keywords') || result.error?.message?.includes('column')) {
         console.warn('[FlowBuilder] keywords column not found, saving without it. Run migration_007.');
-        const fallback = await supabase.from('chat_flows').update({
+        result = await supabase.from('chat_flows').update({
           name: selectedFlow.name,
           is_active: selectedFlow.is_active,
-        }).eq('id', selectedFlow.id);
-        error = fallback.error;
+        }).eq('id', selectedFlow.id).select();
       }
 
-      if (error) {
-        console.error('[FlowBuilder] saveFlowMeta error:', error);
-        showToast(`Erro ao salvar: ${error.message}`, 'err');
+      if (result.error) {
+        console.error('[FlowBuilder] saveFlowMeta error:', result.error);
+        showToast(`Erro ao salvar: ${result.error.message}`, 'err');
+      } else if (!result.data || result.data.length === 0) {
+        // RLS silently blocked the write — 0 rows affected
+        console.error('[FlowBuilder] saveFlowMeta: 0 rows affected — RLS bloqueou a escrita. Execute migration_008_rls_write_policies.sql no Supabase.');
+        showToast('Permissão negada (RLS). Execute a migration 008 no Supabase.', 'err');
       } else {
         // Update local list
         setFlows(prev => prev.map(f => f.id === selectedFlow.id ? selectedFlow : f));
@@ -234,28 +277,30 @@ export default function FlowBuilderView() {
   const saveStep = async (step: FlowStep) => {
     setStepSaving(step.id);
     try {
-      // Try with media_library_id first (may not exist if migration pending)
-      let { error } = await supabase.from('flow_steps').update({
+      // Use .select() to detect RLS silent blocks
+      let result = await supabase.from('flow_steps').update({
         type: step.type,
         content: step.content || '',
         delay_duration: step.delay_duration,
         media_library_id: step.media_library_id || null,
-      }).eq('id', step.id);
+      }).eq('id', step.id).select();
 
       // Fallback: media_library_id column may not exist yet
-      if (error?.message?.includes('media_library_id') || error?.message?.includes('column')) {
+      if (result.error?.message?.includes('media_library_id') || result.error?.message?.includes('column')) {
         console.warn('[FlowBuilder] media_library_id column not found, saving without it. Run migration_007.');
-        const fallback = await supabase.from('flow_steps').update({
+        result = await supabase.from('flow_steps').update({
           type: step.type,
           content: step.content || '',
           delay_duration: step.delay_duration,
-        }).eq('id', step.id);
-        error = fallback.error;
+        }).eq('id', step.id).select();
       }
 
-      if (error) {
-        console.error('[FlowBuilder] saveStep error:', error);
-        showToast(`Erro ao salvar passo: ${error.message}`, 'err');
+      if (result.error) {
+        console.error('[FlowBuilder] saveStep error:', result.error);
+        showToast(`Erro ao salvar passo: ${result.error.message}`, 'err');
+      } else if (!result.data || result.data.length === 0) {
+        console.error('[FlowBuilder] saveStep: 0 rows affected — RLS bloqueou. Execute migration_008_rls_write_policies.sql');
+        showToast('Permissão negada (RLS). Execute a migration 008 no Supabase.', 'err');
       } else {
         showToast('Passo salvo ✔️');
       }
@@ -402,10 +447,23 @@ export default function FlowBuilderView() {
               );
 
               return (
-                <div key={step.id} className={`fb-step ${isExpanded ? 'expanded' : ''}`} style={{ borderLeftColor: cfg.color }}>
+                <div
+                  key={step.id}
+                  className={`fb-step ${isExpanded ? 'expanded' : ''} ${dragOverIndex === idx && dragIndex !== idx ? 'drag-over' : ''}`}
+                  style={{ borderLeftColor: cfg.color }}
+                  draggable
+                  onDragStart={e => handleDragStart(e, idx)}
+                  onDragOver={e => handleDragOver(e, idx)}
+                  onDrop={e => handleDrop(e, idx)}
+                  onDragEnd={() => { setDragIndex(null); setDragOverIndex(null); }}
+                >
                   {/* Step Header */}
                   <div className="fb-step-header" onClick={() => setExpandedStep(isExpanded ? null : step.id)}>
-                    <div className="fb-step-drag">
+                    <div
+                      className="fb-step-drag"
+                      title="Arrastar para reordenar"
+                      onMouseDown={e => e.stopPropagation()}
+                    >
                       <GripVertical size={16} />
                     </div>
                     <div className="fb-step-icon" style={{ background: cfg.color + '20', color: cfg.color }}>
