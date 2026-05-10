@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import ChatView from './ChatView';
 import KanbanView from './KanbanView';

@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import { MessageCircle, Trello, Settings, LogOut } from 'lucide-react';
+import { MessageCircle, Kanban, Settings, LogOut } from 'lucide-react';
 import './DashboardLayout.css';
 
 interface DashboardLayoutProps {
@@ -21,7 +21,7 @@ export default function DashboardLayout({ children, activeView, onViewChange }: 
       }
     });
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) {
         navigate('/');
       }
@@ -72,7 +72,7 @@ export default function DashboardLayout({ children, activeView, onViewChange }: 
             onClick={() => onViewChange('kanban')}
             title="Kanban"
           >
-            <Trello size={22} />
+            <Kanban size={22} />
           </button>
           <button 
             className={`nav-btn ${activeView === 'settings' ? 'active' : ''}`}
