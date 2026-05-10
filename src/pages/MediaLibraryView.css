@@ -1,0 +1,29 @@
+.media-library-root {
+  font-family: inherit;
+}
+
+.media-library-root header h2 {
+  margin: 0;
+  color: #00FF88;
+}
+
+.media-library-root .btn-primary {
+  background-color: #00FF88;
+  color: #0A192F;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: opacity 0.2s;
+}
+
+.media-library-root .btn-primary:hover:not(:disabled) {
+  opacity: 0.8;
+}
+
+.media-library-root .btn-primary:disabled {
+  background-color: #555;
+  color: #999;
+  cursor: not-allowed;
+}
