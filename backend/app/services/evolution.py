@@ -48,9 +48,10 @@ class EvolutionAPI:
         """
         presence_type = "composing" if composing else "recording"
         return await self._post(
-            f"/chat/updatePresence/{self.instance}",
+            f"/chat/sendPresence/{self.instance}",
             {
                 "number": phone,
+                "delay": 1200,
                 "presence": presence_type,
             }
         )
