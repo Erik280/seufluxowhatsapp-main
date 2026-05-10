@@ -28,6 +28,10 @@ export default function ChatView() {
   const [inputValue, setInputValue] = useState('');
   const [companyId, setCompanyId] = useState<string>('');
   
+  // Media Library state
+  const [showMediaModal, setShowMediaModal] = useState(false);
+  const [libraryMedia, setLibraryMedia] = useState<any[]>([]);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Scroll to bottom of messages
@@ -84,6 +88,13 @@ export default function ChatView() {
           })
           .subscribe();
           
+        // 4. Fetch Media Library
+        const { data: mediaData } = await supabase
+          .from('media_library')
+          .select('*')
+          .eq('company_id', userData.company_id);
+        if (mediaData) setLibraryMedia(mediaData);
+
         return () => {
           supabase.removeChannel(contactSub);
         };
@@ -140,6 +151,24 @@ export default function ChatView() {
       // The Realtime subscription will add the final message or we can just rely on the webhook
     } catch (error) {
       console.error("Failed to send message", error);
+    }
+  };
+
+  const handleSendLibraryMedia = async (mediaId: string) => {
+    if (!selectedContact || !companyId) return;
+    try {
+      await fetch(`${API_BASE_URL}/api/messages/send/media_library`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contact_id: selectedContact.id,
+          company_id: companyId,
+          media_id: mediaId
+        })
+      });
+      setShowMediaModal(false);
+    } catch (error) {
+      console.error("Failed to send media from library", error);
     }
   };
 
@@ -230,6 +259,13 @@ export default function ChatView() {
               <div ref={messagesEndRef} />
             </div>
             <footer className="message-input-area">
+              <button 
+                className="attach-btn" 
+                onClick={() => setShowMediaModal(true)}
+                title="Abrir Biblioteca de Mídia"
+              >
+                📁
+              </button>
               <label className="attach-btn" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <input 
                   type="file" 
@@ -326,6 +362,43 @@ export default function ChatView() {
           </div>
         )}
       </section>
+
+      {showMediaModal && (
+        <div className="media-modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="media-modal-content" style={{ background: '#112240', padding: '20px', borderRadius: '8px', width: '80%', maxWidth: '800px', maxHeight: '80vh', overflowY: 'auto', color: '#e6f1ff' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+              <h2>Biblioteca de Mídia</h2>
+              <button onClick={() => setShowMediaModal(false)} style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '20px', cursor: 'pointer' }}>✕</button>
+            </div>
+            
+            {libraryMedia.length === 0 ? (
+              <p>Nenhuma mídia salva. Vá na aba "Biblioteca" para adicionar arquivos.</p>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px' }}>
+                {libraryMedia.map(media => (
+                  <div key={media.id} style={{ background: '#0a192f', padding: '10px', borderRadius: '6px', textAlign: 'center', position: 'relative' }}>
+                    <p style={{ margin: '0 0 10px 0', fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{media.name}</p>
+                    <span style={{ fontSize: '10px', background: '#233554', padding: '2px 4px', borderRadius: '4px', marginBottom: '10px', display: 'inline-block' }}>{media.media_type.toUpperCase()}</span>
+                    
+                    <div style={{ marginTop: '10px', marginBottom: '15px', minHeight: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#112240', borderRadius: '4px', overflow: 'hidden' }}>
+                      {media.media_type === 'image' && <img src={media.url} alt={media.name} style={{ maxWidth: '100%', maxHeight: '100px' }} />}
+                      {media.media_type === 'audio' && <audio src={media.url} controls style={{ width: '90%' }} />}
+                      {media.media_type === 'video' && <video src={media.url} controls style={{ width: '100%', maxHeight: '100px' }} />}
+                    </div>
+
+                    <button 
+                      onClick={() => handleSendLibraryMedia(media.id)}
+                      style={{ background: '#00e5cc', color: '#000', border: 'none', padding: '8px 15px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', width: '100%' }}
+                    >
+                      Enviar
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

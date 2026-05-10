@@ -302,6 +302,144 @@ async def send_manual_media(
     return msg_result.data[0] if msg_result.data else {"status": "sent"}
 
 # ========================
+# MEDIA LIBRARY
+# ========================
+
+from pydantic import BaseModel
+from typing import Optional
+
+class MediaLibraryResponse(BaseModel):
+    id: str
+    company_id: str
+    name: str
+    media_type: str
+    url: str
+    created_at: str
+
+@router.get("/media/{company_id}", response_model=list[MediaLibraryResponse])
+async def list_media(company_id: str):
+    """Lista as mídias salvas na biblioteca da empresa."""
+    db = get_supabase()
+    result = (
+        db.table("media_library")
+        .select("*")
+        .eq("company_id", company_id)
+        .order("created_at", desc=False)
+        .execute()
+    )
+    return result.data or []
+
+@router.post("/media", response_model=MediaLibraryResponse, status_code=201)
+async def upload_media_to_library(
+    company_id: str = Form(...),
+    name: str = Form(...),
+    file: UploadFile = File(...)
+):
+    """Faz upload de uma mídia para o MinIO e salva na biblioteca."""
+    db = get_supabase()
+    
+    # 1. Upload to MinIO
+    content = await file.read()
+    filename = f"{company_id}/lib_{uuid.uuid4()}_{file.filename}"
+    
+    storage = StorageService()
+    media_url = storage.upload_file(content, filename, file.content_type)
+    
+    # 2. Determine media type
+    content_type = file.content_type or ""
+    if content_type.startswith("image/"):
+        media_type = "image"
+    elif content_type.startswith("audio/"):
+        media_type = "audio"
+    elif content_type.startswith("video/"):
+        media_type = "video"
+    else:
+        media_type = "document"
+
+    # 3. Save to database
+    result = db.table("media_library").insert({
+        "company_id": company_id,
+        "name": name,
+        "media_type": media_type,
+        "url": media_url
+    }).execute()
+    
+    return result.data[0]
+
+@router.delete("/media/{media_id}", status_code=204)
+async def delete_media_from_library(media_id: str):
+    """Deleta uma mídia da biblioteca."""
+    db = get_supabase()
+    db.table("media_library").delete().eq("id", media_id).execute()
+    # Opcional: deletar arquivo físico do MinIO aqui se desejado
+    return None
+
+class SendMediaLibraryRequest(BaseModel):
+    contact_id: str
+    company_id: str
+    media_id: str
+
+@router.post("/messages/send/media_library")
+async def send_media_library(body: SendMediaLibraryRequest):
+    """Envia uma mídia da biblioteca para um contato."""
+    db = get_supabase()
+    
+    # 1. Validar empresa
+    company_res = db.table("companies").select("evolution_instance, evolution_apikey").eq("id", body.company_id).execute()
+    if not company_res.data:
+        raise HTTPException(status_code=404, detail="Company not found")
+        
+    company = company_res.data[0]
+    instance = company.get("evolution_instance")
+    apikey = company.get("evolution_apikey")
+    
+    # 2. Validar contato
+    contact_res = db.table("contacts").select("phone").eq("id", body.contact_id).execute()
+    if not contact_res.data:
+        raise HTTPException(status_code=404, detail="Contact not found")
+        
+    phone = contact_res.data[0]["phone"]
+    
+    # 3. Buscar a mídia na biblioteca
+    media_res = db.table("media_library").select("*").eq("id", body.media_id).execute()
+    if not media_res.data:
+        raise HTTPException(status_code=404, detail="Media not found in library")
+        
+    media = media_res.data[0]
+    media_url = media["url"]
+    media_type = media["media_type"]
+    media_name = media["name"]
+
+    # 4. Enviar via Evolution API
+    from app.services.evolution import EvolutionAPI
+    evolution = EvolutionAPI(instance, apikey)
+    
+    if media_type == "audio":
+        await evolution.send_presence(phone, composing=False) # recording
+        resp = await evolution.send_audio(phone, media_url)
+    elif media_type == "image":
+        resp = await evolution.send_image(phone, media_url)
+    elif media_type == "video":
+        resp = await evolution.send_video(phone, media_url)
+    else:
+        raise HTTPException(status_code=400, detail="Unsupported media type")
+        
+    if "error" in resp:
+        raise HTTPException(status_code=500, detail=f"Evolution API Error: {resp['error']}")
+        
+    # 5. Salvar histórico
+    msg_result = db.table("messages").insert({
+        "company_id": body.company_id,
+        "contact_id": body.contact_id,
+        "direction": "out",
+        "content": f"[{media_type.upper()}] {media_name}",
+        "media_url": media_url,
+        "media_type": media_type
+    }).execute()
+    
+    return msg_result.data[0] if msg_result.data else {"status": "sent"}
+
+# ========================
 # KANBAN STAGES & TAGS
 # ========================
 from app.models.schemas import (

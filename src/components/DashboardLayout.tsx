@@ -6,8 +6,8 @@ import './DashboardLayout.css';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
-  activeView: 'chat' | 'kanban' | 'settings';
-  onViewChange: (view: 'chat' | 'kanban' | 'settings') => void;
+  activeView: 'chat' | 'kanban' | 'settings' | 'media';
+  onViewChange: (view: 'chat' | 'kanban' | 'settings' | 'media') => void;
 }
 
 export default function DashboardLayout({ children, activeView, onViewChange }: DashboardLayoutProps) {
@@ -73,6 +73,16 @@ export default function DashboardLayout({ children, activeView, onViewChange }: 
             title="Kanban"
           >
             <Kanban size={22} />
+          </button>
+          <button 
+            className={`nav-btn ${activeView === 'media' ? 'active' : ''}`}
+            onClick={() => onViewChange('media')}
+            title="Biblioteca de Mídia"
+          >
+            {/* Usando um ícone simples de pasta/arquivo */}
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            </svg>
           </button>
           <button 
             className={`nav-btn ${activeView === 'settings' ? 'active' : ''}`}
