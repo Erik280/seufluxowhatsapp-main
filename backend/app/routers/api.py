@@ -506,9 +506,52 @@ async def update_kanban_stage(stage_id: str, body: dict):
 
 @router.delete("/kanban_stages/{stage_id}", status_code=204)
 async def delete_kanban_stage(stage_id: str):
+    """Apaga um estágio do Kanban. Stages protegidos (is_protected=True) não podem ser apagados."""
     db = get_supabase()
+    # Verificar se é protegido
+    check = db.table("kanban_stages").select("is_protected, name").eq("id", stage_id).execute()
+    if check.data and check.data[0].get("is_protected"):
+        raise HTTPException(
+            status_code=403,
+            detail=f"O estágio '{check.data[0]['name']}' é protegido e não pode ser apagado."
+        )
     db.table("kanban_stages").delete().eq("id", stage_id).execute()
     return None
+
+
+class EnsureDefaultStageRequest(BaseModel):
+    company_id: str
+
+@router.post("/kanban_stages/ensure_default")
+async def ensure_default_stage(body: EnsureDefaultStageRequest):
+    """
+    Garante que a empresa tenha um estágio padrão 'NOVOS LEADS'.
+    Chamado no carregamento do Kanban para garantir consistência.
+    """
+    db = get_supabase()
+    res = (
+        db.table("kanban_stages")
+        .select("*")
+        .eq("company_id", body.company_id)
+        .eq("is_default", True)
+        .limit(1)
+        .execute()
+    )
+    if res.data:
+        return res.data[0]  # Já existe
+
+    # Criar
+    new_stage = db.table("kanban_stages").insert({
+        "company_id": body.company_id,
+        "name": "NOVOS LEADS",
+        "color": "#00E5CC",
+        "order_index": 0,
+        "is_default": True,
+        "is_protected": True,
+        "entry_keywords": [],
+    }).execute()
+    logger.info(f"[ensure_default_stage] NOVOS LEADS criado para empresa {body.company_id}")
+    return new_stage.data[0]
 
 @router.post("/tags", response_model=TagResponse, status_code=201)
 async def create_tag(body: TagCreate):

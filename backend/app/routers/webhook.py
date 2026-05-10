@@ -15,6 +15,71 @@ logger = logging.getLogger("seufluxo.webhook")
 router = APIRouter(prefix="/api/webhook", tags=["Webhook"])
 
 
+def _get_or_create_default_stage(db, company_id: str) -> str | None:
+    """
+    Retorna o ID do stage padrão (is_default=True) da empresa.
+    Se não existir, cria 'NOVOS LEADS' automaticamente.
+    """
+    res = (
+        db.table("kanban_stages")
+        .select("id")
+        .eq("company_id", company_id)
+        .eq("is_default", True)
+        .limit(1)
+        .execute()
+    )
+    if res.data:
+        return res.data[0]["id"]
+
+    # Criar o stage padrão se não existir
+    logger.info(f"[{company_id}] Criando stage padrão 'NOVOS LEADS'.")
+    new_stage = db.table("kanban_stages").insert({
+        "company_id": company_id,
+        "name": "NOVOS LEADS",
+        "color": "#00E5CC",
+        "order_index": 0,
+        "is_default": True,
+        "is_protected": True,
+        "entry_keywords": [],
+    }).execute()
+    return new_stage.data[0]["id"] if new_stage.data else None
+
+
+def _find_keyword_stage(db, company_id: str, message_text: str) -> dict | None:
+    """
+    Verifica se o texto da mensagem contém alguma keyword de entrada
+    configurada em um stage. Retorna o primeiro stage que der match.
+    Ordem de prioridade: order_index ASC.
+    """
+    if not message_text:
+        return None
+
+    # Buscar todos os stages com keywords configuradas
+    res = (
+        db.table("kanban_stages")
+        .select("id, name, entry_keywords, trigger_flow_id, is_trigger_enabled")
+        .eq("company_id", company_id)
+        .eq("is_default", False)      # Não aplicar ao stage padrão
+        .order("order_index", desc=False)
+        .execute()
+    )
+
+    if not res.data:
+        return None
+
+    msg_lower = message_text.lower()
+    for stage in res.data:
+        keywords = stage.get("entry_keywords") or []
+        for kw in keywords:
+            if kw and kw.lower() in msg_lower:
+                logger.info(
+                    f"[keyword-routing] Keyword '{kw}' encontrada → stage '{stage['name']}'"
+                )
+                return stage
+
+    return None
+
+
 @router.post("/evolution")
 async def evolution_webhook(request: Request, background_tasks: BackgroundTasks):
     """
@@ -24,10 +89,11 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
     1. Extrai dados da mensagem (remetente, texto, instância)
     2. Identifica a empresa pela instância
     3. Busca ou cria o contato
-    4. Salva a mensagem recebida
-    5. Verifica chat_status:
-       - 'human' → apenas salva (Supabase Realtime entrega ao frontend)
-       - 'bot'   → executa fluxo em background (asyncio.sleep não bloqueia)
+       - Novos contatos entram no stage 'NOVOS LEADS' (is_default=True)
+    4. Verifica se a mensagem contém uma keyword de entrada de algum stage:
+       - Se sim: move o lead para o stage correspondente + dispara fluxo (se configurado)
+       - Se não: verifica chat_status e roteia normalmente
+    5. Salva a mensagem recebida
     """
     try:
         payload = await request.json()
@@ -37,7 +103,6 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
     # ── Validar evento ──
     event = payload.get("event")
     if event != "messages.upsert":
-        # Ignora eventos que não são mensagens (ex: status, presence, etc.)
         return {"status": "ignored", "event": event}
 
     data = payload.get("data", {})
@@ -47,17 +112,14 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
     key = data.get("key", {})
     is_from_me = key.get("fromMe", False)
     if is_from_me:
-        # Ignora mensagens enviadas por nós mesmos
         return {"status": "ignored", "reason": "fromMe"}
 
     remote_jid = key.get("remoteJid", "")
-    # Extrair apenas o número (remove @s.whatsapp.net)
     phone = remote_jid.split("@")[0] if "@" in remote_jid else remote_jid
 
     if not phone or phone == "status":
         return {"status": "ignored", "reason": "invalid_phone"}
 
-    # Texto da mensagem (pode vir em diferentes campos)
     message_obj = data.get("message", {})
     message_text = (
         message_obj.get("conversation")
@@ -86,7 +148,10 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
     company_id = company["id"]
     evolution_apikey = company.get("evolution_apikey", "")
 
-    # ── 2. Buscar ou criar contato ──
+    # ── 2. Buscar o stage padrão da empresa ──
+    default_stage_id = _get_or_create_default_stage(db, company_id)
+
+    # ── 3. Buscar ou criar contato ──
     contact_result = (
         db.table("contacts")
         .select("*")
@@ -96,6 +161,8 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
         .execute()
     )
 
+    is_new_contact = False
+
     if contact_result.data:
         contact = contact_result.data[0]
         # Atualizar nome se veio pushName e não tinha
@@ -103,7 +170,7 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
             db.table("contacts").update({"name": push_name}).eq("id", contact["id"]).execute()
             contact["name"] = push_name
     else:
-        # Criar novo contato
+        # Criar novo contato → sempre entra no stage padrão NOVOS LEADS
         new_contact = (
             db.table("contacts")
             .insert({
@@ -111,15 +178,18 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
                 "phone": phone,
                 "name": push_name or None,
                 "chat_status": "bot",
+                "stage_id": default_stage_id,   # ← NOVOS LEADS
             })
             .execute()
         )
         contact = new_contact.data[0]
+        is_new_contact = True
+        logger.info(f"[{phone}] Novo lead criado → stage NOVOS LEADS ({default_stage_id})")
 
     contact_id = contact["id"]
     chat_status = contact.get("chat_status", "bot")
 
-    # ── 3. Salvar mensagem recebida ──
+    # ── 4. Salvar mensagem recebida ──
     db.table("messages").insert({
         "company_id": company_id,
         "contact_id": contact_id,
@@ -128,26 +198,68 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
     }).execute()
 
     # Atualizar last_message do contato
-    db.table("contacts").update({
-        "last_message": "now()",
-    }).eq("id", contact_id).execute()
+    db.table("contacts").update({"last_message": "now()"}).eq("id", contact_id).execute()
 
-    # ── 4. Rotear conforme chat_status ──
+    # ── 5. Verificar roteamento por keyword ──
+    # (Aplica a novos leads e também a leads existentes em modo bot)
+    if chat_status == "bot" and message_text:
+        keyword_stage = _find_keyword_stage(db, company_id, message_text)
+
+        if keyword_stage and keyword_stage["id"] != contact.get("stage_id"):
+            target_stage_id = keyword_stage["id"]
+
+            # Mover para o stage da keyword
+            db.table("contacts").update({
+                "stage_id": target_stage_id,
+                "chat_status": "bot",
+            }).eq("id", contact_id).execute()
+            contact["stage_id"] = target_stage_id
+
+            logger.info(
+                f"[{phone}] Roteado por keyword → stage '{keyword_stage['name']}'"
+            )
+
+            # Disparar fluxo automático do stage (se configurado)
+            if keyword_stage.get("is_trigger_enabled") and keyword_stage.get("trigger_flow_id"):
+                flow_id = keyword_stage["trigger_flow_id"]
+                evo = EvolutionAPI(instance=instance_name, apikey=evolution_apikey)
+                background_tasks.add_task(
+                    execute_flow,
+                    company_id=company_id,
+                    contact_id=contact_id,
+                    contact_phone=phone,
+                    flow_id=flow_id,
+                    evolution=evo,
+                    contact=contact,
+                )
+                logger.info(
+                    f"[{phone}] Fluxo '{flow_id}' disparado por keyword routing."
+                )
+                return {
+                    "status": "ok",
+                    "mode": "keyword_routed",
+                    "stage": keyword_stage["name"],
+                }
+
+            return {
+                "status": "ok",
+                "mode": "keyword_routed",
+                "stage": keyword_stage["name"],
+                "flow": None,
+            }
+
+    # ── 6. Rotear conforme chat_status ──
 
     if chat_status == "human":
-        # Modo humano: não faz nada — Supabase Realtime entrega ao frontend
         logger.info(f"[{phone}] Modo HUMANO — mensagem salva para atendente.")
         return {"status": "ok", "mode": "human"}
 
     else:
-        # Modo bot: buscar fluxo e executar em background
+        # Modo bot: buscar fluxo por trigger_keyword (comportamento original)
         if message_text:
             flow = find_matching_flow(company_id, message_text)
             if flow:
-                evo = EvolutionAPI(
-                    instance=instance_name,
-                    apikey=evolution_apikey,
-                )
+                evo = EvolutionAPI(instance=instance_name, apikey=evolution_apikey)
                 background_tasks.add_task(
                     execute_flow,
                     company_id=company_id,
@@ -157,8 +269,8 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
                     evolution=evo,
                     contact=contact,
                 )
-                logger.info(f"[{phone}] Modo BOT — fluxo '{flow['name']}' disparado em background.")
+                logger.info(f"[{phone}] Modo BOT — fluxo '{flow['name']}' disparado.")
                 return {"status": "ok", "mode": "bot", "flow": flow["name"]}
 
-        logger.info(f"[{phone}] Modo BOT — nenhum fluxo encontrado para: '{message_text[:50]}'")
+        logger.info(f"[{phone}] Modo BOT — nenhum fluxo para: '{message_text[:50]}'")
         return {"status": "ok", "mode": "bot", "flow": None}

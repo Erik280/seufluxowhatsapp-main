@@ -8,8 +8,11 @@ interface KanbanStage {
   name: string;
   color: string;
   order_index: number;
+  is_default: boolean;
+  is_protected: boolean;
   is_trigger_enabled: boolean;
   trigger_flow_id: string | null;
+  entry_keywords: string[];
 }
 
 interface Contact {
@@ -74,12 +77,25 @@ interface StageModalProps {
 
 function StageModal({ stage, flows, companyId, onClose, onSaved, onDeleted }: StageModalProps) {
   const isNew = !stage;
+  const isProtected = stage?.is_protected ?? false;
   const [name, setName] = useState(stage?.name ?? '');
   const [color, setColor] = useState(stage?.color ?? '#00E5CC');
   const [isTriggerEnabled, setIsTriggerEnabled] = useState(stage?.is_trigger_enabled ?? false);
   const [triggerFlowId, setTriggerFlowId] = useState<string>(stage?.trigger_flow_id ?? '');
+  const [keywords, setKeywords] = useState<string[]>(stage?.entry_keywords ?? []);
+  const [kwInput, setKwInput] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  const addKeyword = () => {
+    const kw = kwInput.trim().toLowerCase();
+    if (kw && !keywords.includes(kw)) {
+      setKeywords(prev => [...prev, kw]);
+    }
+    setKwInput('');
+  };
+
+  const removeKeyword = (kw: string) => setKeywords(prev => prev.filter(k => k !== kw));
 
   const handleSave = async () => {
     if (!name.trim()) { setError('Nome obrigatório.'); return; }
@@ -91,6 +107,7 @@ function StageModal({ stage, flows, companyId, onClose, onSaved, onDeleted }: St
       color,
       is_trigger_enabled: isTriggerEnabled,
       trigger_flow_id: isTriggerEnabled && triggerFlowId ? triggerFlowId : null,
+      entry_keywords: keywords,
     };
 
     try {
@@ -119,6 +136,7 @@ function StageModal({ stage, flows, companyId, onClose, onSaved, onDeleted }: St
   };
 
   const handleDelete = async () => {
+    if (isProtected) return; // should not be reachable due to UI, but extra safety
     if (!stage || !confirm(`Apagar a coluna "${stage.name}"? Os leads desta coluna serão movidos para "Sem coluna".`)) return;
     await fetch(`${API_BASE_URL}/api/kanban_stages/${stage.id}`, { method: 'DELETE' });
     onDeleted?.(stage.id);
@@ -169,6 +187,42 @@ function StageModal({ stage, flows, companyId, onClose, onSaved, onDeleted }: St
             </div>
           </div>
 
+          {/* Entry keywords (not shown for default/protected stages) */}
+          {!isProtected && (
+            <div className="kb-field">
+              <label>Palavras-chave de entrada</label>
+              <p className="kb-label-sub" style={{ marginTop: -4 }}>
+                Se a primeira mensagem do lead contiver qualquer uma dessas palavras, ele entra nesta coluna automaticamente.
+              </p>
+              <div className="kb-keywords-input-row">
+                <input
+                  type="text"
+                  value={kwInput}
+                  onChange={e => setKwInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addKeyword(); } }}
+                  placeholder="Ex: bancada automática"
+                />
+                <button className="kb-btn-add-kw" onClick={addKeyword} type="button">+ Adicionar</button>
+              </div>
+              {keywords.length > 0 && (
+                <div className="kb-keywords-tags">
+                  {keywords.map(kw => (
+                    <span key={kw} className="kb-kw-tag">
+                      {kw}
+                      <button onClick={() => removeKeyword(kw)}><X size={11} /></button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {isProtected && (
+            <div className="kb-protected-notice">
+              <span>🔒 Esta coluna é protegida — todos os novos leads entram aqui por padrão. Você pode renomeá-la mas não excluí-la.</span>
+            </div>
+          )}
+
           {isTriggerEnabled && (
             <div className="kb-field kb-flow-selector">
               <label>Fluxo de resposta automática</label>
@@ -192,7 +246,7 @@ function StageModal({ stage, flows, companyId, onClose, onSaved, onDeleted }: St
         </div>
 
         <div className="kb-modal-footer">
-          {!isNew && (
+          {!isNew && !isProtected && (
             <button className="kb-btn-danger" onClick={handleDelete}>
               <Trash2 size={14} /> Apagar coluna
             </button>
@@ -252,13 +306,28 @@ export default function KanbanView() {
 
       setCompanyId(userData.company_id);
 
+      // Garantir que o stage padrão existe antes de carregar
+      await fetch(`${API_BASE_URL}/api/kanban_stages/ensure_default`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company_id: userData.company_id }),
+      });
+
       const [stagesRes, contactsRes, flowsRes] = await Promise.all([
         supabase.from('kanban_stages').select('*').eq('company_id', userData.company_id).order('order_index'),
         supabase.from('contacts').select('*').eq('company_id', userData.company_id).order('last_message', { ascending: false }),
         supabase.from('chat_flows').select('id, name, is_active').eq('company_id', userData.company_id).order('name'),
       ]);
 
-      if (stagesRes.data) setStages(stagesRes.data);
+      if (stagesRes.data) {
+        // Garantir que NOVOS LEADS (is_default) sempre aparece primeiro
+        const sorted = [...stagesRes.data].sort((a, b) => {
+          if (a.is_default && !b.is_default) return -1;
+          if (!a.is_default && b.is_default) return 1;
+          return a.order_index - b.order_index;
+        });
+        setStages(sorted);
+      }
       if (contactsRes.data) setContacts(contactsRes.data);
       if (flowsRes.data) setFlows(flowsRes.data);
 
@@ -269,7 +338,16 @@ export default function KanbanView() {
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'kanban_stages', filter: `company_id=eq.${userData.company_id}` }, () => {
           supabase.from('kanban_stages').select('*').eq('company_id', userData.company_id).order('order_index')
-            .then(({ data }) => { if (data) setStages(data); });
+            .then(({ data }) => {
+              if (data) {
+                const sorted = [...data].sort((a, b) => {
+                  if (a.is_default && !b.is_default) return -1;
+                  if (!a.is_default && b.is_default) return 1;
+                  return a.order_index - b.order_index;
+                });
+                setStages(sorted);
+              }
+            });
         })
         .subscribe();
 
