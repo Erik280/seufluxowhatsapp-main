@@ -163,6 +163,51 @@ export default function SettingsView() {
                   </div>
                 )}
 
+                {connectionStatus === 'unconfigured' && (
+                  <div className="qr-section" style={{ background: 'transparent', padding: 0 }}>
+                     <p style={{marginBottom: '16px', color: '#8892b0'}}>Você ainda não configurou uma instância. Clique no botão abaixo para criar uma automaticamente na Evolution API.</p>
+                     <button 
+                        className="btn-primary" 
+                        onClick={async () => {
+                           if (!company) return;
+                           const instanceName = prompt("Digite um nome para sua instância (ex: empresa123):");
+                           if (!instanceName) return;
+                           
+                           setLoadingQr(true);
+                           const token = Math.random().toString(36).substring(2, 15);
+                           const API_URL = (window as any).__CONFIG__?.VITE_API_BASE_URL || 'http://localhost:8000';
+                           
+                           try {
+                             // 1. Create in Evolution API
+                             await fetch(`${API_URL}/api/evolution/create`, {
+                               method: 'POST',
+                               headers: { 'Content-Type': 'application/json' },
+                               body: JSON.stringify({ instance_name: instanceName, token: token })
+                             });
+                             
+                             // 2. Update Supabase Company
+                             await supabase.from('companies').update({
+                               evolution_instance: instanceName,
+                               evolution_apikey: token
+                             }).eq('id', company.id);
+                             
+                             // Refresh
+                             setCompany({ ...company, evolution_instance: instanceName, evolution_apikey: token });
+                             setConnectionStatus('disconnected');
+                             
+                           } catch (e) {
+                             console.error(e);
+                             alert("Erro ao criar instância.");
+                           }
+                           setLoadingQr(false);
+                        }}
+                        disabled={loadingQr}
+                      >
+                        {loadingQr ? 'Criando...' : 'Criar Instância'}
+                      </button>
+                  </div>
+                )}
+
                 {connectionStatus === 'open' && (
                   <div className="connected-panel">
                     <ShieldAlert size={48} color="#00FF88" />
