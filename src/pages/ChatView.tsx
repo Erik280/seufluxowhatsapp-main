@@ -39,7 +39,10 @@ export default function ChatView() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const recordingStartRef = useRef<number>(0); // timestamp when recording started
   const presenceIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const typingDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isTypingRef = useRef(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -178,6 +181,37 @@ export default function ChatView() {
     }
   }, [selectedContact, companyId]);
 
+  const sendPresenceComposing = useCallback(async () => {
+    if (!selectedContact || !companyId) return;
+    try {
+      await fetch(`${API_BASE_URL}/api/contacts/${selectedContact.id}/presence`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company_id: companyId, presence: 'composing' })
+      });
+    } catch (e) {
+      console.error('Composing presence error', e);
+    }
+  }, [selectedContact, companyId]);
+
+  // Called on every keystroke in the text input
+  const handleTyping = (value: string) => {
+    setInputValue(value);
+    if (!selectedContact || !companyId || !value.trim()) return;
+
+    // Send composing presence immediately on first keystroke
+    if (!isTypingRef.current) {
+      isTypingRef.current = true;
+      sendPresenceComposing();
+    }
+
+    // Debounce: reset typing flag after 3s of inactivity
+    if (typingDebounceRef.current) clearTimeout(typingDebounceRef.current);
+    typingDebounceRef.current = setTimeout(() => {
+      isTypingRef.current = false;
+    }, 3000);
+  };
+
   const startRecording = async () => {
     if (!selectedContact || !companyId) return;
     try {
@@ -240,12 +274,14 @@ export default function ChatView() {
 
       mediaRecorder.start(250); // Collect data every 250ms
       setIsRecording(true);
+      recordingStartRef.current = Date.now();
       setRecordingTime(0);
 
-      // Timer for elapsed time display
+      // Timer: use Date.now() for accuracy, tick every 100ms
       recordingTimerRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
-      }, 1000);
+        const elapsed = Math.floor((Date.now() - recordingStartRef.current) / 1000);
+        setRecordingTime(elapsed);
+      }, 100);
 
       // Send presence 'recording' every 5 seconds to keep the indicator alive
       sendPresenceRecording();
@@ -457,7 +493,7 @@ export default function ChatView() {
                         type="text" 
                         placeholder="Digite uma mensagem..." 
                         value={inputValue}
-                        onChange={e => setInputValue(e.target.value)}
+                        onChange={e => handleTyping(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && handleSend()}
                       />
                       <button className="send-btn" onClick={handleSend}>Enviar</button>
@@ -468,7 +504,7 @@ export default function ChatView() {
                         type="text" 
                         placeholder="Digite uma mensagem..." 
                         value={inputValue}
-                        onChange={e => setInputValue(e.target.value)}
+                        onChange={e => handleTyping(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && handleSend()}
                       />
                       <button className="mic-btn" onClick={startRecording} title="Gravar áudio">
