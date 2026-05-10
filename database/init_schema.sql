@@ -10,7 +10,7 @@
 CREATE TYPE chat_status_enum AS ENUM ('bot', 'human');
 CREATE TYPE user_role_enum   AS ENUM ('superadmin', 'admin', 'agent');
 CREATE TYPE message_dir_enum AS ENUM ('in', 'out');
-CREATE TYPE step_type_enum   AS ENUM ('text', 'audio', 'image');
+CREATE TYPE step_type_enum   AS ENUM ('text', 'audio', 'image', 'video');
 
 
 -- ========================
@@ -81,7 +81,7 @@ CREATE TABLE flow_steps (
   id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   flow_id        UUID NOT NULL REFERENCES chat_flows(id) ON DELETE CASCADE,
   type           step_type_enum NOT NULL DEFAULT 'text',
-  content        TEXT NOT NULL,        -- texto, URL do áudio ou imagem
+  content        TEXT NOT NULL,        -- texto, URL do áudio, imagem ou vídeo
   delay_duration INT NOT NULL DEFAULT 3,  -- segundos de espera (simula humano)
   order_index    INT NOT NULL DEFAULT 0,
   created_at     TIMESTAMPTZ NOT NULL DEFAULT now()

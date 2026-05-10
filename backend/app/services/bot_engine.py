@@ -73,6 +73,9 @@ async def execute_flow(
             elif step_type == "image":
                 await evolution.send_image(contact_phone, content)
 
+            elif step_type == "video":
+                await evolution.send_video(contact_phone, content)
+
         except Exception as e:
             logger.error(f"Erro ao enviar step [{step_type}]: {e}")
             continue

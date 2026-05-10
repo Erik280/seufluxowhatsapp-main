@@ -31,6 +31,7 @@ class StepType(str, Enum):
     text = "text"
     audio = "audio"
     image = "image"
+    video = "video"
 
 
 # ========================

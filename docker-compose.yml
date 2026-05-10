@@ -55,7 +55,7 @@ services:
       - MINIO_SECURE=false
 
       ## --- CORS ---
-      - CORS_ORIGINS=https://seufluxowhatsapp.transformafuturo.com.br
+      - CORS_ORIGINS=https://seufluxowhatsapp.transformafuturo.com.br,https://apiseufluxowhatsapp.transformafuturo.com.br
 
       ## --- App ---
       - APP_ENV=production
@@ -73,10 +73,8 @@ services:
           memory: 512M
       labels:
         - traefik.enable=true
-        ## API responde no MESMO domínio, mas com PathPrefix — prioridade MAIOR que o front
-        - traefik.http.routers.seufluxo_api.rule=Host(`seufluxowhatsapp.transformafuturo.com.br`) && PathPrefix(`/webhook`, `/api`, `/docs`, `/redoc`, `/openapi.json`)
+        - traefik.http.routers.seufluxo_api.rule=Host(`apiseufluxowhatsapp.transformafuturo.com.br`)
         - traefik.http.routers.seufluxo_api.entrypoints=websecure
-        - traefik.http.routers.seufluxo_api.priority=10
         - traefik.http.routers.seufluxo_api.tls.certresolver=letsencryptresolver
         - traefik.http.routers.seufluxo_api.service=seufluxo_api
         - traefik.http.services.seufluxo_api.loadbalancer.server.port=8000

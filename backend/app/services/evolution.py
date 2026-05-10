@@ -88,3 +88,17 @@ class EvolutionAPI:
                 "caption": caption,
             }
         )
+
+    # ── Vídeo ────────────────────────────────────────────────
+
+    async def send_video(self, phone: str, video_url: str, caption: str = "") -> dict:
+        """Envia vídeo com legenda opcional."""
+        return await self._post(
+            f"/message/sendMedia/{self.instance}",
+            {
+                "number": phone,
+                "mediatype": "video",
+                "media": video_url,
+                "caption": caption,
+            }
+        )
