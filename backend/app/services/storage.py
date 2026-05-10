@@ -8,9 +8,11 @@ logger = logging.getLogger("seufluxo.storage")
 class StorageService:
     def __init__(self):
         self.settings = get_settings()
+        # Limpar endpoint caso o usuário tenha colocado http:// ou https:// por engano
+        endpoint = self.settings.minio_endpoint.replace("https://", "").replace("http://", "").rstrip("/")
         self.s3 = boto3.client(
             "s3",
-            endpoint_url=f"http{'s' if self.settings.minio_secure else ''}://{self.settings.minio_endpoint}",
+            endpoint_url=f"http{'s' if self.settings.minio_secure else ''}://{endpoint}",
             aws_access_key_id=self.settings.minio_access_key,
             aws_secret_access_key=self.settings.minio_secret_key,
             config=Config(signature_version="s3v4"),
