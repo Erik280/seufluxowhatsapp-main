@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
-from app.routers import webhook, api
+from app.routers import webhook, api, evolution_router
 
 
 # ── Logging ──
@@ -53,11 +53,10 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-)
-
 # ── Routers ──
 app.include_router(webhook.router)
 app.include_router(api.router)
+app.include_router(evolution_router.router)
 
 
 # ── Health Check ──

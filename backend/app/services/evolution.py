@@ -102,3 +102,55 @@ class EvolutionAPI:
                 "caption": caption,
             }
         )
+
+class EvolutionAdminAPI:
+    """Client para gerenciar instâncias na Evolution API v2 (requer Global Key)."""
+
+    def __init__(self):
+        self.settings = get_settings()
+        self.base_url = self.settings.evolution_api_url.rstrip("/")
+        self.headers = {
+            "Content-Type": "application/json",
+            "apikey": self.settings.evolution_api_global_key,
+        }
+
+    async def _post(self, path: str, payload: dict) -> dict:
+        url = f"{self.base_url}{path}"
+        try:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                resp = await client.post(url, json=payload, headers=self.headers)
+                resp.raise_for_status()
+                return resp.json()
+        except httpx.HTTPError as e:
+            logger.error(f"Evolution Admin API error [{path}]: {e}")
+            return {"error": str(e)}
+
+    async def _get(self, path: str) -> dict:
+        url = f"{self.base_url}{path}"
+        try:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                resp = await client.get(url, headers=self.headers)
+                resp.raise_for_status()
+                return resp.json()
+        except httpx.HTTPError as e:
+            logger.error(f"Evolution Admin API get error [{path}]: {e}")
+            return {"error": str(e)}
+
+    async def create_instance(self, instance_name: str, token: str) -> dict:
+        """Cria uma nova instância."""
+        return await self._post(
+            "/instance/create",
+            {
+                "instanceName": instance_name,
+                "token": token,
+                "qrcode": True
+            }
+        )
+
+    async def connect_instance(self, instance_name: str) -> dict:
+        """Retorna o QR Code em Base64 para conectar a instância."""
+        return await self._get(f"/instance/connect/{instance_name}")
+
+    async def connection_state(self, instance_name: str) -> dict:
+        """Retorna o status da conexão (open, connecting, close)."""
+        return await self._get(f"/instance/connectionState/{instance_name}")
