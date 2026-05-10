@@ -28,6 +28,7 @@ export default function ChatView() {
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [inputValue, setInputValue] = useState('');
   const [companyId, setCompanyId] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Media Library state
   const [showMediaModal, setShowMediaModal] = useState(false);
@@ -367,11 +368,33 @@ export default function ChatView() {
         <header className="chat-list-header">
           <h2>Conversas</h2>
           <div className="search-bar">
-            <input type="text" placeholder="Buscar contatos..." />
+            <input
+              type="text"
+              placeholder="Buscar por nome ou telefone..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+            />
           </div>
         </header>
         <div className="chat-list">
-          {contacts.map(contact => (
+          {(() => {
+            const q = searchQuery.trim().toLowerCase();
+            const filtered = q
+              ? contacts.filter(c =>
+                  (c.name || '').toLowerCase().includes(q) ||
+                  (c.phone || '').includes(q)
+                )
+              : contacts;
+
+            if (filtered.length === 0) {
+              return (
+                <div style={{ padding: '20px', textAlign: 'center', color: '#8892b0', fontSize: '0.875rem' }}>
+                  {q ? `Nenhum resultado para "${q}"` : 'Nenhuma conversa ainda.'}
+                </div>
+              );
+            }
+
+            return filtered.map(contact => (
             <div 
               key={contact.id} 
               className={`chat-item ${selectedContact?.id === contact.id ? 'active' : ''}`} 
@@ -396,12 +419,8 @@ export default function ChatView() {
                 </div>
               </div>
             </div>
-          ))}
-          {contacts.length === 0 && (
-            <div style={{ padding: '20px', textAlign: 'center', color: '#8892b0' }}>
-              Nenhuma conversa ainda.
-            </div>
-          )}
+            ));
+          })()}
         </div>
       </section>
 
