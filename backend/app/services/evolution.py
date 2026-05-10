@@ -167,3 +167,22 @@ class EvolutionAdminAPI:
     async def connection_state(self, instance_name: str) -> dict:
         """Retorna o status da conexão (open, connecting, close)."""
         return await self._get(f"/instance/connectionState/{instance_name}")
+
+    async def set_webhook(self, instance_name: str, webhook_url: str) -> dict:
+        """Configura o webhook para a instância receber mensagens."""
+        return await self._post(
+            f"/webhook/set/{instance_name}",
+            {
+                "webhook": {
+                    "enabled": True,
+                    "url": webhook_url,
+                    "webhookByEvents": False,
+                    "events": [
+                        "MESSAGES_UPSERT",
+                        "MESSAGES_UPDATE",
+                        "SEND_MESSAGE",
+                        "CONNECTION_UPDATE"
+                    ]
+                }
+            }
+        )
