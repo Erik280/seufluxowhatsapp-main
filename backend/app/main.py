@@ -31,6 +31,9 @@ async def lifespan(app: FastAPI):
     logger.info(f"  Ambiente: {settings.app_env}")
     logger.info(f"  Supabase: {settings.supabase_url}")
     logger.info(f"  Evolution: {settings.evolution_api_url}")
+    logger.info(f"  MinIO Endpoint: {settings.minio_endpoint}")
+    logger.info(f"  MinIO Secure: {settings.minio_secure}")
+    logger.info(f"  MinIO Region: {settings.minio_region}")
     logger.info("═" * 60)
     yield
     logger.info("SeuFluxo WhatsApp API — Encerrado.")
