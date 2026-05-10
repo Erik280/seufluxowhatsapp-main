@@ -91,7 +91,7 @@ export default function KanbanView() {
     }, 0);
   };
 
-  const handleDragEnd = (e: React.DragEvent<HTMLDivElement>, contactId: string) => {
+  const handleDragEnd = (_e: React.DragEvent<HTMLDivElement>, contactId: string) => {
     setDraggedContactId(null);
     const el = document.getElementById(`card-${contactId}`);
     if (el) el.classList.remove('dragging');
