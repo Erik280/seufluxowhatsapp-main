@@ -11,10 +11,15 @@ from pydantic import BaseModel
 from app.database import get_supabase
 from app.services.storage import StorageService
 from app.models.schemas import (
-    ContactResponse, ContactStatusUpdate,
+    CompanyCreate, CompanyResponse,
+    UserCreate, UserResponse,
+    ContactCreate, ContactResponse, ContactStatusUpdate, ContactStageUpdate,
     FlowCreate, FlowResponse,
     StepCreate, StepResponse,
-    MessageResponse,
+    MessageCreate, MessageResponse,
+    EvolutionWebhookData,
+    KanbanStageCreate, KanbanStageResponse,
+    TagCreate, TagResponse, ScheduleMessageRequest
 )
 
 logger = logging.getLogger("seufluxo.api")
@@ -721,6 +726,70 @@ async def get_contact_crm(contact_id: str):
     contact["tags"] = [row["tags"] for row in (tags_res.data or []) if row.get("tags")]
 
     return contact
+
+
+# ========================
+# Agendamento de Mensagens / Fluxos
+# ========================
+
+@router.post("/contacts/{contact_id}/schedule")
+async def schedule_contact_message(contact_id: str, body: ScheduleMessageRequest):
+    """
+    Agenda uma mensagem ou um pequeno fluxo para um lead específico em uma data futura.
+    Se 'save_as_flow' for verdadeiro ou passos forem fornecidos sem um 'flow_id', 
+    cria um novo fluxo e agenda ele.
+    """
+    db = get_supabase()
+    
+    # 1. Recupera o contact e company
+    contact_res = db.table("contacts").select("company_id").eq("id", contact_id).execute()
+    if not contact_res.data:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    company_id = contact_res.data[0]["company_id"]
+
+    final_flow_id = body.flow_id
+
+    # 2. Se não tem flow_id, mas tem steps, precisamos criar um fluxo na hora
+    if not final_flow_id and body.steps:
+        flow_name = body.flow_name if body.flow_name and body.save_as_flow else f"[Agendamento] {contact_id} - {body.scheduled_for.strftime('%Y-%m-%d %H:%M')}"
+        
+        flow_res = db.table("chat_flows").insert({
+            "company_id": company_id,
+            "name": flow_name,
+            "trigger_keyword": "",
+            "is_active": body.save_as_flow  # se não é pra salvar modelo, deixa inativo (oculto)
+        }).execute()
+        
+        final_flow_id = flow_res.data[0]["id"]
+        
+        # Insere os steps
+        steps_data = []
+        for i, step in enumerate(body.steps):
+            steps_data.append({
+                "flow_id": final_flow_id,
+                "type": step.type.value,
+                "content": step.content or "",
+                "delay_duration": step.delay_duration,
+                "order_index": i
+            })
+        if steps_data:
+            db.table("flow_steps").insert(steps_data).execute()
+
+    # 3. Cria o agendamento
+    try:
+        db.table("scheduled_messages").insert({
+            "company_id": company_id,
+            "contact_id": contact_id,
+            "flow_id": final_flow_id,
+            "scheduled_for": body.scheduled_for.isoformat(),
+            "status": "pending"
+        }).execute()
+    except Exception as e:
+        logger.error(f"Erro ao agendar: {e}")
+        raise HTTPException(status_code=500, detail="Erro interno ao agendar mensagem")
+
+    return {"message": "Agendado com sucesso", "flow_id": final_flow_id}
+
 
 
 # ========================

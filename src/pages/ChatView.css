@@ -552,3 +552,264 @@
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* ── Schedule Modal & Button ── */
+.crm-schedule-btn {
+  background: rgba(0, 229, 204, 0.1);
+  border: 1px solid rgba(0, 229, 204, 0.3);
+  color: var(--color-neon-cyan, #00E5CC);
+  padding: 10px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.crm-schedule-btn:hover {
+  background: rgba(0, 229, 204, 0.2);
+  box-shadow: 0 0 10px rgba(0, 229, 204, 0.2);
+}
+
+.schedule-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.schedule-modal-content {
+  background: #0a192f;
+  border: 1px solid #233554;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.schedule-modal-header {
+  padding: 20px;
+  border-bottom: 1px solid #233554;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.schedule-modal-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #e6f1ff;
+}
+
+.schedule-modal-header .close-btn {
+  background: transparent;
+  border: none;
+  color: #8892b0;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.schedule-modal-body {
+  padding: 20px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.85rem;
+  color: #8892b0;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.quick-btn {
+  background: #112240;
+  border: 1px solid #233554;
+  color: #e6f1ff;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.quick-btn:hover {
+  background: rgba(0, 229, 204, 0.1);
+  border-color: rgba(0, 229, 204, 0.5);
+  color: #00E5CC;
+}
+
+.schedule-input {
+  width: 100%;
+  background: #112240;
+  border: 1px solid #233554;
+  color: #e6f1ff;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+.schedule-input:focus {
+  outline: none;
+  border-color: #00E5CC;
+}
+
+.mini-flow-builder {
+  background: rgba(17, 34, 64, 0.5);
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px dashed #233554;
+}
+
+.mini-flow-builder h4 {
+  margin: 0 0 15px 0;
+  color: #e6f1ff;
+  font-size: 1rem;
+}
+
+.empty-steps {
+  color: #8892b0;
+  font-size: 0.9rem;
+  font-style: italic;
+  margin-bottom: 15px;
+}
+
+.steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.step-card {
+  background: #112240;
+  border: 1px solid #233554;
+  border-radius: 6px;
+  padding: 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  position: relative;
+}
+
+.step-badge {
+  background: #233554;
+  color: #00E5CC;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.step-input {
+  flex: 1;
+  background: transparent;
+  border: 1px solid #233554;
+  color: #e6f1ff;
+  padding: 8px;
+  border-radius: 4px;
+  resize: vertical;
+  min-height: 35px;
+}
+
+.remove-step-btn {
+  background: transparent;
+  border: none;
+  color: #ff6b6b;
+  cursor: pointer;
+  padding: 4px;
+  opacity: 0.7;
+}
+
+.remove-step-btn:hover {
+  opacity: 1;
+}
+
+.add-step-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.add-step-buttons button {
+  background: #112240;
+  border: 1px solid #233554;
+  color: #e6f1ff;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.add-step-buttons button:hover {
+  border-color: #00E5CC;
+}
+
+.save-as-flow {
+  border-top: 1px solid #233554;
+  padding-top: 15px;
+}
+
+.save-as-flow label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #e6f1ff;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.mt-2 {
+  margin-top: 10px;
+}
+
+.schedule-modal-footer {
+  padding: 20px;
+  border-top: 1px solid #233554;
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+}
+
+.cancel-btn {
+  background: transparent;
+  border: 1px solid #8892b0;
+  color: #8892b0;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.cancel-btn:hover {
+  background: rgba(136, 146, 176, 0.1);
+  color: #e6f1ff;
+}
+
+.confirm-btn {
+  background: #00E5CC;
+  color: #0a192f;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.confirm-btn:hover {
+  background: #00c2ab;
+  box-shadow: 0 0 10px rgba(0, 229, 204, 0.4);
+}
+
+.confirm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

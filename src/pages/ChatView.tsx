@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { FolderOpen, Plus, Mic, Trash2, Send } from 'lucide-react';
+import { FolderOpen, Plus, Mic, Trash2, Send, Calendar } from 'lucide-react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
 import './ChatView.css';
 
@@ -43,6 +43,17 @@ export default function ChatView() {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   };
+
+  // Schedule Modal State
+  const [chatFlows, setChatFlows] = useState<any[]>([]);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState('');
+  const [scheduleMode, setScheduleMode] = useState<'existing' | 'new'>('new');
+  const [scheduleFlowId, setScheduleFlowId] = useState('');
+  const [scheduleSteps, setScheduleSteps] = useState<{type: string, content: string, delay_duration: number}[]>([]);
+  const [saveAsFlow, setSaveAsFlow] = useState(false);
+  const [newFlowName, setNewFlowName] = useState('');
+  const [isScheduling, setIsScheduling] = useState(false);
 
   // Media Library state
   const [showMediaModal, setShowMediaModal] = useState(false);
@@ -102,6 +113,15 @@ export default function ChatView() {
           .eq('company_id', userData.company_id)
           .order('order_index', { ascending: true });
         if (stagesData) setStages(stagesData);
+
+        // Fetch Chat Flows
+        const { data: flowsData } = await supabase
+          .from('chat_flows')
+          .select('id, name')
+          .eq('company_id', userData.company_id)
+          .eq('is_active', true)
+          .order('name', { ascending: true });
+        if (flowsData) setChatFlows(flowsData);
 
         // 3. Subscribe to Realtime Contacts
         const contactSub = supabase
@@ -413,6 +433,77 @@ export default function ChatView() {
     }
   };
 
+  // ── Scheduling Logic ──
+  const setScheduleOffset = (hours: number) => {
+    const d = new Date();
+    d.setHours(d.getHours() + hours);
+    // Format to YYYY-MM-DDTHH:mm
+    const tzoffset = d.getTimezoneOffset() * 60000;
+    const localISOTime = (new Date(d.getTime() - tzoffset)).toISOString().slice(0, 16);
+    setScheduleDate(localISOTime);
+  };
+
+  const handleAddScheduleStep = (type: string) => {
+    setScheduleSteps([...scheduleSteps, { type, content: '', delay_duration: 3 }]);
+  };
+
+  const handleScheduleSubmit = async () => {
+    if (!selectedContact || !scheduleDate) {
+      alert("Por favor, selecione uma data e hora válida.");
+      return;
+    }
+
+    if (scheduleMode === 'existing' && !scheduleFlowId) {
+      alert("Por favor, selecione um fluxo.");
+      return;
+    }
+
+    if (scheduleMode === 'new' && scheduleSteps.length === 0) {
+      alert("Por favor, adicione pelo menos um passo no mini-fluxo.");
+      return;
+    }
+
+    if (scheduleMode === 'new' && saveAsFlow && !newFlowName) {
+      alert("Por favor, dê um nome para salvar o modelo de fluxo.");
+      return;
+    }
+
+    setIsScheduling(true);
+
+    try {
+      const payload = {
+        scheduled_for: new Date(scheduleDate).toISOString(),
+        flow_id: scheduleMode === 'existing' ? scheduleFlowId : null,
+        save_as_flow: saveAsFlow,
+        flow_name: newFlowName,
+        steps: scheduleMode === 'new' ? scheduleSteps : null
+      };
+
+      const res = await fetch(`${API_BASE_URL}/api/contacts/${selectedContact.id}/schedule`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        showToast('Agendamento realizado com sucesso!');
+        setShowScheduleModal(false);
+        // Reset state
+        setScheduleDate('');
+        setScheduleSteps([]);
+        setSaveAsFlow(false);
+        setNewFlowName('');
+      } else {
+        showToast('Erro ao agendar.', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Erro ao agendar.', 'error');
+    } finally {
+      setIsScheduling(false);
+    }
+  };
+
   return (
     <div className="chat-view-root">
       {/* Column 1: Chat List */}
@@ -624,6 +715,14 @@ export default function ChatView() {
                   <option key={stage.id} value={stage.id}>{stage.name}</option>
                 ))}
               </select>
+
+              <button 
+                className="crm-schedule-btn" 
+                onClick={() => setShowScheduleModal(true)}
+                style={{ marginTop: '15px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+              >
+                <Calendar size={16} /> Agendar Mensagem
+              </button>
             </div>
 
             <div className="crm-section">
@@ -721,6 +820,148 @@ export default function ChatView() {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {showScheduleModal && (
+        <div className="schedule-modal-overlay">
+          <div className="schedule-modal-content">
+            <div className="schedule-modal-header">
+              <h2>Agendar Mensagem</h2>
+              <button className="close-btn" onClick={() => setShowScheduleModal(false)}>✕</button>
+            </div>
+            
+            <div className="schedule-modal-body">
+              <div className="form-group">
+                <label>Data e Hora do Envio</label>
+                <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                  <button className="quick-btn" onClick={() => setScheduleOffset(24)}>Daqui a 24h</button>
+                  <button className="quick-btn" onClick={() => setScheduleOffset(48)}>Daqui a 48h</button>
+                </div>
+                <input 
+                  type="datetime-local" 
+                  className="schedule-input"
+                  value={scheduleDate}
+                  onChange={(e) => setScheduleDate(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>O que deseja agendar?</label>
+                <select 
+                  className="schedule-input"
+                  value={scheduleMode}
+                  onChange={(e) => setScheduleMode(e.target.value as 'existing' | 'new')}
+                >
+                  <option value="new">Criar Mensagem / Mini-Fluxo</option>
+                  <option value="existing">Usar um Fluxo Existente</option>
+                </select>
+              </div>
+
+              {scheduleMode === 'existing' ? (
+                <div className="form-group">
+                  <label>Selecione o Fluxo</label>
+                  <select 
+                    className="schedule-input"
+                    value={scheduleFlowId}
+                    onChange={(e) => setScheduleFlowId(e.target.value)}
+                  >
+                    <option value="">-- Selecione --</option>
+                    {chatFlows.map(flow => (
+                      <option key={flow.id} value={flow.id}>{flow.name}</option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div className="mini-flow-builder">
+                  <h4>Passos do Envio</h4>
+                  {scheduleSteps.length === 0 ? (
+                    <p className="empty-steps">Nenhum passo adicionado.</p>
+                  ) : (
+                    <div className="steps-list">
+                      {scheduleSteps.map((step, index) => (
+                        <div key={index} className="step-card">
+                          <span className="step-badge">{step.type.toUpperCase()}</span>
+                          {step.type === 'text' && (
+                            <textarea 
+                              className="step-input" 
+                              value={step.content} 
+                              onChange={(e) => {
+                                const newSteps = [...scheduleSteps];
+                                newSteps[index].content = e.target.value;
+                                setScheduleSteps(newSteps);
+                              }}
+                              placeholder="Digite a mensagem..."
+                            />
+                          )}
+                          {step.type === 'delay' && (
+                            <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+                              <input 
+                                type="number" 
+                                className="step-input" 
+                                value={step.delay_duration} 
+                                onChange={(e) => {
+                                  const newSteps = [...scheduleSteps];
+                                  newSteps[index].delay_duration = Number(e.target.value);
+                                  setScheduleSteps(newSteps);
+                                }}
+                                style={{ width: '80px' }}
+                                min="1" max="60"
+                              /> segundos
+                            </div>
+                          )}
+                          <button 
+                            className="remove-step-btn"
+                            onClick={() => {
+                              const newSteps = [...scheduleSteps];
+                              newSteps.splice(index, 1);
+                              setScheduleSteps(newSteps);
+                            }}
+                          ><Trash2 size={16} /></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="add-step-buttons">
+                    <button type="button" onClick={() => handleAddScheduleStep('text')}>+ Texto</button>
+                    <button type="button" onClick={() => handleAddScheduleStep('delay')}>+ Delay</button>
+                  </div>
+
+                  <div className="save-as-flow">
+                    <label>
+                      <input 
+                        type="checkbox" 
+                        checked={saveAsFlow} 
+                        onChange={(e) => setSaveAsFlow(e.target.checked)} 
+                      /> 
+                      <span>Salvar esse modelo para usar novamente depois</span>
+                    </label>
+                    {saveAsFlow && (
+                      <input 
+                        type="text" 
+                        className="schedule-input mt-2" 
+                        placeholder="Nome do Modelo (ex: Recuperação 24h)"
+                        value={newFlowName}
+                        onChange={(e) => setNewFlowName(e.target.value)}
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="schedule-modal-footer">
+              <button className="cancel-btn" onClick={() => setShowScheduleModal(false)}>Cancelar</button>
+              <button 
+                className="confirm-btn" 
+                onClick={handleScheduleSubmit}
+                disabled={isScheduling}
+              >
+                {isScheduling ? 'Agendando...' : 'Confirmar Agendamento'}
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -32,6 +32,7 @@ class StepType(str, Enum):
     audio = "audio"
     image = "image"
     video = "video"
+    delay = "delay"
 
 
 # ========================
@@ -195,3 +196,20 @@ class TagResponse(TagBase):
 
 class ContactStageUpdate(BaseModel):
     stage_id: Optional[str] = None
+
+# ========================
+# Scheduling
+# ========================
+
+class ScheduleStep(BaseModel):
+    type: StepType
+    content: Optional[str] = None
+    media_url: Optional[str] = None
+    delay_duration: int = 3
+
+class ScheduleMessageRequest(BaseModel):
+    scheduled_for: datetime
+    flow_id: Optional[str] = None
+    save_as_flow: bool = False
+    flow_name: Optional[str] = None
+    steps: Optional[list[ScheduleStep]] = None
