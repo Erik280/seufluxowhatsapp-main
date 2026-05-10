@@ -53,6 +53,8 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
 # ── Routers ──
 app.include_router(webhook.router)
 app.include_router(api.router)
