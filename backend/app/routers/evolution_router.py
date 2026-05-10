@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import Dict, Any
 from app.services.evolution import EvolutionAdminAPI
 
-router = APIRouter(prefix="/evolution", tags=["Evolution"])
+router = APIRouter(prefix="/api/evolution", tags=["Evolution"])
 
 class CreateInstanceRequest(BaseModel):
     instance_name: str
