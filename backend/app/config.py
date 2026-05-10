@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     minio_secret_key: str = ""
     minio_bucket: str = "whatsapp-storage"
     minio_secure: bool = False
+    minio_region: str = "us-east-1"
 
     # --- CORS ---
     cors_origins: str = "https://seufluxowhatsapp.transformafuturo.com.br,http://localhost:5173"

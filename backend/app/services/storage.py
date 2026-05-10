@@ -14,7 +14,7 @@ class StorageService:
             aws_access_key_id=self.settings.minio_access_key,
             aws_secret_access_key=self.settings.minio_secret_key,
             config=Config(signature_version="s3v4"),
-            region_name="us-east-1"
+            region_name=self.settings.minio_region
         )
         self.bucket = self.settings.minio_bucket
         self._ensure_bucket_exists()
