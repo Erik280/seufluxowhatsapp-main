@@ -10,6 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.routers import webhook, api, evolution_router
+from app.services.scheduler import start_scheduler, stop_scheduler
 
 
 # ── Logging ──
@@ -35,7 +36,10 @@ async def lifespan(app: FastAPI):
     logger.info(f"  MinIO Secure: {settings.minio_secure}")
     logger.info(f"  MinIO Region: {settings.minio_region}")
     logger.info("═" * 60)
+    # Start background scheduler
+    start_scheduler()
     yield
+    stop_scheduler()
     logger.info("SeuFluxo WhatsApp API — Encerrado.")
 
 

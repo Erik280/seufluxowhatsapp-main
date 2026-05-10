@@ -155,6 +155,7 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
                     contact_phone=phone,
                     flow_id=flow["id"],
                     evolution=evo,
+                    contact=contact,
                 )
                 logger.info(f"[{phone}] Modo BOT — fluxo '{flow['name']}' disparado em background.")
                 return {"status": "ok", "mode": "bot", "flow": flow["name"]}

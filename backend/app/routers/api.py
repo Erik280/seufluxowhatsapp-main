@@ -551,7 +551,6 @@ async def update_contact_stage(contact_id: str, body: ContactStageUpdate):
         if stage_res.data and stage_res.data[0].get("trigger_flow_id"):
             flow_id = stage_res.data[0]["trigger_flow_id"]
             
-            # Buscar informações da empresa para EvolutionAPI
             company_res = db.table("companies").select("evolution_instance, evolution_apikey").eq("id", contact["company_id"]).execute()
             if company_res.data:
                 company = company_res.data[0]
@@ -564,14 +563,236 @@ async def update_contact_stage(contact_id: str, body: ContactStageUpdate):
                     import asyncio
                     
                     evolution = EvolutionAPI(instance, apikey)
-                    
-                    # Roda o fluxo em background para não travar a requisição
                     asyncio.create_task(execute_flow(
                         company_id=contact["company_id"],
                         contact_id=contact_id,
                         contact_phone=contact["phone"],
                         flow_id=flow_id,
-                        evolution=evolution
+                        evolution=evolution,
+                        contact=contact,
                     ))
                     
     return contact
+
+
+# ========================
+# CRM — Edição de Dados do Lead
+# ========================
+
+class CRMUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    notes: Optional[str] = None
+    tag_ids: Optional[list[str]] = None  # lista de UUIDs de tags
+
+from typing import Optional
+
+@router.patch("/contacts/{contact_id}/crm")
+async def update_contact_crm(contact_id: str, body: CRMUpdate):
+    """Atualiza os campos CRM de um contato: nome, email, notes e tags."""
+    db = get_supabase()
+
+    # 1. Atualizar campos diretos
+    update_data = {}
+    if body.name is not None:
+        update_data["name"] = body.name
+    if body.email is not None:
+        update_data["email"] = body.email
+    if body.notes is not None:
+        update_data["notes"] = body.notes
+
+    if update_data:
+        result = db.table("contacts").update(update_data).eq("id", contact_id).execute()
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Contact not found")
+
+    # 2. Atualizar tags via junction table contact_tags
+    if body.tag_ids is not None:
+        # Remover todas as tags atuais
+        db.table("contact_tags").delete().eq("contact_id", contact_id).execute()
+        # Inserir as novas tags
+        if body.tag_ids:
+            rows = [{"contact_id": contact_id, "tag_id": tid} for tid in body.tag_ids]
+            db.table("contact_tags").insert(rows).execute()
+
+    # 3. Retornar contato atualizado com tags
+    contact_res = db.table("contacts").select("*").eq("id", contact_id).execute()
+    contact = contact_res.data[0] if contact_res.data else {}
+
+    tags_res = (
+        db.table("contact_tags")
+        .select("tag_id, tags(id, name, color)")
+        .eq("contact_id", contact_id)
+        .execute()
+    )
+    contact["tags"] = [row["tags"] for row in (tags_res.data or []) if row.get("tags")]
+
+    return contact
+
+
+@router.get("/contacts/{contact_id}/crm")
+async def get_contact_crm(contact_id: str):
+    """Retorna dados completos do CRM de um contato (incluindo tags)."""
+    db = get_supabase()
+
+    contact_res = db.table("contacts").select("*").eq("id", contact_id).execute()
+    if not contact_res.data:
+        raise HTTPException(status_code=404, detail="Contact not found")
+
+    contact = contact_res.data[0]
+
+    tags_res = (
+        db.table("contact_tags")
+        .select("tag_id, tags(id, name, color)")
+        .eq("contact_id", contact_id)
+        .execute()
+    )
+    contact["tags"] = [row["tags"] for row in (tags_res.data or []) if row.get("tags")]
+
+    return contact
+
+
+# ========================
+# TAGS
+# ========================
+
+class TagCreate(BaseModel):
+    company_id: str
+    name: str
+    color: str = "#00FF88"
+
+@router.get("/tags/{company_id}")
+async def list_tags(company_id: str):
+    """Lista todas as tags de uma empresa."""
+    db = get_supabase()
+    result = db.table("tags").select("*").eq("company_id", company_id).order("name").execute()
+    return result.data or []
+
+@router.post("/tags", status_code=201)
+async def create_tag(body: TagCreate):
+    """Cria uma nova tag."""
+    db = get_supabase()
+    result = db.table("tags").insert({
+        "company_id": body.company_id,
+        "name": body.name,
+        "color": body.color,
+    }).execute()
+    return result.data[0]
+
+@router.delete("/tags/{tag_id}", status_code=204)
+async def delete_tag(tag_id: str):
+    """Remove uma tag (e suas associações via CASCADE)."""
+    db = get_supabase()
+    db.table("contact_tags").delete().eq("tag_id", tag_id).execute()
+    db.table("tags").delete().eq("id", tag_id).execute()
+    return None
+
+
+# ========================
+# AGENDAMENTOS (Scheduled Messages)
+# ========================
+
+class ScheduledMessageCreate(BaseModel):
+    company_id: str
+    contact_id: str
+    flow_id: Optional[str] = None
+    content: Optional[str] = None
+    scheduled_for: str  # ISO datetime string
+
+@router.get("/scheduled/{company_id}")
+async def list_scheduled(company_id: str):
+    """Lista agendamentos de uma empresa."""
+    db = get_supabase()
+    result = (
+        db.table("scheduled_messages")
+        .select("*, contacts(name, phone)")
+        .eq("company_id", company_id)
+        .order("scheduled_for", desc=False)
+        .execute()
+    )
+    return result.data or []
+
+@router.post("/scheduled", status_code=201)
+async def create_scheduled(body: ScheduledMessageCreate):
+    """Cria um novo agendamento de mensagem."""
+    db = get_supabase()
+    if not body.flow_id and not body.content:
+        raise HTTPException(status_code=400, detail="É necessário flow_id ou content.")
+
+    result = db.table("scheduled_messages").insert({
+        "company_id": body.company_id,
+        "contact_id": body.contact_id,
+        "flow_id": body.flow_id,
+        "content": body.content,
+        "scheduled_for": body.scheduled_for,
+        "status": "pending",
+    }).execute()
+    return result.data[0]
+
+@router.delete("/scheduled/{scheduled_id}", status_code=204)
+async def cancel_scheduled(scheduled_id: str):
+    """Cancela (marca como 'cancelled') um agendamento."""
+    db = get_supabase()
+    db.table("scheduled_messages").update({"status": "cancelled"}).eq("id", scheduled_id).execute()
+    return None
+
+
+# ========================
+# CAMPANHAS
+# ========================
+
+class CampaignCreate(BaseModel):
+    company_id: str
+    name: str
+    target_tag_ids: list[str] = []
+    min_inactive_hours: int = 0
+    message_variants: list[str] = []
+    flow_id: Optional[str] = None
+    interval_min_seconds: int = 30
+    interval_max_seconds: int = 120
+    scheduled_for: Optional[str] = None  # ISO datetime, None = imediato
+
+@router.get("/campaigns/{company_id}")
+async def list_campaigns(company_id: str):
+    """Lista campanhas de uma empresa."""
+    db = get_supabase()
+    result = (
+        db.table("campaigns")
+        .select("*")
+        .eq("company_id", company_id)
+        .order("created_at", desc=True)
+        .execute()
+    )
+    return result.data or []
+
+@router.post("/campaigns", status_code=201)
+async def create_campaign(body: CampaignCreate):
+    """Cria uma nova campanha."""
+    db = get_supabase()
+    if not body.message_variants and not body.flow_id:
+        raise HTTPException(status_code=400, detail="É necessário message_variants ou flow_id.")
+
+    from datetime import datetime, timezone
+    scheduled = body.scheduled_for or datetime.now(timezone.utc).isoformat()
+
+    result = db.table("campaigns").insert({
+        "company_id": body.company_id,
+        "name": body.name,
+        "target_tag_ids": body.target_tag_ids,
+        "min_inactive_hours": body.min_inactive_hours,
+        "message_variants": body.message_variants,
+        "flow_id": body.flow_id,
+        "interval_min_seconds": body.interval_min_seconds,
+        "interval_max_seconds": body.interval_max_seconds,
+        "status": "scheduled",
+        "scheduled_for": scheduled,
+    }).execute()
+    return result.data[0]
+
+@router.delete("/campaigns/{campaign_id}", status_code=204)
+async def cancel_campaign(campaign_id: str):
+    """Cancela uma campanha."""
+    db = get_supabase()
+    db.table("campaigns").update({"status": "cancelled"}).eq("id", campaign_id).execute()
+    db.table("scheduled_messages").update({"status": "cancelled"}).eq("campaign_id", campaign_id).eq("status", "pending").execute()
+    return None
