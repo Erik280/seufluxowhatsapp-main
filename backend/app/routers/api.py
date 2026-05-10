@@ -534,45 +534,73 @@ async def delete_tag(tag_id: str):
 async def update_contact_stage(contact_id: str, body: ContactStageUpdate):
     """
     Atualiza o estágio do Kanban de um contato.
-    Se o novo estágio tiver um trigger_flow_id, dispara o fluxo de atendimento.
+    Se o novo estágio tiver is_trigger_enabled=true, muda o chat_status
+    para 'bot' e dispara o fluxo de automação automaticamente.
     """
     db = get_supabase()
-    
-    # Atualiza o stage_id
+
+    # 1. Atualiza o stage_id do contato
     update_res = db.table("contacts").update({"stage_id": body.stage_id}).eq("id", contact_id).execute()
     if not update_res.data:
         raise HTTPException(status_code=404, detail="Contact not found")
-        
+
     contact = update_res.data[0]
-    
-    # Verifica se há um gatilho de fluxo associado ao estágio
+
+    # 2. Verifica se o novo estágio tem automação ativada
     if body.stage_id:
-        stage_res = db.table("kanban_stages").select("trigger_flow_id").eq("id", body.stage_id).execute()
-        if stage_res.data and stage_res.data[0].get("trigger_flow_id"):
-            flow_id = stage_res.data[0]["trigger_flow_id"]
-            
-            company_res = db.table("companies").select("evolution_instance, evolution_apikey").eq("id", contact["company_id"]).execute()
-            if company_res.data:
-                company = company_res.data[0]
-                instance = company.get("evolution_instance")
-                apikey = company.get("evolution_apikey")
-                
-                if instance and apikey:
-                    from app.services.evolution import EvolutionAPI
-                    from app.services.bot_engine import execute_flow
-                    import asyncio
-                    
-                    evolution = EvolutionAPI(instance, apikey)
-                    asyncio.create_task(execute_flow(
-                        company_id=contact["company_id"],
-                        contact_id=contact_id,
-                        contact_phone=contact["phone"],
-                        flow_id=flow_id,
-                        evolution=evolution,
-                        contact=contact,
-                    ))
-                    
+        stage_res = (
+            db.table("kanban_stages")
+            .select("trigger_flow_id, is_trigger_enabled")
+            .eq("id", body.stage_id)
+            .execute()
+        )
+
+        if stage_res.data:
+            stage = stage_res.data[0]
+            if stage.get("is_trigger_enabled") and stage.get("trigger_flow_id"):
+                flow_id = stage["trigger_flow_id"]
+                logger.info(
+                    f"[Kanban] Trigger ativado: contato {contact_id} → estágio {body.stage_id} → fluxo {flow_id}"
+                )
+
+                # 3. Muda chat_status para 'bot' para que a automação tenha prioridade
+                db.table("contacts").update({"chat_status": "bot"}).eq("id", contact_id).execute()
+                contact["chat_status"] = "bot"
+
+                # 4. Busca dados da empresa para executar o fluxo
+                company_res = (
+                    db.table("companies")
+                    .select("evolution_instance, evolution_apikey")
+                    .eq("id", contact["company_id"])
+                    .execute()
+                )
+                if company_res.data:
+                    company = company_res.data[0]
+                    instance = company.get("evolution_instance")
+                    apikey = company.get("evolution_apikey")
+
+                    if instance and apikey:
+                        from app.services.evolution import EvolutionAPI
+                        from app.services.bot_engine import execute_flow
+                        import asyncio
+
+                        evolution = EvolutionAPI(instance, apikey)
+                        asyncio.create_task(execute_flow(
+                            company_id=contact["company_id"],
+                            contact_id=contact_id,
+                            contact_phone=contact["phone"],
+                            flow_id=flow_id,
+                            evolution=evolution,
+                            contact=contact,
+                        ))
+                        logger.info(f"[Kanban] execute_flow agendado para contato {contact_id}")
+                    else:
+                        logger.warning(f"[Kanban] Empresa {contact['company_id']} sem Evolution API configurada.")
+                else:
+                    logger.warning(f"[Kanban] Empresa {contact['company_id']} não encontrada.")
+
     return contact
+
 
 
 # ========================

@@ -1,5 +1,5 @@
 /* ============================================
-   KanbanView.css
+   KanbanView.css — SeuFluxo
    ============================================ */
 
 .kanban-view-root {
@@ -11,7 +11,11 @@
   padding: 24px;
 }
 
+/* ── Header ── */
 .kanban-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 24px;
 }
 
@@ -20,27 +24,56 @@
   color: var(--color-text-primary);
 }
 
+.kb-btn-new-col {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  background: rgba(0, 255, 136, 0.08);
+  color: #00FF88;
+  border: 1px solid #00FF88;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.kb-btn-new-col:hover {
+  background: rgba(0, 255, 136, 0.16);
+  transform: translateY(-1px);
+}
+
+/* ── Board ── */
 .kanban-board {
   display: flex;
   gap: 20px;
   flex: 1;
   overflow-x: auto;
-  align-items: flex-start; /* so columns don't stretch to full height if empty */
+  align-items: flex-start;
+  padding-bottom: 16px;
 }
 
+/* ── Column ── */
 .kanban-column {
-  min-width: 300px;
-  width: 300px;
+  min-width: 290px;
+  width: 290px;
   background: rgba(11, 15, 30, 0.6);
   border-radius: 12px;
   border: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
-  max-height: 100%;
+  max-height: calc(100vh - 180px);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.kanban-column.drop-target {
+  border-color: rgba(0, 229, 204, 0.5);
+  box-shadow: 0 0 0 2px rgba(0, 229, 204, 0.2), inset 0 0 20px rgba(0, 229, 204, 0.05);
 }
 
 .column-header {
-  padding: 16px;
+  padding: 14px 16px;
   border-top: 3px solid;
   border-top-left-radius: 12px;
   border-top-right-radius: 12px;
@@ -48,13 +81,32 @@
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid var(--color-border);
+  gap: 8px;
 }
 
-.column-header h3 {
-  font-size: 0.9rem;
+.column-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.column-title-row h3 {
+  font-size: 0.85rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.column-header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .task-count {
@@ -65,55 +117,85 @@
   border-radius: 12px;
 }
 
+.kb-trigger-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  color: #F59E0B;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.kb-settings-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.kb-settings-btn:hover {
+  color: var(--color-neon-cyan, #00E5CC);
+  background: rgba(0, 229, 204, 0.1);
+}
+
+/* ── Task List ── */
 .task-list {
   padding: 12px;
   flex: 1;
   overflow-y: auto;
-  min-height: 100px;
+  min-height: 80px;
   transition: background 0.2s ease;
 }
 
-.task-list.dragging-over {
-  background: rgba(255, 255, 255, 0.02);
+.kb-empty-col {
+  text-align: center;
+  padding: 24px 12px;
+  color: rgba(122, 139, 168, 0.4);
+  font-size: 0.8rem;
+  border: 1px dashed rgba(255,255,255,0.08);
+  border-radius: 8px;
+  pointer-events: none;
 }
 
+/* ── Task Card ── */
 .task-card {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--color-border);
   border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 12px;
+  padding: 14px;
+  margin-bottom: 10px;
   cursor: grab;
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
-}
-
-.task-card:active {
-  cursor: grabbing;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.15s;
 }
 
 .task-card:hover {
   border-color: rgba(0, 255, 136, 0.3);
+  transform: translateY(-1px);
 }
 
+.task-card:active { cursor: grabbing; }
+
 .task-card.dragging {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  border-color: var(--color-neon-green);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  border-color: var(--color-neon-green, #00FF88);
   background: rgba(7, 10, 22, 0.95);
+  opacity: 0.85;
 }
 
 .task-name {
   font-weight: 600;
   color: var(--color-text-primary);
   margin-bottom: 6px;
-}
-
-.task-msg {
-  font-size: 0.85rem;
-  color: var(--color-text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-bottom: 12px;
+  font-size: 0.9rem;
 }
 
 .task-footer {
@@ -125,3 +207,274 @@
   font-size: 0.7rem;
   color: rgba(136, 146, 176, 0.6);
 }
+
+/* ── No Stages placeholder ── */
+.kb-no-stages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding-top: 60px;
+  color: var(--color-text-muted);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MODAL DE CONFIGURAÇÃO DA COLUNA
+══════════════════════════════════════════════════════════════ */
+
+.kb-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: kb-fade-in 0.15s ease;
+}
+
+@keyframes kb-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.kb-modal {
+  background: #0e1325;
+  border: 1px solid rgba(0, 229, 204, 0.2);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+  animation: kb-slide-up 0.2s ease;
+  overflow: hidden;
+}
+
+@keyframes kb-slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.kb-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.kb-modal-header h3 {
+  font-size: 1.05rem;
+  color: var(--color-text-primary, #e6f1ff);
+  font-weight: 700;
+}
+
+.kb-modal-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 6px;
+  transition: color 0.15s;
+}
+.kb-modal-close:hover { color: #ff6b6b; }
+
+.kb-modal-body {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ── Fields ── */
+.kb-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kb-field label, .kb-label-main {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-muted, #8892b0);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+}
+
+.kb-field input[type="text"],
+.kb-flow-selector select {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--color-text-primary, #e6f1ff);
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+
+.kb-field input[type="text"]:focus,
+.kb-flow-selector select:focus {
+  border-color: var(--color-neon-cyan, #00E5CC);
+}
+
+/* ── Color picker ── */
+.kb-color-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.kb-color-dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s;
+  padding: 0;
+}
+
+.kb-color-dot.selected,
+.kb-color-dot:hover {
+  border-color: #fff;
+  transform: scale(1.15);
+}
+
+.kb-color-custom {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.2);
+  cursor: pointer;
+  background: none;
+  padding: 2px;
+}
+
+/* ── Trigger toggle ── */
+.kb-trigger-toggle-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.kb-label-sub {
+  font-size: 0.78rem;
+  color: rgba(122, 139, 168, 0.7);
+  margin-top: 4px;
+  font-weight: 400;
+}
+
+.kb-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 8px 14px;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.kb-toggle-btn.active {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.5);
+  color: #F59E0B;
+}
+
+/* ── Flow selector ── */
+.kb-flow-selector {
+  background: rgba(245, 158, 11, 0.05);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.kb-no-flows {
+  font-size: 0.83rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.kb-warn {
+  font-size: 0.8rem;
+  color: #F59E0B;
+  margin-top: 4px;
+}
+
+/* ── Errors ── */
+.kb-error {
+  font-size: 0.83rem;
+  color: #ff6b6b;
+  background: rgba(255, 60, 60, 0.08);
+  border: 1px solid rgba(255, 60, 60, 0.2);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+/* ── Modal Footer ── */
+.kb-modal-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 24px 20px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.kb-btn-danger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 60, 60, 0.08);
+  border: 1px solid rgba(255, 60, 60, 0.3);
+  color: #ff6b6b;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.83rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.kb-btn-danger:hover { background: rgba(255, 60, 60, 0.15); }
+
+.kb-btn-cancel {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--color-text-muted);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.kb-btn-cancel:hover { background: rgba(255,255,255,0.1); }
+
+.kb-btn-save {
+  background: rgba(0, 229, 204, 0.12);
+  border: 1px solid rgba(0, 229, 204, 0.45);
+  color: var(--color-neon-cyan, #00E5CC);
+  border-radius: 8px;
+  padding: 8px 20px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+.kb-btn-save:hover { background: rgba(0, 229, 204, 0.2); transform: translateY(-1px); }
+.kb-btn-save:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
