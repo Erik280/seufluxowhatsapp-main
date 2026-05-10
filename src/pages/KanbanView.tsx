@@ -1,6 +1,4 @@
 import { useState, useEffect } from 'react';
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import type { DropResult } from '@hello-pangea/dnd';
 import { supabase, API_BASE_URL } from '../supabaseClient';
 import './KanbanView.css';
 
@@ -24,6 +22,9 @@ export default function KanbanView() {
   const [stages, setStages] = useState<KanbanStage[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [companyId, setCompanyId] = useState<string>('');
+  
+  // Drag state
+  const [draggedContactId, setDraggedContactId] = useState<string | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -79,23 +80,49 @@ export default function KanbanView() {
     init();
   }, []);
 
-  const onDragEnd = async (result: DropResult) => {
-    const { destination, draggableId } = result;
-    if (!destination) return;
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, contactId: string) => {
+    setDraggedContactId(contactId);
+    e.dataTransfer.setData('text/plain', contactId);
+    // Para efeito visual de "movimento"
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => {
+      const el = document.getElementById(`card-${contactId}`);
+      if (el) el.classList.add('dragging');
+    }, 0);
+  };
 
-    const newStageId = destination.droppableId;
-    
-    // Optimistic UI update
-    setContacts(prev => prev.map(c => c.id === draggableId ? { ...c, stage_id: newStageId } : c));
+  const handleDragEnd = (e: React.DragEvent<HTMLDivElement>, contactId: string) => {
+    setDraggedContactId(null);
+    const el = document.getElementById(`card-${contactId}`);
+    if (el) el.classList.remove('dragging');
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault(); // Necessário para permitir o "drop"
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>, stageId: string) => {
+    e.preventDefault();
+    const contactId = e.dataTransfer.getData('text/plain');
+    if (!contactId || contactId === draggedContactId === false) return;
+
+    // Se soltou na mesma coluna, ignora
+    const contact = contacts.find(c => c.id === contactId);
+    if (!contact || contact.stage_id === stageId) return;
+
+    // Atualização otimista
+    setContacts(prev => prev.map(c => c.id === contactId ? { ...c, stage_id: stageId } : c));
 
     try {
-      await fetch(`${API_BASE_URL}/api/contacts/${draggableId}/stage`, {
+      await fetch(`${API_BASE_URL}/api/contacts/${contactId}/stage`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ stage_id: newStageId })
+        body: JSON.stringify({ stage_id: stageId })
       });
     } catch (error) {
       console.error("Failed to update contact stage", error);
+      // Aqui poderíamos reverter o estado otimista em caso de erro
     }
   };
 
@@ -124,61 +151,53 @@ export default function KanbanView() {
         </button>
       </header>
 
-      <DragDropContext onDragEnd={onDragEnd}>
-        <div className="kanban-board">
-          {stages.map(stage => {
-            const stageContacts = contacts.filter(c => c.stage_id === stage.id);
-            return (
-              <div key={stage.id} className="kanban-column">
-                <div className="column-header" style={{ borderTopColor: stage.color }}>
-                  <h3 onClick={async () => {
-                    const newName = prompt("Renomear coluna:", stage.name);
-                    if (newName && newName !== stage.name) {
-                       await fetch(`${API_BASE_URL}/api/kanban_stages/${stage.id}`, {
-                         method: 'PATCH',
-                         headers: { 'Content-Type': 'application/json' },
-                         body: JSON.stringify({ name: newName })
-                       });
-                    }
-                  }} style={{ cursor: 'pointer' }}>{stage.name}</h3>
-                  <span className="task-count">{stageContacts.length}</span>
-                </div>
-
-                <Droppable droppableId={stage.id}>
-                  {(provided, snapshot) => (
-                    <div
-                      className={`task-list ${snapshot.isDraggingOver ? 'dragging-over' : ''}`}
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
-                    >
-                      {stageContacts.map((contact, index) => (
-                        <Draggable key={contact.id} draggableId={contact.id} index={index}>
-                          {(provided, snapshot) => (
-                            <div
-                              className={`task-card ${snapshot.isDragging ? 'dragging' : ''}`}
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              {...provided.dragHandleProps}
-                            >
-                              <div className="task-name">{contact.name || contact.phone}</div>
-                              <div className="task-footer">
-                                <span className="task-time">
-                                  {contact.last_message ? new Date(contact.last_message).toLocaleDateString() : 'Novo'}
-                                </span>
-                              </div>
-                            </div>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
+      <div className="kanban-board">
+        {stages.map(stage => {
+          const stageContacts = contacts.filter(c => c.stage_id === stage.id);
+          return (
+            <div 
+              key={stage.id} 
+              className="kanban-column"
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, stage.id)}
+            >
+              <div className="column-header" style={{ borderTopColor: stage.color }}>
+                <h3 onClick={async () => {
+                  const newName = prompt("Renomear coluna:", stage.name);
+                  if (newName && newName !== stage.name) {
+                     await fetch(`${API_BASE_URL}/api/kanban_stages/${stage.id}`, {
+                       method: 'PATCH',
+                       headers: { 'Content-Type': 'application/json' },
+                       body: JSON.stringify({ name: newName })
+                     });
+                  }
+                }} style={{ cursor: 'pointer' }}>{stage.name}</h3>
+                <span className="task-count">{stageContacts.length}</span>
               </div>
-            );
-          })}
-        </div>
-      </DragDropContext>
+
+              <div className="task-list">
+                {stageContacts.map(contact => (
+                  <div
+                    id={`card-${contact.id}`}
+                    key={contact.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, contact.id)}
+                    onDragEnd={(e) => handleDragEnd(e, contact.id)}
+                    className="task-card"
+                  >
+                    <div className="task-name">{contact.name || contact.phone}</div>
+                    <div className="task-footer">
+                      <span className="task-time">
+                        {contact.last_message ? new Date(contact.last_message).toLocaleDateString() : 'Novo'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
