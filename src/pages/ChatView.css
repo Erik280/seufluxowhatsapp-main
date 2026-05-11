@@ -133,20 +133,42 @@
 .chat-header-row {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   margin-bottom: 4px;
+}
+
+.chat-time-and-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
 }
 
 .chat-name {
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--color-text-primary, #ffffff);
+  font-size: 0.95rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 70%;
 }
 
 .chat-time {
   font-size: 0.75rem;
-  color: var(--color-text-muted);
+  color: var(--color-text-muted, #8892b0);
+}
+
+.unread-badge {
+  background-color: #00E5CC;
+  color: #0a0a0a;
+  font-size: 0.65rem;
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 12px;
+  min-width: 18px;
+  text-align: center;
+  box-shadow: 0 0 8px rgba(0, 229, 204, 0.4);
 }
 
 .chat-preview {

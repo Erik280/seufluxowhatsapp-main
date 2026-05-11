@@ -138,6 +138,24 @@ async def send_contact_presence(contact_id: str, body: PresenceRequest):
     return {"status": "ok", "presence": body.presence}
 
 # ========================
+# READ STATUS
+# ========================
+
+@router.post("/contacts/{contact_id}/read")
+async def mark_contact_as_read(contact_id: str):
+    """Zera o contador de mensagens não lidas de um contato."""
+    db = get_supabase()
+    result = (
+        db.table("contacts")
+        .update({"unread_count": 0})
+        .eq("id", contact_id)
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    return {"status": "ok", "contact_id": contact_id, "unread_count": 0}
+
+# ========================
 # CHAT FLOWS
 # ========================
 

@@ -13,6 +13,7 @@ interface Contact {
   last_message: string;
   stage_id: string | null;
   avatar_url?: string | null;
+  unread_count?: number;
 }
 
 interface Message {
@@ -757,7 +758,19 @@ export default function ChatView() {
             <div 
               key={contact.id} 
               className={`chat-item ${selectedContact?.id === contact.id ? 'active' : ''}`} 
-              onClick={() => setSelectedContact(contact)}
+              onClick={async () => {
+                setSelectedContact(contact);
+                if (contact.unread_count && contact.unread_count > 0) {
+                  // Zerar localmente primeiro para UX rápido
+                  setContacts(prev => prev.map(c => c.id === contact.id ? { ...c, unread_count: 0 } : c));
+                  // Chamar API para zerar no banco
+                  try {
+                    await fetch(`${API_BASE_URL}/api/contacts/${contact.id}/read`, { method: 'POST' });
+                  } catch (e) {
+                    console.error("Failed to mark as read", e);
+                  }
+                }
+              }}
             >
               <div className="avatar">
                 {contact.avatar_url ? (
@@ -769,9 +782,14 @@ export default function ChatView() {
               <div className="chat-info">
                 <div className="chat-header-row">
                   <span className="chat-name">{contact.name || contact.phone}</span>
-                  <span className="chat-time">
-                    {contact.last_message ? new Date(contact.last_message).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}
-                  </span>
+                  <div className="chat-time-and-badge">
+                    <span className="chat-time">
+                      {contact.last_message ? new Date(contact.last_message).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}
+                    </span>
+                    {(contact.unread_count || 0) > 0 && (
+                      <span className="unread-badge">{contact.unread_count}</span>
+                    )}
+                  </div>
                 </div>
                 <div className="chat-preview">{contact.phone}</div>
                 <div className="chat-tags">

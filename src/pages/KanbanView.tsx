@@ -25,6 +25,7 @@ interface Contact {
   created_at: string;
   flow_current_flow_id?: string | null;
   flow_current_step_index?: number | null;
+  unread_count?: number;
 }
 
 interface Flow {

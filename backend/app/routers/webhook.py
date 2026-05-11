@@ -267,8 +267,12 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
         "content": message_text or None,
     }).execute()
 
-    # Atualizar last_message do contato
-    db.table("contacts").update({"last_message": "now()"}).eq("id", contact_id).execute()
+    # Atualizar last_message e incrementar unread_count do contato
+    current_unread = contact.get("unread_count") or 0
+    db.table("contacts").update({
+        "last_message": "now()",
+        "unread_count": current_unread + 1
+    }).eq("id", contact_id).execute()
 
     # ── 5. Verificar roteamento por keyword ──
     # (Aplica a todos os status: se o lead enviar uma keyword, ele entra no fluxo)
