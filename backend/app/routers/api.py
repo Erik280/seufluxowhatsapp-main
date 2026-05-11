@@ -45,6 +45,46 @@ async def list_contacts(company_id: str):
     return result.data or []
 
 
+@router.post("/contacts", response_model=ContactResponse, status_code=201)
+async def create_contact(body: ContactCreate):
+    """Cria um novo contato manualmente."""
+    db = get_supabase()
+    
+    # 1. Limpar telefone (apenas números)
+    phone = re.sub(r"\D", "", body.phone)
+    if not phone:
+        raise HTTPException(status_code=400, detail="Invalid phone number")
+        
+    # 2. Verificar se já existe
+    check = db.table("contacts").select("id").eq("company_id", body.company_id).eq("phone", phone).execute()
+    if check.data:
+        raise HTTPException(status_code=400, detail="Contact already exists with this phone")
+        
+    # 3. Buscar stage padrão se não enviado
+    stage_id = None
+    stage_res = db.table("kanban_stages").select("id").eq("company_id", body.company_id).eq("is_default", True).limit(1).execute()
+    if stage_res.data:
+        stage_id = stage_res.data[0]["id"]
+
+    # 4. Inserir
+    result = (
+        db.table("contacts")
+        .insert({
+            "company_id": body.company_id,
+            "phone": phone,
+            "name": body.name,
+            "chat_status": body.chat_status.value,
+            "stage_id": stage_id
+        })
+        .execute()
+    )
+    
+    if not result.data:
+        raise HTTPException(status_code=500, detail="Error creating contact")
+        
+    return result.data[0]
+
+
 @router.patch("/contacts/{contact_id}/status")
 async def update_contact_status(contact_id: str, body: ContactStatusUpdate):
     """Alterna o chat_status de um contato entre 'bot' e 'human'."""
@@ -324,18 +364,20 @@ async def send_manual_media(
     elif media_type == "video":
         resp = await evolution.send_video(phone, media_url)
     else:
-        # evolution wrapper might not support generic document yet, fallback to text or add generic sendMedia
-        raise HTTPException(status_code=400, detail="Unsupported media type")
+        # Documento (PDF, DOCX, etc.)
+        original_filename = re.sub(r'[^a-zA-Z0-9._-]', '_', file.filename or "documento")
+        resp = await evolution.send_document(phone, media_url, filename=original_filename)
         
     if "error" in resp:
         raise HTTPException(status_code=500, detail=f"Evolution API Error: {resp['error']}")
         
     # 4. Save to Database
+    original_name = file.filename or "documento"
     msg_result = db.table("messages").insert({
         "company_id": company_id,
         "contact_id": contact_id,
         "direction": "out",
-        "content": f"[{media_type.upper()}] enviado.",
+        "content": f"[{media_type.upper()}] {original_name}",
         "media_url": media_url,
         "media_type": media_type
     }).execute()
@@ -468,7 +510,8 @@ async def send_media_library(body: SendMediaLibraryRequest):
     elif media_type == "video":
         resp = await evolution.send_video(phone, media_url)
     else:
-        raise HTTPException(status_code=400, detail="Unsupported media type")
+        # Documento (PDF, DOCX, etc.) da biblioteca
+        resp = await evolution.send_document(phone, media_url, filename=media_name)
         
     if "error" in resp:
         logger.error(f"Erro Evolution API ao enviar mídia da biblioteca: {resp['error']}")

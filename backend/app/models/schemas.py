@@ -87,6 +87,7 @@ class ContactResponse(ContactBase):
     id: str
     company_id: str
     profile_pic: Optional[str] = None
+    avatar_url: Optional[str] = None
     assigned_to: Optional[str] = None
     last_message: Optional[datetime] = None
     created_at: datetime

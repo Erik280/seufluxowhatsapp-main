@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { FolderOpen, Plus, Mic, Trash2, Send, Calendar } from 'lucide-react';
+import { FolderOpen, Plus, Mic, Trash2, Send, Calendar, FileText } from 'lucide-react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
 import './ChatView.css';
 
@@ -12,6 +12,7 @@ interface Contact {
   chat_status: 'bot' | 'human';
   last_message: string;
   stage_id: string | null;
+  avatar_url?: string | null;
 }
 
 interface Message {
@@ -59,6 +60,12 @@ export default function ChatView() {
   const [showMediaModal, setShowMediaModal] = useState(false);
   const [libraryMedia, setLibraryMedia] = useState<any[]>([]);
 
+  // New Chat Modal state
+  const [showNewChatModal, setShowNewChatModal] = useState(false);
+  const [newChatName, setNewChatName] = useState('');
+  const [newChatPhone, setNewChatPhone] = useState('');
+  const [isCreatingChat, setIsCreatingChat] = useState(false);
+
   // Voice recording state
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -71,6 +78,10 @@ export default function ChatView() {
   const isTypingRef = useRef(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Drag-and-drop state
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCounterRef = useRef(0);
 
   // Scroll to bottom of messages
   const scrollToBottom = () => {
@@ -200,11 +211,66 @@ export default function ChatView() {
           text: text
         })
       });
-      // The Realtime subscription will add the final message or we can just rely on the webhook
     } catch (error) {
       console.error("Failed to send message", error);
     }
   };
+
+  // ── Shared file upload handler (used by button AND drag-and-drop) ──
+  const handleUploadFile = useCallback(async (file: File) => {
+    if (!selectedContact || !companyId) return;
+    const formData = new FormData();
+    formData.append('contact_id', selectedContact.id);
+    formData.append('company_id', companyId);
+    formData.append('file', file);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/messages/send/media`, {
+        method: 'POST',
+        body: formData
+      });
+      if (!response.ok) {
+        const errData = await response.json();
+        showToast(`Erro ao enviar arquivo: ${errData.detail || 'Erro desconhecido'}`, 'error');
+      }
+    } catch (error) {
+      console.error('Upload falhou', error);
+      showToast('Falha ao enviar arquivo.', 'error');
+    }
+  }, [selectedContact, companyId]);
+
+  // ── Drag & Drop handlers ─────────────────────────────────────────
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current += 1;
+    if (dragCounterRef.current === 1) setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current -= 1;
+    if (dragCounterRef.current === 0) setIsDragging(false);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current = 0;
+    setIsDragging(false);
+    if (!selectedContact) return;
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length === 0) return;
+    // Upload all dropped files sequentially
+    for (const file of files) {
+      await handleUploadFile(file);
+    }
+  }, [selectedContact, handleUploadFile]);
 
   // ── Voice Recording ──────────────────────────────────────────
 
@@ -529,19 +595,63 @@ export default function ChatView() {
     }
   };
 
+  const handleCreateChat = async () => {
+    if (!newChatName.trim() || !newChatPhone.trim() || !companyId) {
+      showToast('Por favor, preencha nome e telefone.', 'error');
+      return;
+    }
+
+    setIsCreatingChat(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/contacts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          company_id: companyId,
+          name: newChatName.trim(),
+          phone: newChatPhone.trim(),
+          chat_status: 'human' // Start as human for manual chats usually
+        })
+      });
+
+      if (res.ok) {
+        const newContact = await res.json();
+        setContacts([newContact, ...contacts]);
+        setSelectedContact(newContact);
+        setShowNewChatModal(false);
+        setNewChatName('');
+        setNewChatPhone('');
+        showToast('Conversa criada com sucesso!');
+      } else {
+        const error = await res.json();
+        showToast(error.detail || 'Erro ao criar conversa.', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Erro ao conectar com o servidor.', 'error');
+    } finally {
+      setIsCreatingChat(false);
+    }
+  };
+
   return (
     <div className="chat-view-root">
       {/* Column 1: Chat List */}
       <section className="chat-list-col">
         <header className="chat-list-header">
           <h2>Conversas</h2>
-          <div className="search-bar">
-            <input
-              type="text"
-              placeholder="Buscar por nome ou telefone..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-            />
+          <div className="search-row">
+            <div className="search-bar">
+              <input
+                type="text"
+                placeholder="Buscar por nome ou telefone..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <button className="new-chat-btn" onClick={() => setShowNewChatModal(true)} title="Nova Conversa">
+              <Plus size={20} />
+            </button>
           </div>
         </header>
         <div className="chat-list">
@@ -568,7 +678,13 @@ export default function ChatView() {
               className={`chat-item ${selectedContact?.id === contact.id ? 'active' : ''}`} 
               onClick={() => setSelectedContact(contact)}
             >
-              <div className="avatar">{contact.name ? contact.name.substring(0, 2).toUpperCase() : '👤'}</div>
+              <div className="avatar">
+                {contact.avatar_url ? (
+                  <img src={contact.avatar_url} alt={contact.name || contact.phone} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                ) : (
+                  contact.name ? contact.name.substring(0, 2).toUpperCase() : '👤'
+                )}
+              </div>
               <div className="chat-info">
                 <div className="chat-header-row">
                   <span className="chat-name">{contact.name || contact.phone}</span>
@@ -604,7 +720,13 @@ export default function ChatView() {
         {selectedContact ? (
           <>
             <header className="message-header">
-              <div className="avatar">{selectedContact.name ? selectedContact.name.substring(0, 2).toUpperCase() : '👤'}</div>
+              <div className="avatar">
+                {selectedContact.avatar_url ? (
+                  <img src={selectedContact.avatar_url} alt={selectedContact.name || selectedContact.phone} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                ) : (
+                  selectedContact.name ? selectedContact.name.substring(0, 2).toUpperCase() : '👤'
+                )}
+              </div>
               <div className="header-info">
                 <h3>{selectedContact.name || selectedContact.phone}</h3>
                 <span className="status" style={{ color: selectedContact.chat_status === 'bot' ? '#00FF88' : '#ff6b6b' }}>
@@ -612,13 +734,42 @@ export default function ChatView() {
                 </span>
               </div>
             </header>
-            <div className="messages-container">
+            <div
+              className="messages-container"
+              onDragEnter={handleDragEnter}
+              onDragLeave={handleDragLeave}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+            >
+              {/* Drag overlay */}
+              {isDragging && (
+                <div className="drag-overlay">
+                  <div className="drag-overlay-inner">
+                    <FileText size={48} />
+                    <p>Solte o arquivo aqui para enviar</p>
+                  </div>
+                </div>
+              )}
               {messages.map((msg, idx) => (
                 <div key={msg.id || idx} className={`message ${msg.direction}`}>
                   <div className="bubble">
                     {msg.media_type === 'image' && <img src={msg.media_url!} alt="midia" style={{maxWidth: '100%', borderRadius: '8px'}} />}
                     {msg.media_type === 'audio' && <audio src={msg.media_url!} controls style={{maxWidth: '200px'}} />}
-                    {msg.content}
+                    {msg.media_type === 'document' && (
+                      <a
+                        href={msg.media_url!}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="pdf-bubble"
+                      >
+                        <FileText size={28} className="pdf-icon" />
+                        <span className="pdf-name">
+                          {msg.content.replace(/^\[DOCUMENT\]\s*/i, '') || 'Documento'}
+                        </span>
+                        <span className="pdf-open">Abrir</span>
+                      </a>
+                    )}
+                    {msg.media_type !== 'document' && msg.content}
                   </div>
                   <span className="time">{new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                 </div>
@@ -660,24 +811,11 @@ export default function ChatView() {
                       style={{ display: 'none' }} 
                       onChange={async (e) => {
                         const file = e.target.files?.[0];
-                        if (!file || !selectedContact || !companyId) return;
-                        
-                        const formData = new FormData();
-                        formData.append("contact_id", selectedContact.id);
-                        formData.append("company_id", companyId);
-                        formData.append("file", file);
-
-                        try {
-                          await fetch(`${API_BASE_URL}/api/messages/send/media`, {
-                            method: 'POST',
-                            body: formData
-                          });
-                          e.target.value = ''; // reset
-                        } catch (error) {
-                          console.error("Upload falhou", error);
-                        }
+                        if (!file) return;
+                        await handleUploadFile(file);
+                        e.target.value = ''; // reset
                       }}
-                      accept="image/*,audio/*,video/*"
+                      accept="image/*,audio/*,video/*,application/pdf,.pdf"
                     />
                     <Plus size={20} />
                   </label>
@@ -722,7 +860,13 @@ export default function ChatView() {
         {selectedContact ? (
           <div className="crm-content">
             <header className="crm-header">
-              <div className="avatar large">{selectedContact.name ? selectedContact.name.substring(0, 2).toUpperCase() : '👤'}</div>
+              <div className="avatar large">
+                {selectedContact.avatar_url ? (
+                  <img src={selectedContact.avatar_url} alt={selectedContact.name || selectedContact.phone} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                ) : (
+                  selectedContact.name ? selectedContact.name.substring(0, 2).toUpperCase() : '👤'
+                )}
+              </div>
               <h2>{selectedContact.name || 'Sem Nome'}</h2>
               <p className="phone">{selectedContact.phone}</p>
             </header>
@@ -1001,6 +1145,52 @@ export default function ChatView() {
       {toast && (
         <div className={`chat-toast ${toast.type}`}>
           {toast.message}
+        </div>
+      )}
+
+      {showNewChatModal && (
+        <div className="schedule-modal-overlay">
+          <div className="schedule-modal-content" style={{ maxWidth: '400px' }}>
+            <div className="schedule-modal-header">
+              <h2>Nova Conversa</h2>
+              <button className="close-btn" onClick={() => setShowNewChatModal(false)}>✕</button>
+            </div>
+            <div className="schedule-modal-body">
+              <div className="crm-field">
+                <label>Nome do Lead</label>
+                <input 
+                  type="text" 
+                  className="crm-input" 
+                  value={newChatName} 
+                  onChange={e => setNewChatName(e.target.value)}
+                  placeholder="Ex: João Silva"
+                />
+              </div>
+              <div className="crm-field">
+                <label>Telefone / WhatsApp</label>
+                <input 
+                  type="text" 
+                  className="crm-input" 
+                  value={newChatPhone} 
+                  onChange={e => setNewChatPhone(e.target.value)}
+                  placeholder="Ex: 5511999999999"
+                />
+                <small style={{ color: '#8892b0', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>
+                  Use o formato com DDI e DDD (ex: 55119...)
+                </small>
+              </div>
+            </div>
+            <div className="schedule-modal-footer">
+              <button className="cancel-btn" onClick={() => setShowNewChatModal(false)}>Cancelar</button>
+              <button 
+                className="confirm-btn" 
+                onClick={handleCreateChat}
+                disabled={isCreatingChat}
+              >
+                {isCreatingChat ? 'Criando...' : 'Iniciar Conversa'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

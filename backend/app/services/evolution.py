@@ -113,6 +113,22 @@ class EvolutionAPI:
             }
         )
 
+    # ── Documento (PDF, etc.) ────────────────────────────────
+
+    async def send_document(self, phone: str, doc_url: str, filename: str = "", caption: str = "") -> dict:
+        """Envia um documento (PDF, DOCX, etc.) como arquivo anexo."""
+        safe_name = filename or doc_url.split("/")[-1]
+        return await self._post(
+            f"/message/sendMedia/{self.instance}",
+            {
+                "number": phone,
+                "mediatype": "document",
+                "media": doc_url,
+                "caption": caption,
+                "fileName": safe_name,
+            }
+        )
+
 class EvolutionAdminAPI:
     """Client para gerenciar instâncias na Evolution API v2 (requer Global Key)."""
 

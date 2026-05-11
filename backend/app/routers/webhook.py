@@ -227,6 +227,37 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
 
     contact_id = contact["id"]
     chat_status = contact.get("chat_status", "human")
+    
+    # ── 4a. Agendar sincronização de avatar (a cada 14 dias ou se não existir) ──
+    avatar_updated_at = contact.get("avatar_updated_at")
+    should_sync_avatar = False
+    
+    if is_new_contact or not avatar_updated_at:
+        should_sync_avatar = True
+    else:
+        from datetime import datetime, timezone
+        # Parse ISO format string from Supabase
+        # Handling the 'Z' format correctly
+        updated_str = avatar_updated_at.replace('Z', '+00:00')
+        try:
+            last_updated = datetime.fromisoformat(updated_str)
+            days_since_update = (datetime.now(timezone.utc) - last_updated).days
+            if days_since_update >= 14:
+                should_sync_avatar = True
+        except ValueError:
+            # Fallback for parsing errors
+            should_sync_avatar = True
+            
+    if should_sync_avatar:
+        from app.services.thumbnail import sync_contact_profile_picture
+        evo_client = EvolutionAPI(instance=instance_name, apikey=evolution_apikey)
+        background_tasks.add_task(
+            sync_contact_profile_picture,
+            company_id=company_id,
+            contact_id=contact_id,
+            phone=phone,
+            evolution_client=evo_client
+        )
 
     # ── 4. Salvar mensagem recebida ──
     db.table("messages").insert({

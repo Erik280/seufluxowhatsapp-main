@@ -43,6 +43,11 @@
   flex-direction: column;
   gap: 16px;
   flex: 1;
+  overflow-y: auto;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  display: none;
 }
 
 .nav-btn {
