@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
-import { Send, File, Image as ImageIcon, Video, Mic } from 'lucide-react';
+import { Send, File } from 'lucide-react';
 import '../pages/ChatView.css'; // Reusing chat styles
 
 interface Message {
