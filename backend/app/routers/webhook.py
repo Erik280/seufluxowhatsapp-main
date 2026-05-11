@@ -240,8 +240,8 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
     db.table("contacts").update({"last_message": "now()"}).eq("id", contact_id).execute()
 
     # ── 5. Verificar roteamento por keyword ──
-    # (Aplica a novos leads e também a leads existentes em modo bot)
-    if chat_status == "bot" and message_text:
+    # (Aplica a todos os status: se o lead enviar uma keyword, ele entra no fluxo)
+    if message_text:
         keyword_stage = _find_keyword_stage(db, company_id, message_text)
 
         if keyword_stage and keyword_stage["id"] != contact.get("stage_id"):
@@ -296,32 +296,37 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
                 "flow": None,
             }
 
-    # ── 6. Rotear conforme chat_status ──
+    # ── 6. Verificar Fluxos por Keyword Direto ──
+    if message_text:
+        flow = find_matching_flow(company_id, message_text)
+        if flow:
+            if _should_trigger_flow(db, contact, flow):
+                # Se o lead estava como humano, o disparo da keyword ativa o bot
+                if chat_status == "human":
+                    db.table("contacts").update({"chat_status": "bot"}).eq("id", contact_id).execute()
+                    chat_status = "bot"
+                    
+                evo = EvolutionAPI(instance=instance_name, apikey=evolution_apikey)
+                background_tasks.add_task(
+                    execute_flow,
+                    company_id=company_id,
+                    contact_id=contact_id,
+                    contact_phone=phone,
+                    flow_id=flow["id"],
+                    evolution=evo,
+                    contact=contact,
+                )
+                logger.info(f"[{phone}] Modo BOT — fluxo '{flow['name']}' disparado.")
+            else:
+                logger.info(f"[{phone}] Modo BOT — fluxo '{flow['name']}' ignorado (trigger_once).")
+            return {"status": "ok", "mode": "bot", "flow": flow["name"]}
+
+    # ── 7. Rotear conforme chat_status ──
 
     if chat_status == "human":
         logger.info(f"[{phone}] Modo HUMANO — mensagem salva para atendente.")
         return {"status": "ok", "mode": "human"}
 
     else:
-        # Modo bot: buscar fluxo por trigger_keyword (comportamento original)
-        if message_text:
-            flow = find_matching_flow(company_id, message_text)
-            if flow:
-                if _should_trigger_flow(db, contact, flow):
-                    evo = EvolutionAPI(instance=instance_name, apikey=evolution_apikey)
-                    background_tasks.add_task(
-                        execute_flow,
-                        company_id=company_id,
-                        contact_id=contact_id,
-                        contact_phone=phone,
-                        flow_id=flow["id"],
-                        evolution=evo,
-                        contact=contact,
-                    )
-                    logger.info(f"[{phone}] Modo BOT — fluxo '{flow['name']}' disparado.")
-                else:
-                    logger.info(f"[{phone}] Modo BOT — fluxo '{flow['name']}' ignorado (trigger_once).")
-                return {"status": "ok", "mode": "bot", "flow": flow["name"]}
-
         logger.info(f"[{phone}] Modo BOT — nenhum fluxo para: '{message_text[:50]}'")
         return {"status": "ok", "mode": "bot", "flow": None}
