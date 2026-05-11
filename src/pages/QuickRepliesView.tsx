@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Trash2, Plus, Zap } from 'lucide-react';
-import { API_BASE_URL } from '../supabaseClient';
+import { API_BASE_URL, supabase } from '../supabaseClient';
 import './QuickRepliesView.css';
 
 interface QuickReply {
@@ -24,23 +24,41 @@ export default function QuickRepliesView() {
   // Toast
   const [toast, setToast] = useState<{message: string, type: 'success'|'error'} | null>(null);
 
-  const companyId = localStorage.getItem('companyId');
+  const [companyId, setCompanyId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (companyId) {
-      fetchReplies();
-    }
-  }, [companyId]);
+    const init = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setLoading(false);
+        return;
+      }
+      
+      const { data: userData } = await supabase
+        .from('users')
+        .select('company_id')
+        .eq('auth_id', session.user.id)
+        .single();
+        
+      if (userData && userData.company_id) {
+        setCompanyId(userData.company_id);
+        fetchReplies(userData.company_id);
+      } else {
+        setLoading(false);
+      }
+    };
+    init();
+  }, []);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   };
 
-  const fetchReplies = async () => {
+  const fetchReplies = async (compId: string) => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE_URL}/api/quick-replies/${companyId}`);
+      const res = await fetch(`${API_BASE_URL}/api/quick-replies/${compId}`);
       if (res.ok) {
         const data = await res.json();
         setReplies(data);
@@ -71,12 +89,11 @@ export default function QuickRepliesView() {
         })
       });
 
-      if (res.ok) {
         showToast('Resposta rápida criada!');
         setShowModal(false);
         setNewShortcut('');
         setNewContent('');
-        fetchReplies();
+        if (companyId) fetchReplies(companyId);
       } else {
         const err = await res.json();
         showToast(err.detail || 'Erro ao criar', 'error');
