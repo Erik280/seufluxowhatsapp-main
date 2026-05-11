@@ -17,6 +17,7 @@ interface KanbanStage {
 
 interface Contact {
   id: string;
+  company_id: string;
   name: string;
   phone: string;
   last_message: string;
