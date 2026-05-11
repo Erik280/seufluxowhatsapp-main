@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { FolderOpen, Plus, Mic, Trash2, Send, Calendar, FileText } from 'lucide-react';
+import { FolderOpen, Plus, Mic, Trash2, Send, Calendar, FileText, Zap } from 'lucide-react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
 import './ChatView.css';
 

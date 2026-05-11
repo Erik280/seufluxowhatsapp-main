@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Trash2, Plus, Zap } from 'lucide-react';
-import { API_BASE_URL } from '../config';
+import { API_BASE_URL } from '../supabaseClient';
 import './QuickRepliesView.css';
 
 interface QuickReply {
