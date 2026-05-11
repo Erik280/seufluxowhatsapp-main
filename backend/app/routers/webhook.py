@@ -15,6 +15,90 @@ logger = logging.getLogger("seufluxo.webhook")
 router = APIRouter(prefix="/api/webhook", tags=["Webhook"])
 
 
+async def process_incoming_media(
+    message_id: str,
+    company_id: str,
+    instance_name: str,
+    evolution_apikey: str,
+    message_obj: dict
+):
+    """
+    Tenta baixar o base64 da mídia (áudio, imagem, vídeo, doc) da Evolution API,
+    faz upload no MinIO e atualiza a mensagem no banco com a URL e tipo corretos.
+    """
+    try:
+        from app.services.evolution import EvolutionAPI
+        from app.services.storage import StorageService
+        import base64
+        import uuid
+
+        # Identificar tipo de mídia
+        media_type = None
+        if "audioMessage" in message_obj:
+            media_type = "audio"
+        elif "imageMessage" in message_obj:
+            media_type = "image"
+        elif "videoMessage" in message_obj:
+            media_type = "video"
+        elif "documentMessage" in message_obj:
+            media_type = "document"
+            
+        if not media_type:
+            return
+
+        logger.info(f"Processando mídia recebida ({media_type}) para mensagem {message_id}...")
+        
+        # Obter o Base64 da Evolution API
+        evo = EvolutionAPI(instance_name, evolution_apikey)
+        resp = await evo.get_base64_from_message(message_obj)
+        if "error" in resp:
+            logger.error(f"Erro ao buscar media base64: {resp['error']}")
+            return
+
+        b64_string = resp.get("base64", "")
+        if not b64_string:
+            logger.warning(f"Base64 vazio retornado pela Evolution API para msg {message_id}")
+            return
+
+        # Separar prefixo do conteúdo real do base64 (ex: data:audio/ogg;base64,xxxxx)
+        if "," in b64_string:
+            header, b64_data = b64_string.split(",", 1)
+            content_type = header.split(";")[0].replace("data:", "")
+        else:
+            b64_data = b64_string
+            content_type = "application/octet-stream"
+            
+        file_bytes = base64.b64decode(b64_data)
+        
+        # Determinar extensão
+        ext = "bin"
+        if "ogg" in content_type: ext = "ogg"
+        elif "mp4" in content_type: ext = "mp4"
+        elif "jpeg" in content_type or "jpg" in content_type: ext = "jpg"
+        elif "png" in content_type: ext = "png"
+        elif "pdf" in content_type: ext = "pdf"
+        elif "mpeg" in content_type: ext = "mp3"
+        elif "wa" in content_type: ext = "wav"
+        
+        filename = f"{company_id}/in_{uuid.uuid4().hex}.{ext}"
+        
+        # Upload para MinIO
+        storage = StorageService()
+        media_url = storage.upload_file(file_bytes, filename, content_type)
+        
+        from app.database import get_supabase
+        # Atualizar banco de dados
+        db = get_supabase()
+        db.table("messages").update({
+            "media_url": media_url,
+            "media_type": media_type
+        }).eq("id", message_id).execute()
+        
+        logger.info(f"Mídia salva com sucesso: {media_url}")
+        
+    except Exception as e:
+        logger.error(f"Erro ao processar mídia recebida: {e}")
+
 def _get_or_create_default_stage(db, company_id: str) -> str | None:
     """
     Retorna o ID do stage padrão (is_default=True) da empresa.
@@ -260,12 +344,27 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
         )
 
     # ── 4. Salvar mensagem recebida ──
-    db.table("messages").insert({
+    msg_res = db.table("messages").insert({
         "company_id": company_id,
         "contact_id": contact_id,
         "direction": "in",
         "content": message_text or None,
     }).execute()
+    
+    if msg_res.data:
+        message_id = msg_res.data[0]["id"]
+        
+        # Disparar background task para mídia se for áudio/imagem/vídeo/doc
+        has_media = any(k in message_obj for k in ["audioMessage", "imageMessage", "videoMessage", "documentMessage"])
+        if has_media:
+            background_tasks.add_task(
+                process_incoming_media,
+                message_id=message_id,
+                company_id=company_id,
+                instance_name=instance_name,
+                evolution_apikey=evolution_apikey,
+                message_obj=message_obj
+            )
 
     # Atualizar last_message e incrementar unread_count do contato
     current_unread = contact.get("unread_count") or 0

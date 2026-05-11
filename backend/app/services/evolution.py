@@ -131,6 +131,15 @@ class EvolutionAPI:
             }
         )
 
+    async def get_base64_from_message(self, message_obj: dict) -> dict:
+        """Busca o base64 de uma mensagem de mídia (áudio, imagem, vídeo, documento)."""
+        return await self._post(
+            f"/chat/getBase64FromMediaMessage/{self.instance}",
+            {
+                "message": message_obj
+            }
+        )
+
 class EvolutionAdminAPI:
     """Client para gerenciar instâncias na Evolution API v2 (requer Global Key)."""
 

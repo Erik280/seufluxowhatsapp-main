@@ -211,6 +211,9 @@ export default function ChatView() {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `contact_id=eq.${selectedContact.id}` }, (payload) => {
         setMessages(prev => [...prev, payload.new as Message]);
       })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter: `contact_id=eq.${selectedContact.id}` }, (payload) => {
+        setMessages(prev => prev.map(msg => msg.id === payload.new.id ? (payload.new as Message) : msg));
+      })
       .subscribe();
 
     return () => {
