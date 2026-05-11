@@ -45,6 +45,22 @@ def _get_or_create_default_stage(db, company_id: str) -> str | None:
     return new_stage.data[0]["id"] if new_stage.data else None
 
 
+def _should_trigger_flow(db, contact: dict, flow: dict) -> bool:
+    """Verifica se o fluxo deve ser disparado baseado na regra trigger_once."""
+    if not flow.get("trigger_once"):
+        return True
+    
+    completed = contact.get("completed_flows") or []
+    if flow["id"] in completed:
+        return False
+        
+    # Marca como completado
+    completed.append(flow["id"])
+    db.table("contacts").update({"completed_flows": completed}).eq("id", contact["id"]).execute()
+    contact["completed_flows"] = completed
+    return True
+
+
 def _find_keyword_stage(db, company_id: str, message_text: str) -> dict | None:
     """
     Verifica se o texto da mensagem contém alguma keyword de entrada
@@ -245,19 +261,28 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
             # Disparar fluxo automático do stage (se configurado)
             if keyword_stage.get("is_trigger_enabled") and keyword_stage.get("trigger_flow_id"):
                 flow_id = keyword_stage["trigger_flow_id"]
-                evo = EvolutionAPI(instance=instance_name, apikey=evolution_apikey)
-                background_tasks.add_task(
-                    execute_flow,
-                    company_id=company_id,
-                    contact_id=contact_id,
-                    contact_phone=phone,
-                    flow_id=flow_id,
-                    evolution=evo,
-                    contact=contact,
-                )
-                logger.info(
-                    f"[{phone}] Fluxo '{flow_id}' disparado por keyword routing."
-                )
+                
+                # Fetch flow to check trigger_once
+                flow_res = db.table("chat_flows").select("id, name, trigger_once").eq("id", flow_id).execute()
+                
+                if flow_res.data:
+                    stage_flow = flow_res.data[0]
+                    if _should_trigger_flow(db, contact, stage_flow):
+                        evo = EvolutionAPI(instance=instance_name, apikey=evolution_apikey)
+                        background_tasks.add_task(
+                            execute_flow,
+                            company_id=company_id,
+                            contact_id=contact_id,
+                            contact_phone=phone,
+                            flow_id=flow_id,
+                            evolution=evo,
+                            contact=contact,
+                        )
+                        logger.info(
+                            f"[{phone}] Fluxo '{flow_id}' disparado por keyword routing."
+                        )
+                    else:
+                        logger.info(f"[{phone}] Fluxo '{flow_id}' ignorado (trigger_once).")
                 return {
                     "status": "ok",
                     "mode": "keyword_routed",
@@ -282,17 +307,20 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
         if message_text:
             flow = find_matching_flow(company_id, message_text)
             if flow:
-                evo = EvolutionAPI(instance=instance_name, apikey=evolution_apikey)
-                background_tasks.add_task(
-                    execute_flow,
-                    company_id=company_id,
-                    contact_id=contact_id,
-                    contact_phone=phone,
-                    flow_id=flow["id"],
-                    evolution=evo,
-                    contact=contact,
-                )
-                logger.info(f"[{phone}] Modo BOT — fluxo '{flow['name']}' disparado.")
+                if _should_trigger_flow(db, contact, flow):
+                    evo = EvolutionAPI(instance=instance_name, apikey=evolution_apikey)
+                    background_tasks.add_task(
+                        execute_flow,
+                        company_id=company_id,
+                        contact_id=contact_id,
+                        contact_phone=phone,
+                        flow_id=flow["id"],
+                        evolution=evo,
+                        contact=contact,
+                    )
+                    logger.info(f"[{phone}] Modo BOT — fluxo '{flow['name']}' disparado.")
+                else:
+                    logger.info(f"[{phone}] Modo BOT — fluxo '{flow['name']}' ignorado (trigger_once).")
                 return {"status": "ok", "mode": "bot", "flow": flow["name"]}
 
         logger.info(f"[{phone}] Modo BOT — nenhum fluxo para: '{message_text[:50]}'")

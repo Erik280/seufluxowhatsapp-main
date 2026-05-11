@@ -24,10 +24,10 @@ interface FlowStep {
 interface Flow {
   id: string;
   name: string;
-  trigger_keyword: string;
   keywords: string[];
   description?: string;
   is_active: boolean;
+  trigger_once?: boolean;
   company_id: string;
 }
 
@@ -197,6 +197,7 @@ export default function FlowBuilderView() {
       trigger_keyword: newFlowName.trim().toLowerCase(),
       keywords: [],
       is_active: false,
+      trigger_once: false,
     }).select().single();
 
     if (result.error?.message?.includes('keywords')) {
@@ -206,6 +207,7 @@ export default function FlowBuilderView() {
         name: newFlowName.trim(),
         trigger_keyword: newFlowName.trim().toLowerCase(),
         is_active: false,
+        trigger_once: false,
       }).select().single();
     }
 
@@ -234,6 +236,7 @@ export default function FlowBuilderView() {
         keywords: selectedFlow.keywords,
         description: selectedFlow.description,
         is_active: selectedFlow.is_active,
+        trigger_once: selectedFlow.trigger_once,
       }).eq('id', selectedFlow.id).select();
 
       // Fallback: keywords column may not exist yet (migration pending)
@@ -242,6 +245,7 @@ export default function FlowBuilderView() {
         result = await supabase.from('chat_flows').update({
           name: selectedFlow.name,
           is_active: selectedFlow.is_active,
+          trigger_once: selectedFlow.trigger_once,
         }).eq('id', selectedFlow.id).select();
       }
 
@@ -466,6 +470,15 @@ export default function FlowBuilderView() {
               <button className={`fb-toggle ${selectedFlow.is_active ? 'active' : ''}`} onClick={toggleFlowActive}>
                 {selectedFlow.is_active ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
                 {selectedFlow.is_active ? 'Ativo' : 'Inativo'}
+              </button>
+              <button 
+                className={`fb-toggle ${selectedFlow.trigger_once ? 'active' : ''}`} 
+                onClick={() => setSelectedFlow({ ...selectedFlow, trigger_once: !selectedFlow.trigger_once })}
+                title="Se ativo, o contato só receberá este fluxo a primeira vez que enviar a palavra-chave"
+                style={{ marginLeft: '10px' }}
+              >
+                {selectedFlow.trigger_once ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
+                Disparar apenas 1x
               </button>
               <button className="fb-btn-save" onClick={saveFlowMeta} disabled={saving}>
                 <Save size={16} />

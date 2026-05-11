@@ -103,6 +103,7 @@ class FlowBase(BaseModel):
     name: str
     trigger_keyword: str
     is_active: bool = True
+    trigger_once: bool = False
 
 class FlowCreate(FlowBase):
     company_id: str
