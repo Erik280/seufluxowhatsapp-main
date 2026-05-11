@@ -85,9 +85,27 @@ async def execute_flow(
         logger.warning(f"Fluxo {flow_id} não possui steps. Abortando.")
         return
 
-    logger.info(f"Executando fluxo '{flow_id}' com {len(steps)} steps para {contact_phone}")
+    total_steps = len(steps)
+    logger.info(f"Executando fluxo '{flow_id}' com {total_steps} steps para {contact_phone}")
 
-    for step in steps:
+    # ── Marcar fluxo como iniciado no contato ──────────────────────────────
+    try:
+        db.table("contacts").update({
+            "flow_current_flow_id": flow_id,
+            "flow_current_step_index": 0,
+        }).eq("id", contact_id).execute()
+    except Exception as e:
+        logger.warning(f"Não foi possível registrar início do fluxo no contato: {e}")
+
+    for idx, step in enumerate(steps):
+        # ── Atualizar step atual no contato ────────────────────────────────
+        try:
+            db.table("contacts").update({
+                "flow_current_step_index": idx,
+            }).eq("id", contact_id).execute()
+        except Exception as e:
+            logger.warning(f"Não foi possível atualizar step atual do contato: {e}")
+
         step_type = step["type"]
         raw_content = step.get("content") or ""
         delay = step.get("delay_duration", 3)
@@ -183,6 +201,15 @@ async def execute_flow(
             }).execute()
         except Exception as e:
             logger.error(f"Erro ao salvar mensagem no banco: {e}")
+
+    # ── Fluxo concluído — limpar progresso do contato ─────────────────────
+    try:
+        db.table("contacts").update({
+            "flow_current_flow_id": None,
+            "flow_current_step_index": None,
+        }).eq("id", contact_id).execute()
+    except Exception as e:
+        logger.warning(f"Não foi possível limpar progresso do fluxo no contato: {e}")
 
     logger.info(f"Fluxo '{flow_id}' concluído para {contact_phone}")
 

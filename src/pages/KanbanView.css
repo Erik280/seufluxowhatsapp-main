@@ -660,3 +660,139 @@
   color: var(--color-text-muted, #8892b0);
   line-height: 1.5;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   FLOW STEPS COUNT BADGE (column header)
+══════════════════════════════════════════════════════════════ */
+
+.kb-steps-count-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #F59E0B;
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  margin-top: 6px;
+}
+
+/* Reflow the column header to be two rows when badge exists */
+.column-header {
+  flex-wrap: wrap;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   FLOW PROGRESS TIMELINE (on task card)
+══════════════════════════════════════════════════════════════ */
+
+/* Card glows when automation is running */
+.task-card.flow-active {
+  border-color: rgba(245, 158, 11, 0.35);
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.12), 0 2px 12px rgba(0,0,0,0.25);
+}
+
+.task-card.flow-active:hover {
+  border-color: rgba(245, 158, 11, 0.6);
+}
+
+/* Zap icon next to name */
+.task-flow-icon {
+  display: inline-flex;
+  align-items: center;
+  color: #F59E0B;
+  margin-right: 5px;
+  flex-shrink: 0;
+  vertical-align: middle;
+  animation: flow-icon-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes flow-icon-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+
+/* Timeline container */
+.flow-timeline {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin: 8px 0 4px;
+  padding: 0 2px;
+  position: relative;
+}
+
+/* Connecting line behind dots */
+.flow-timeline::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  z-index: 0;
+}
+
+/* Each dot */
+.flow-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+  transition: background 0.3s, transform 0.2s;
+  /* Evenly space dots using flex */
+}
+
+/* Spacer lines between dots */
+.flow-dot + .flow-dot {
+  margin-left: auto;
+}
+
+/* Make timeline use space-between layout */
+.flow-timeline {
+  justify-content: space-between;
+}
+
+/* Completed step */
+.flow-dot.done {
+  background: #00E5CC;
+  box-shadow: 0 0 4px rgba(0, 229, 204, 0.5);
+}
+
+/* Current step — pulsing */
+.flow-dot.current {
+  background: #F59E0B;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25);
+  animation: step-pulse 1.5s ease-in-out infinite;
+  transform: scale(1.25);
+}
+
+@keyframes step-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25); }
+  50%       { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0.1); }
+}
+
+/* Future step */
+.flow-dot.pending {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Step label below timeline */
+.flow-step-label {
+  font-size: 0.68rem;
+  color: rgba(245, 158, 11, 0.75);
+  text-align: right;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  margin-bottom: 4px;
+}
+

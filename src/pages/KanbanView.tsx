@@ -22,6 +22,8 @@ interface Contact {
   last_message: string;
   stage_id: string | null;
   created_at: string;
+  flow_current_flow_id?: string | null;
+  flow_current_step_index?: number | null;
 }
 
 interface Flow {
@@ -270,6 +272,8 @@ export default function KanbanView() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [flows, setFlows] = useState<Flow[]>([]);
   const [companyId, setCompanyId] = useState<string>('');
+  // Maps flow_id → total number of steps (for header badge and timeline)
+  const [flowStepCounts, setFlowStepCounts] = useState<Record<string, number>>({});
 
   // Stage config modal
   const [modalStage, setModalStage] = useState<KanbanStage | null>(null);
@@ -327,6 +331,28 @@ export default function KanbanView() {
           return a.order_index - b.order_index;
         });
         setStages(sorted);
+
+        // Buscar contagem de steps para os fluxos vinculados aos estágios com automação
+        const triggerFlowIds = [
+          ...new Set(
+            stagesRes.data
+              .filter(s => s.is_trigger_enabled && s.trigger_flow_id)
+              .map(s => s.trigger_flow_id as string)
+          ),
+        ];
+        if (triggerFlowIds.length > 0) {
+          const stepsRes = await supabase
+            .from('flow_steps')
+            .select('flow_id')
+            .in('flow_id', triggerFlowIds);
+          if (stepsRes.data) {
+            const counts: Record<string, number> = {};
+            for (const row of stepsRes.data) {
+              counts[row.flow_id] = (counts[row.flow_id] || 0) + 1;
+            }
+            setFlowStepCounts(counts);
+          }
+        }
       }
       if (contactsRes.data) setContacts(contactsRes.data);
       if (flowsRes.data) setFlows(flowsRes.data);
@@ -577,6 +603,13 @@ export default function KanbanView() {
                     </span>
                   )}
                 </div>
+                {/* Steps count badge — only shown for automation columns */}
+                {stage.is_trigger_enabled && stage.trigger_flow_id && flowStepCounts[stage.trigger_flow_id] && (
+                  <div className="kb-steps-count-badge" title={`Este fluxo possui ${flowStepCounts[stage.trigger_flow_id]} passos de automação`}>
+                    <Zap size={10} />
+                    {flowStepCounts[stage.trigger_flow_id]} STEPS
+                  </div>
+                )}
 
                 <div className="column-header-right">
                   <span className="task-count">{stageContacts.length}</span>
@@ -587,25 +620,55 @@ export default function KanbanView() {
               </div>
 
               <div className="task-list">
-                {stageContacts.map(contact => (
-                  <div
-                    id={`card-${contact.id}`}
-                    key={contact.id}
-                    draggable
-                    onDragStart={e => handleCardDragStart(e, contact.id)}
-                    onDragEnd={e => handleCardDragEnd(e, contact.id)}
-                    className="task-card"
-                  >
-                    <div className="task-name">{contact.name || contact.phone}</div>
-                    <div className="task-footer">
-                      <span className="task-time">
-                        {contact.last_message
-                          ? new Date(contact.last_message).toLocaleDateString('pt-BR')
-                          : 'Novo'}
-                      </span>
+                {stageContacts.map(contact => {
+                  const flowId = contact.flow_current_flow_id;
+                  const currentStep = contact.flow_current_step_index;
+                  const totalSteps = flowId ? (flowStepCounts[flowId] ?? (stage.trigger_flow_id === flowId ? flowStepCounts[stage.trigger_flow_id!] : undefined)) : undefined;
+                  const isRunning = flowId != null && currentStep != null && totalSteps != null;
+
+                  return (
+                    <div
+                      id={`card-${contact.id}`}
+                      key={contact.id}
+                      draggable
+                      onDragStart={e => handleCardDragStart(e, contact.id)}
+                      onDragEnd={e => handleCardDragEnd(e, contact.id)}
+                      className={`task-card ${isRunning ? 'flow-active' : ''}`}
+                    >
+                      <div className="task-name">
+                        {isRunning && <span className="task-flow-icon" title="Automação em andamento"><Zap size={12} /></span>}
+                        {contact.name || contact.phone}
+                      </div>
+
+                      {/* ── Flow Timeline ── */}
+                      {isRunning && (
+                        <div className="flow-timeline" title={`Passo ${currentStep! + 1} de ${totalSteps}`}>
+                          {Array.from({ length: totalSteps! }).map((_, i) => (
+                            <span
+                              key={i}
+                              className={`flow-dot ${
+                                i < currentStep! ? 'done' : i === currentStep! ? 'current' : 'pending'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      )}
+                      {isRunning && (
+                        <div className="flow-step-label">
+                          Passo {currentStep! + 1}/{totalSteps}
+                        </div>
+                      )}
+
+                      <div className="task-footer">
+                        <span className="task-time">
+                          {contact.last_message
+                            ? new Date(contact.last_message).toLocaleDateString('pt-BR')
+                            : 'Novo'}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 {stageContacts.length === 0 && (
                   <div className="kb-empty-col">Arraste um lead aqui</div>
                 )}
