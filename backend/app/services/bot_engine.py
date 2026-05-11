@@ -199,6 +199,11 @@ async def execute_flow(
                 "media_url": content if step_type != "text" else None,
                 "media_type": step_type if step_type != "text" else None,
             }).execute()
+            
+            # Atualiza last_message para manter o contato no topo
+            db.table("contacts").update({
+                "last_message": "now()"
+            }).eq("id", contact_id).execute()
         except Exception as e:
             logger.error(f"Erro ao salvar mensagem no banco: {e}")
 

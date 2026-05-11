@@ -640,8 +640,10 @@ async def delete_tag(tag_id: str):
     db.table("tags").delete().eq("id", tag_id).execute()
     return None
 
+from fastapi import BackgroundTasks
+
 @router.patch("/contacts/{contact_id}/stage")
-async def update_contact_stage(contact_id: str, body: ContactStageUpdate):
+async def update_contact_stage(contact_id: str, body: ContactStageUpdate, background_tasks: BackgroundTasks):
     """
     Atualiza o estágio do Kanban de um contato.
     Se o novo estágio tiver is_trigger_enabled=true, muda o chat_status
@@ -692,17 +694,17 @@ async def update_contact_stage(contact_id: str, body: ContactStageUpdate):
                     if instance and apikey:
                         from app.services.evolution import EvolutionAPI
                         from app.services.bot_engine import execute_flow
-                        import asyncio
 
                         evolution = EvolutionAPI(instance, apikey)
-                        asyncio.create_task(execute_flow(
+                        background_tasks.add_task(
+                            execute_flow,
                             company_id=contact["company_id"],
                             contact_id=contact_id,
                             contact_phone=contact["phone"],
                             flow_id=flow_id,
                             evolution=evolution,
                             contact=contact,
-                        ))
+                        )
                         logger.info(f"[Kanban] execute_flow agendado para contato {contact_id}")
                     else:
                         logger.warning(f"[Kanban] Empresa {contact['company_id']} sem Evolution API configurada.")
