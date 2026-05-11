@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
 import {
-  Plus, Trash2, GripVertical, ChevronDown, ChevronUp,
+  Plus, Trash2, GripVertical, ChevronDown, ChevronUp, Copy,
   MessageSquare, Mic, Image, Video, Clock, Keyboard, Radio,
   Play, Save, ToggleLeft, ToggleRight, X, Tag, Upload
 } from 'lucide-react';
@@ -381,6 +381,33 @@ export default function FlowBuilderView() {
     if (err) showToast(`Erro ao reordenar: ${err.message}`, 'err');
   };
 
+  const duplicateStep = async (step: FlowStep, index: number) => {
+    if (!selectedFlow) return;
+    
+    const newStepPayload = {
+      flow_id: step.flow_id,
+      type: step.type,
+      content: step.content,
+      delay_duration: step.delay_duration,
+      media_library_id: step.media_library_id,
+      order_index: index + 1
+    };
+
+    const { data, error } = await supabase.from('flow_steps').insert(newStepPayload).select().single();
+    if (error) { showToast(`Erro ao duplicar: ${error.message}`, 'err'); return; }
+
+    const newSteps = [...steps];
+    newSteps.splice(index + 1, 0, data);
+    newSteps.forEach((s, i) => s.order_index = i);
+    setSteps(newSteps);
+
+    const updates = newSteps.slice(index + 1).map(s => 
+      supabase.from('flow_steps').update({ order_index: s.order_index }).eq('id', s.id)
+    );
+    await Promise.all(updates);
+    showToast('Passo duplicado!', 'ok');
+  };
+
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
@@ -529,13 +556,16 @@ export default function FlowBuilderView() {
                       </span>
                     </div>
                     <div className="fb-step-actions">
-                      <button className="fb-icon-btn" onClick={e => { e.stopPropagation(); moveStep(idx, -1); }} disabled={idx === 0}>
+                      <button className="fb-icon-btn" onClick={e => { e.stopPropagation(); moveStep(idx, -1); }} disabled={idx === 0} title="Mover para cima">
                         <ChevronUp size={14} />
                       </button>
-                      <button className="fb-icon-btn" onClick={e => { e.stopPropagation(); moveStep(idx, 1); }} disabled={idx === steps.length - 1}>
+                      <button className="fb-icon-btn" onClick={e => { e.stopPropagation(); moveStep(idx, 1); }} disabled={idx === steps.length - 1} title="Mover para baixo">
                         <ChevronDown size={14} />
                       </button>
-                      <button className="fb-icon-btn danger" onClick={e => { e.stopPropagation(); deleteStep(step.id); }}>
+                      <button className="fb-icon-btn" onClick={e => { e.stopPropagation(); duplicateStep(step, idx); }} title="Duplicar passo">
+                        <Copy size={14} />
+                      </button>
+                      <button className="fb-icon-btn danger" onClick={e => { e.stopPropagation(); deleteStep(step.id); }} title="Apagar passo">
                         <Trash2 size={14} />
                       </button>
                       {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
