@@ -315,7 +315,7 @@ export default function KanbanView() {
 
       const [stagesRes, contactsRes, flowsRes] = await Promise.all([
         supabase.from('kanban_stages').select('*').eq('company_id', userData.company_id).order('order_index'),
-        supabase.from('contacts').select('*').eq('company_id', userData.company_id).order('last_message', { ascending: false }),
+        supabase.from('contacts').select('*').eq('company_id', userData.company_id).order('last_message', { ascending: false, nullsFirst: false }),
         supabase.from('chat_flows').select('id, name, is_active').eq('company_id', userData.company_id).order('name'),
       ]);
 
@@ -333,7 +333,7 @@ export default function KanbanView() {
 
       const sub = supabase.channel('public:kanban')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts', filter: `company_id=eq.${userData.company_id}` }, () => {
-          supabase.from('contacts').select('*').eq('company_id', userData.company_id).order('last_message', { ascending: false })
+          supabase.from('contacts').select('*').eq('company_id', userData.company_id).order('last_message', { ascending: false, nullsFirst: false })
             .then(({ data }) => { if (data) setContacts(data); });
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'kanban_stages', filter: `company_id=eq.${userData.company_id}` }, () => {
