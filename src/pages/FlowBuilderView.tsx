@@ -277,6 +277,67 @@ export default function FlowBuilderView() {
     if (selectedFlow?.id === flowId) { setSelectedFlow(null); setSteps([]); }
   };
 
+  const duplicateFlow = async (flow: Flow) => {
+    if (!companyId) return;
+    
+    const newFlowName = `${flow.name} (Cópia)`;
+    
+    let result = await supabase.from('chat_flows').insert({
+      company_id: companyId,
+      name: newFlowName,
+      trigger_keyword: newFlowName.toLowerCase(),
+      keywords: flow.keywords || [],
+      is_active: false,
+      trigger_once: flow.trigger_once || false,
+      description: flow.description
+    }).select().single();
+
+    if (result.error?.message?.includes('keywords')) {
+      result = await supabase.from('chat_flows').insert({
+        company_id: companyId,
+        name: newFlowName,
+        trigger_keyword: newFlowName.toLowerCase(),
+        is_active: false,
+        trigger_once: flow.trigger_once || false,
+        description: flow.description
+      }).select().single();
+    }
+
+    if (result.error) {
+      showToast(`Erro ao duplicar fluxo: ${result.error.message}`, 'err');
+      return;
+    }
+    
+    const newFlow = result.data;
+    if (!newFlow) return;
+
+    const { data: originalSteps } = await supabase
+      .from('flow_steps')
+      .select('*')
+      .eq('flow_id', flow.id)
+      .order('order_index');
+
+    if (originalSteps && originalSteps.length > 0) {
+      const newStepsPayload = originalSteps.map(step => ({
+        flow_id: newFlow.id,
+        type: step.type,
+        content: step.content,
+        delay_duration: step.delay_duration,
+        order_index: step.order_index,
+        media_library_id: step.media_library_id
+      }));
+
+      const { error: stepsError } = await supabase.from('flow_steps').insert(newStepsPayload);
+      if (stepsError) {
+        showToast(`Fluxo criado, mas erro ao duplicar passos: ${stepsError.message}`, 'err');
+      }
+    }
+
+    setFlows(prev => [...prev, newFlow]);
+    setSelectedFlow(newFlow);
+    showToast('Fluxo duplicado com sucesso!');
+  };
+
   const toggleFlowActive = () => {
     if (!selectedFlow) return;
     setSelectedFlow({ ...selectedFlow, is_active: !selectedFlow.is_active });
@@ -450,10 +511,15 @@ export default function FlowBuilderView() {
               onClick={() => setSelectedFlow(flow)}
             >
               <span className={`fb-status-dot ${flow.is_active ? 'on' : 'off'}`} />
-              <span className="fb-flow-name">{flow.name}</span>
-              <button className="fb-icon-btn danger" onClick={e => { e.stopPropagation(); deleteFlow(flow.id); }}>
-                <Trash2 size={14} />
-              </button>
+              <span className="fb-flow-name" title={flow.name}>{flow.name}</span>
+              <div className="fb-flow-actions" style={{ display: 'flex', gap: '4px' }}>
+                <button className="fb-icon-btn" onClick={e => { e.stopPropagation(); duplicateFlow(flow); }} title="Duplicar fluxo">
+                  <Copy size={14} />
+                </button>
+                <button className="fb-icon-btn danger" onClick={e => { e.stopPropagation(); deleteFlow(flow.id); }} title="Apagar fluxo">
+                  <Trash2 size={14} />
+                </button>
+              </div>
             </div>
           ))}
           {flows.length === 0 && (
