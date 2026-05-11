@@ -57,9 +57,11 @@ async def create_contact(body: ContactCreate):
         raise HTTPException(status_code=400, detail="Invalid phone number")
         
     # 2. Verificar se já existe
-    check = db.table("contacts").select("id").eq("company_id", body.company_id).eq("phone", phone).execute()
+    check = db.table("contacts").select("*").eq("company_id", body.company_id).eq("phone", phone).execute()
     if check.data:
-        raise HTTPException(status_code=400, detail="Contact already exists with this phone")
+        # Se já existe, não é um erro para o usuário final, apenas retornamos o contato existente
+        # para que o frontend abra a conversa.
+        return check.data[0]
         
     # 3. Buscar stage padrão se não enviado
     stage_id = None

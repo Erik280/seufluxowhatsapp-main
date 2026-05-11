@@ -658,7 +658,11 @@ export default function ChatView() {
 
       if (res.ok) {
         const newContact = await res.json();
-        setContacts([newContact, ...contacts]);
+        setContacts(prev => {
+          const exists = prev.find(c => c.id === newContact.id);
+          if (exists) return prev;
+          return [newContact, ...prev];
+        });
         setSelectedContact(newContact);
         setShowNewChatModal(false);
         setNewChatName('');
