@@ -88,7 +88,7 @@ export default function QuickRepliesView() {
           content: newContent.trim()
         })
       });
-
+      if (res.ok) {
         showToast('Resposta rápida criada!');
         setShowModal(false);
         setNewShortcut('');
