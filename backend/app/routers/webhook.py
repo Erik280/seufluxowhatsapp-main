@@ -200,7 +200,7 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
                 "company_id": company_id,
                 "phone": phone,
                 "name": push_name or None,
-                "chat_status": "bot",
+                "chat_status": "human",
                 "stage_id": default_stage_id,   # ← NOVOS LEADS
             })
             .execute()
@@ -210,7 +210,7 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
         logger.info(f"[{phone}] Novo lead criado → stage NOVOS LEADS ({default_stage_id})")
 
     contact_id = contact["id"]
-    chat_status = contact.get("chat_status", "bot")
+    chat_status = contact.get("chat_status", "human")
 
     # ── 4. Salvar mensagem recebida ──
     db.table("messages").insert({
