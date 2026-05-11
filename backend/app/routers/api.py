@@ -528,6 +528,20 @@ async def send_media_library(body: SendMediaLibraryRequest):
         resp = await evolution.send_image(phone, media_url)
     elif media_type == "video":
         resp = await evolution.send_video(phone, media_url)
+        # Fallback para Base64 se a Evolution API não conseguir baixar a tempo (timeout de Axios)
+        if "error" in resp and "Failed to fetch stream" in resp["error"]:
+            logger.warning(f"Fallback Base64 para vídeo {media_url}")
+            import httpx
+            import base64
+            try:
+                async with httpx.AsyncClient(timeout=120.0) as client:
+                    vid_res = await client.get(media_url)
+                    vid_res.raise_for_status()
+                    b64 = base64.b64encode(vid_res.content).decode("utf-8")
+                    b64_url = f"data:video/mp4;base64,{b64}"
+                    resp = await evolution.send_video(phone, b64_url)
+            except Exception as e:
+                logger.error(f"Erro no fallback Base64 do vídeo: {e}")
     else:
         # Documento (PDF, DOCX, etc.) da biblioteca
         resp = await evolution.send_document(phone, media_url, filename=media_name)

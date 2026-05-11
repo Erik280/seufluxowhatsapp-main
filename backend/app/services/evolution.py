@@ -107,6 +107,7 @@ class EvolutionAPI:
             {
                 "number": phone,
                 "mediatype": "video",
+                "mimetype": "video/mp4",
                 "media": video_url,
                 "caption": caption,
                 "fileName": filename
@@ -123,6 +124,7 @@ class EvolutionAPI:
             {
                 "number": phone,
                 "mediatype": "document",
+                "mimetype": "application/pdf",
                 "media": doc_url,
                 "caption": caption,
                 "fileName": safe_name,
