@@ -19,7 +19,8 @@ from app.models.schemas import (
     MessageCreate, MessageResponse,
     EvolutionWebhookData,
     KanbanStageCreate, KanbanStageResponse,
-    TagCreate, TagResponse, ScheduleMessageRequest
+    TagCreate, TagResponse, ScheduleMessageRequest,
+    QuickReplyCreate, QuickReplyResponse
 )
 
 logger = logging.getLogger("seufluxo.api")
@@ -988,4 +989,41 @@ async def cancel_campaign(campaign_id: str):
     db = get_supabase()
     db.table("campaigns").update({"status": "cancelled"}).eq("id", campaign_id).execute()
     db.table("scheduled_messages").update({"status": "cancelled"}).eq("campaign_id", campaign_id).eq("status", "pending").execute()
+    return None
+
+# ========================
+# Quick Replies
+# ========================
+
+@router.get("/quick-replies/{company_id}", response_model=list[QuickReplyResponse])
+async def list_quick_replies(company_id: str):
+    db = get_supabase()
+    res = db.table("quick_replies").select("*").eq("company_id", company_id).order("shortcut").execute()
+    return res.data or []
+
+@router.post("/quick-replies", response_model=QuickReplyResponse, status_code=201)
+async def create_quick_reply(body: QuickReplyCreate):
+    db = get_supabase()
+    
+    # Check duplicate shortcut
+    check = db.table("quick_replies").select("id").eq("company_id", body.company_id).eq("shortcut", body.shortcut).execute()
+    if check.data:
+        raise HTTPException(status_code=400, detail="Já existe uma resposta rápida com este atalho")
+        
+    res = db.table("quick_replies").insert({
+        "company_id": body.company_id,
+        "shortcut": body.shortcut,
+        "content": body.content
+    }).execute()
+    
+    if not res.data:
+        raise HTTPException(status_code=500, detail="Erro ao criar resposta rápida")
+    return res.data[0]
+
+@router.delete("/quick-replies/{reply_id}", status_code=204)
+async def delete_quick_reply(reply_id: str):
+    db = get_supabase()
+    res = db.table("quick_replies").delete().eq("id", reply_id).execute()
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Resposta rápida não encontrada")
     return None

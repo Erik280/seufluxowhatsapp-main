@@ -215,3 +215,20 @@ class ScheduleMessageRequest(BaseModel):
     save_as_flow: bool = False
     flow_name: Optional[str] = None
     steps: Optional[list[ScheduleStep]] = None
+
+# ========================
+# Quick Replies
+# ========================
+
+class QuickReplyBase(BaseModel):
+    shortcut: str
+    content: str
+
+class QuickReplyCreate(QuickReplyBase):
+    company_id: str
+
+class QuickReplyResponse(QuickReplyBase):
+    id: str
+    company_id: str
+    created_at: datetime
+

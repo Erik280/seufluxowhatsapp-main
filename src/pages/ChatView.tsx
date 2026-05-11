@@ -24,6 +24,12 @@ interface Message {
   created_at: string;
 }
 
+interface QuickReply {
+  id: string;
+  shortcut: string;
+  content: string;
+}
+
 export default function ChatView() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -83,6 +89,14 @@ export default function ChatView() {
   const [isDragging, setIsDragging] = useState(false);
   const dragCounterRef = useRef(0);
 
+  // Quick Replies state
+  const [quickReplies, setQuickReplies] = useState<QuickReply[]>([]);
+  const [showQRMenu, setShowQRMenu] = useState(false);
+  const [filteredQRs, setFilteredQRs] = useState<QuickReply[]>([]);
+  const [saveQRModal, setSaveQRModal] = useState<{show: boolean, content: string}>({show: false, content: ''});
+  const [saveQRShortcut, setSaveQRShortcut] = useState('');
+  const [isSavingQR, setIsSavingQR] = useState(false);
+
   // Scroll to bottom of messages
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -133,6 +147,14 @@ export default function ChatView() {
           .eq('is_active', true)
           .order('name', { ascending: true });
         if (flowsData) setChatFlows(flowsData);
+
+        // Fetch Quick Replies
+        const { data: qrData } = await supabase
+          .from('quick_replies')
+          .select('*')
+          .eq('company_id', userData.company_id)
+          .order('shortcut', { ascending: true });
+        if (qrData) setQuickReplies(qrData);
 
         // 3. Subscribe to Realtime Contacts
         const contactSub = supabase
@@ -303,6 +325,17 @@ export default function ChatView() {
   // Called on every keystroke in the text input
   const handleTyping = (value: string) => {
     setInputValue(value);
+    
+    // Quick Replies Check
+    if (value.startsWith('/')) {
+      const search = value.substring(1).toLowerCase();
+      const filtered = quickReplies.filter(qr => qr.shortcut.toLowerCase().includes(search));
+      setFilteredQRs(filtered);
+      setShowQRMenu(true);
+    } else {
+      setShowQRMenu(false);
+    }
+
     if (!selectedContact || !companyId || !value.trim()) return;
 
     // Send composing presence immediately on first keystroke
@@ -316,6 +349,11 @@ export default function ChatView() {
     typingDebounceRef.current = setTimeout(() => {
       isTypingRef.current = false;
     }, 3000);
+  };
+
+  const handleSelectQuickReply = (qr: QuickReply) => {
+    setInputValue(qr.content);
+    setShowQRMenu(false);
   };
 
   const startRecording = async () => {
@@ -634,6 +672,49 @@ export default function ChatView() {
     }
   };
 
+  const handleSaveQuickReply = async () => {
+    if (!saveQRShortcut.trim()) {
+      showToast('Digite um atalho.', 'error');
+      return;
+    }
+    
+    setIsSavingQR(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/quick-replies`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          company_id: companyId,
+          shortcut: saveQRShortcut.trim().toLowerCase(),
+          content: saveQRModal.content
+        })
+      });
+
+      if (res.ok) {
+        showToast('Resposta rápida salva!');
+        setSaveQRModal({show: false, content: ''});
+        setSaveQRShortcut('');
+        
+        // Refresh Quick Replies
+        const { data: qrData } = await supabase
+          .from('quick_replies')
+          .select('*')
+          .eq('company_id', companyId)
+          .order('shortcut', { ascending: true });
+        if (qrData) setQuickReplies(qrData);
+        
+      } else {
+        const error = await res.json();
+        showToast(error.detail || 'Erro ao salvar.', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Erro ao conectar com o servidor.', 'error');
+    } finally {
+      setIsSavingQR(false);
+    }
+  };
+
   return (
     <div className="chat-view-root">
       {/* Column 1: Chat List */}
@@ -770,6 +851,13 @@ export default function ChatView() {
                       </a>
                     )}
                     {msg.media_type !== 'document' && msg.content}
+                    {msg.media_type !== 'document' && msg.content && (
+                      <div className="msg-actions">
+                        <button className="save-qr-btn" onClick={() => setSaveQRModal({show: true, content: msg.content})} title="Salvar como Resposta Rápida">
+                          <Zap size={14} />
+                        </button>
+                      </div>
+                    )}
                   </div>
                   <span className="time">{new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                 </div>
@@ -845,6 +933,18 @@ export default function ChatView() {
                     </>
                   )}
                 </>
+              )}
+              
+              {/* Quick Replies Menu */}
+              {showQRMenu && filteredQRs.length > 0 && (
+                <div className="qr-popup-menu">
+                  {filteredQRs.map(qr => (
+                    <div key={qr.id} className="qr-popup-item" onClick={() => handleSelectQuickReply(qr)}>
+                      <div className="qr-popup-shortcut">/{qr.shortcut}</div>
+                      <div className="qr-popup-content">{qr.content}</div>
+                    </div>
+                  ))}
+                </div>
               )}
             </footer>
           </>
@@ -1188,6 +1288,44 @@ export default function ChatView() {
                 disabled={isCreatingChat}
               >
                 {isCreatingChat ? 'Criando...' : 'Iniciar Conversa'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {saveQRModal.show && (
+        <div className="schedule-modal-overlay">
+          <div className="schedule-modal-content" style={{ maxWidth: '400px' }}>
+            <div className="schedule-modal-header">
+              <h2>Salvar Resposta Rápida</h2>
+              <button className="close-btn" onClick={() => setSaveQRModal({show: false, content: ''})}>✕</button>
+            </div>
+            <div className="schedule-modal-body">
+              <div className="crm-field">
+                <label>Atalho</label>
+                <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '0 10px' }}>
+                  <span style={{ color: '#00E5CC', fontWeight: 'bold' }}>/</span>
+                  <input 
+                    type="text" 
+                    style={{ flex: 1, background: 'transparent', border: 'none', padding: '10px', color: '#e6f1ff', outline: 'none' }}
+                    value={saveQRShortcut} 
+                    onChange={e => setSaveQRShortcut(e.target.value.replace(/[^a-zA-Z0-9_-]/g, ''))}
+                    placeholder="exemplo"
+                  />
+                </div>
+              </div>
+              <div className="crm-field">
+                <label>Conteúdo</label>
+                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px', borderRadius: '8px', fontSize: '0.85rem', color: '#8892b0', maxHeight: '100px', overflowY: 'auto' }}>
+                  {saveQRModal.content}
+                </div>
+              </div>
+            </div>
+            <div className="schedule-modal-footer">
+              <button className="cancel-btn" onClick={() => setSaveQRModal({show: false, content: ''})}>Cancelar</button>
+              <button className="confirm-btn" onClick={handleSaveQuickReply} disabled={isSavingQR}>
+                {isSavingQR ? 'Salvando...' : 'Salvar'}
               </button>
             </div>
           </div>

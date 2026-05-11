@@ -1,13 +1,13 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import { MessageCircle, Kanban, Settings, LogOut, Zap, Megaphone, FolderOpen } from 'lucide-react';
+import { MessageCircle, Kanban, Settings, LogOut, Zap, Megaphone, FolderOpen, Keyboard } from 'lucide-react';
 import './DashboardLayout.css';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
-  activeView: 'chat' | 'kanban' | 'settings' | 'media' | 'flows' | 'campaigns';
-  onViewChange: (view: 'chat' | 'kanban' | 'settings' | 'media' | 'flows' | 'campaigns') => void;
+  activeView: 'chat' | 'kanban' | 'settings' | 'media' | 'flows' | 'campaigns' | 'quick-replies';
+  onViewChange: (view: 'chat' | 'kanban' | 'settings' | 'media' | 'flows' | 'campaigns' | 'quick-replies') => void;
 }
 
 export default function DashboardLayout({ children, activeView, onViewChange }: DashboardLayoutProps) {
@@ -94,6 +94,13 @@ export default function DashboardLayout({ children, activeView, onViewChange }: 
             title="Biblioteca de Mídia"
           >
             <FolderOpen size={22} />
+          </button>
+          <button 
+            className={`nav-btn ${activeView === 'quick-replies' ? 'active' : ''}`}
+            onClick={() => onViewChange('quick-replies')}
+            title="Respostas Rápidas"
+          >
+            <Keyboard size={22} />
           </button>
           <button 
             className={`nav-btn ${activeView === 'settings' ? 'active' : ''}`}

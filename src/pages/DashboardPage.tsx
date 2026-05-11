@@ -6,9 +6,10 @@ import SettingsView from './SettingsView';
 import MediaLibraryView from './MediaLibraryView';
 import FlowBuilderView from './FlowBuilderView';
 import CampaignView from './CampaignView';
+import QuickRepliesView from './QuickRepliesView';
 
 export default function DashboardPage() {
-  const [activeView, setActiveView] = useState<'chat' | 'kanban' | 'settings' | 'media' | 'flows' | 'campaigns'>('chat');
+  const [activeView, setActiveView] = useState<'chat' | 'kanban' | 'settings' | 'media' | 'flows' | 'campaigns' | 'quick-replies'>('chat');
 
   return (
     <DashboardLayout activeView={activeView} onViewChange={setActiveView}>
@@ -18,6 +19,7 @@ export default function DashboardPage() {
       {activeView === 'media'     && <MediaLibraryView />}
       {activeView === 'flows'     && <FlowBuilderView />}
       {activeView === 'campaigns' && <CampaignView />}
+      {activeView === 'quick-replies' && <QuickRepliesView />}
     </DashboardLayout>
   );
 }
