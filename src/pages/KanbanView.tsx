@@ -297,6 +297,9 @@ export default function KanbanView() {
   const [draggedColIdx, setDraggedColIdx] = useState<number | null>(null);
   const [dragOverColIdx, setDragOverColIdx] = useState<number | null>(null);
   const colSaveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Ref para polling de fluxos ativos — evita stale closure no setInterval
+  const contactsRef = useRef<Contact[]>([]);
+  contactsRef.current = contacts;
 
   // ── Init ───────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -357,8 +360,24 @@ export default function KanbanView() {
       if (contactsRes.data) setContacts(contactsRes.data);
       if (flowsRes.data) setFlows(flowsRes.data);
 
-      const sub = supabase.channel('public:kanban')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts', filter: `company_id=eq.${userData.company_id}` }, () => {
+      const sub = supabase.channel('kanban_realtime_v2')
+        // ── UPDATE de contatos: usa payload.new diretamente (sem filtro)
+        // Isso contorna a limitação do REPLICA IDENTITY no Supabase Realtime.
+        // O filtro server-side em colunas não-PK requer REPLICA IDENTITY FULL,
+        // que não é o padrão. Ao remover o filtro e verificar company_id no
+        // callback, garantimos que UPDATEs de flow_current_step_index disparam.
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'contacts' }, (payload) => {
+          const updated = payload.new as Contact;
+          if (updated.company_id === userData.company_id) {
+            setContacts(prev => prev.map(c => c.id === updated.id ? { ...c, ...updated } : c));
+          }
+        })
+        // INSERT/DELETE: re-fetch completo (precisam do filtro para segurança)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'contacts', filter: `company_id=eq.${userData.company_id}` }, () => {
+          supabase.from('contacts').select('*').eq('company_id', userData.company_id).order('last_message', { ascending: false, nullsFirst: false })
+            .then(({ data }) => { if (data) setContacts(data); });
+        })
+        .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'contacts', filter: `company_id=eq.${userData.company_id}` }, () => {
           supabase.from('contacts').select('*').eq('company_id', userData.company_id).order('last_message', { ascending: false, nullsFirst: false })
             .then(({ data }) => { if (data) setContacts(data); });
         })
@@ -381,6 +400,26 @@ export default function KanbanView() {
     };
     init();
   }, []);
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // POLLING — garante atualizações em tempo real para fluxos ativos
+  // Roda a cada 2.5s e só busca dados quando há leads com fluxo em andamento.
+  // Funciona como safety-net caso o Realtime falhe ou seja lento.
+  // ══════════════════════════════════════════════════════════════════════════
+  useEffect(() => {
+    if (!companyId) return;
+    const interval = setInterval(() => {
+      const hasActiveFlow = contactsRef.current.some(c => c.flow_current_flow_id != null);
+      if (!hasActiveFlow) return; // nada rodando — sem custo de rede
+      supabase
+        .from('contacts')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('last_message', { ascending: false, nullsFirst: false })
+        .then(({ data }) => { if (data) setContacts(data); });
+    }, 2500);
+    return () => clearInterval(interval);
+  }, [companyId]);
 
   // ══════════════════════════════════════════════════════════════════════════
   // CARD DRAG & DROP
