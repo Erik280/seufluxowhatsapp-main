@@ -11,6 +11,17 @@
   padding: 24px;
 }
 
+.kanban-board-container {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.kanban-board-container.quick-chat-open .kanban-board {
+  width: calc(100% - 360px);
+}
+
 /* ── Header ── */
 .kanban-header {
   display: flex;
@@ -198,13 +209,48 @@
 /* ── Task Card ── */
 .task-card {
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
-  padding: 14px;
-  margin-bottom: 10px;
+  padding: 12px;
+  margin-bottom: 12px;
   cursor: grab;
-  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.15s;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s, background 0.2s;
 }
+
+.task-card:hover {
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.task-card.selected {
+  border-color: var(--color-neon-cyan, #00E5CC);
+  background: rgba(0, 229, 204, 0.05);
+  box-shadow: 0 0 10px rgba(0, 229, 204, 0.15);
+}
+
+.task-card:active {
+  cursor: grabbing;
+}
+
+.task-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #e6f1ff;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.task-preview {
+  font-size: 0.8rem;
+  color: var(--color-text-muted, #8892b0);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 8px;
+}
+
 
 .task-card:hover {
   border-color: rgba(0, 255, 136, 0.3);
@@ -796,3 +842,61 @@
   margin-bottom: 4px;
 }
 
+
+/* ── Quick Chat Panel ── */
+.kanban-quick-chat {
+  width: 360px;
+  background: rgba(11, 15, 30, 0.95);
+  border-left: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  animation: slide-in-right 0.3s forwards;
+  z-index: 10;
+  box-shadow: -4px 0 20px rgba(0,0,0,0.3);
+}
+
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.quick-chat-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.quick-chat-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #e6f1ff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 85%;
+}
+
+.close-quick-chat {
+  background: transparent;
+  border: none;
+  color: #8892b0;
+  cursor: pointer;
+  padding: 4px;
+  transition: color 0.2s;
+}
+
+.close-quick-chat:hover {
+  color: #ff6b6b;
+}
+
+.quick-chat-body {
+  flex: 1;
+  overflow: hidden;
+}

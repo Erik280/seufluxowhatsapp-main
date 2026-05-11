@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
 import { Zap, Settings, X, ToggleLeft, ToggleRight, Plus, Trash2, GripVertical, AlertTriangle } from 'lucide-react';
+import QuickChat from '../components/QuickChat';
 import './KanbanView.css';
 
 interface KanbanStage {
@@ -21,6 +22,7 @@ interface Contact {
   name: string;
   phone: string;
   last_message: string;
+  last_message_content?: string | null;
   stage_id: string | null;
   created_at: string;
   flow_current_flow_id?: string | null;
@@ -298,6 +300,9 @@ export default function KanbanView() {
   // ── Column drag state ──────────────────────────────────────────────────────
   const [draggedColIdx, setDraggedColIdx] = useState<number | null>(null);
   const [dragOverColIdx, setDragOverColIdx] = useState<number | null>(null);
+  // ── Quick Chat State ───────────────────────────────────────────────────────
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+  const [isQuickChatOpen, setIsQuickChatOpen] = useState(false);
   const colSaveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Ref para polling de fluxos ativos — evita stale closure no setInterval
   const contactsRef = useRef<Contact[]>([]);
@@ -603,10 +608,14 @@ export default function KanbanView() {
         </button>
       </header>
 
-      <div className="kanban-board">
-        {stages.map((stage, colIdx) => {
-          const stageContacts = contacts.filter(c => c.stage_id === stage.id);
-          const isCardTarget = dragOverStageId === stage.id && draggedCardId !== null;
+      <div className={`kanban-board-container ${isQuickChatOpen ? 'quick-chat-open' : ''}`}>
+        <div className="kanban-board">
+          {stages.map((stage, colIdx) => {
+            const stageContacts = contacts
+              .filter(c => c.stage_id === stage.id)
+              .sort((a, b) => new Date(b.last_message || 0).getTime() - new Date(a.last_message || 0).getTime());
+              
+            const isCardTarget = dragOverStageId === stage.id && draggedCardId !== null;
           const isColDragged = draggedColIdx === colIdx;
           const isColTarget  = dragOverColIdx === colIdx && draggedColIdx !== null && draggedColIdx !== colIdx;
 
@@ -674,12 +683,19 @@ export default function KanbanView() {
                       draggable
                       onDragStart={e => handleCardDragStart(e, contact.id)}
                       onDragEnd={e => handleCardDragEnd(e, contact.id)}
-                      className={`task-card ${isRunning ? 'flow-active' : ''}`}
+                      onClick={() => { setSelectedContact(contact); setIsQuickChatOpen(true); }}
+                      className={`task-card ${isRunning ? 'flow-active' : ''} ${selectedContact?.id === contact.id ? 'selected' : ''}`}
                     >
                       <div className="task-name">
                         {isRunning && <span className="task-flow-icon" title="Automação em andamento"><Zap size={12} /></span>}
                         {contact.name || contact.phone}
                       </div>
+                      
+                      {contact.last_message_content && (
+                        <div className="task-preview">
+                          {contact.last_message_content}
+                        </div>
+                      )}
 
                       {/* ── Flow Timeline ── */}
                       {isRunning && (
@@ -702,9 +718,14 @@ export default function KanbanView() {
 
                       <div className="task-footer">
                         <span className="task-time">
-                          {contact.last_message
-                            ? new Date(contact.last_message).toLocaleDateString('pt-BR')
-                            : 'Novo'}
+                          {(() => {
+                            if (!contact.last_message) return 'Novo';
+                            const d = new Date(contact.last_message);
+                            const now = new Date();
+                            const isToday = d.getDate() === now.getDate() && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+                            if (isToday) return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                            return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                          })()}
                         </span>
                       </div>
                     </div>
@@ -726,6 +747,21 @@ export default function KanbanView() {
             </button>
           </div>
         )}
+      </div>
+      
+      {isQuickChatOpen && selectedContact && (
+        <div className="kanban-quick-chat">
+          <div className="quick-chat-header">
+            <h3>{selectedContact.name || selectedContact.phone}</h3>
+            <button className="close-quick-chat" onClick={() => setIsQuickChatOpen(false)}>
+              <X size={18} />
+            </button>
+          </div>
+          <div className="quick-chat-body">
+            <QuickChat contactId={selectedContact.id} companyId={companyId} />
+          </div>
+        </div>
+      )}
       </div>
 
       {/* Stage config modal */}

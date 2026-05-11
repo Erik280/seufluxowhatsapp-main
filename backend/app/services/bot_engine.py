@@ -201,8 +201,10 @@ async def execute_flow(
             }).execute()
             
             # Atualiza last_message para manter o contato no topo
+            preview_content = content if step_type == "text" else f"[{step_type.capitalize()}]"
             db.table("contacts").update({
-                "last_message": "now()"
+                "last_message": "now()",
+                "last_message_content": preview_content
             }).eq("id", contact_id).execute()
         except Exception as e:
             logger.error(f"Erro ao salvar mensagem no banco: {e}")

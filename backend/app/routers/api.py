@@ -326,6 +326,12 @@ async def send_manual_message(body: SendMessageRequest):
         "content": body.text,
     }).execute()
     
+    # 5. Atualizar contato
+    db.table("contacts").update({
+        "last_message": "now()",
+        "last_message_content": body.text
+    }).eq("id", body.contact_id).execute()
+    
     return msg_result.data[0] if msg_result.data else {"status": "sent"}
 
 
@@ -392,14 +398,21 @@ async def send_manual_media(
         
     # 4. Save to Database
     original_name = file.filename or "documento"
+    content_text = f"[{media_type.upper()}] {original_name}"
     msg_result = db.table("messages").insert({
         "company_id": company_id,
         "contact_id": contact_id,
         "direction": "out",
-        "content": f"[{media_type.upper()}] {original_name}",
+        "content": content_text,
         "media_url": media_url,
         "media_type": media_type
     }).execute()
+    
+    # 5. Atualizar contato
+    db.table("contacts").update({
+        "last_message": "now()",
+        "last_message_content": f"[{media_type.capitalize()}]"
+    }).eq("id", contact_id).execute()
     
     return msg_result.data[0] if msg_result.data else {"status": "sent"}
 
@@ -559,6 +572,12 @@ async def send_media_library(body: SendMediaLibraryRequest):
         "media_url": media_url,
         "media_type": media_type
     }).execute()
+    
+    # 6. Atualizar contato
+    db.table("contacts").update({
+        "last_message": "now()",
+        "last_message_content": f"[{media_type.capitalize()}]"
+    }).eq("id", body.contact_id).execute()
     
     return msg_result.data[0] if msg_result.data else {"status": "sent"}
 

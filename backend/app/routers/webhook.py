@@ -366,10 +366,21 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
                 message_obj=message_obj
             )
 
+    # Determine preview content
+    preview_content = message_text
+    if not preview_content and 'message_obj' in locals():
+        if "audioMessage" in message_obj: preview_content = "[Áudio]"
+        elif "imageMessage" in message_obj: preview_content = "[Imagem]"
+        elif "videoMessage" in message_obj: preview_content = "[Vídeo]"
+        elif "documentMessage" in message_obj: preview_content = "[Documento]"
+        elif "stickerMessage" in message_obj: preview_content = "[Figurinha]"
+        else: preview_content = "[Mídia]"
+
     # Atualizar last_message e incrementar unread_count do contato
     current_unread = contact.get("unread_count") or 0
     db.table("contacts").update({
         "last_message": "now()",
+        "last_message_content": preview_content,
         "unread_count": current_unread + 1
     }).eq("id", contact_id).execute()
 
