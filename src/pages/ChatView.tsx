@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { FolderOpen, Plus, Mic, Trash2, Send, Calendar, FileText, Zap } from 'lucide-react';
+import { FolderOpen, Plus, Mic, Trash2, Send, Calendar, FileText, Zap, Filter } from 'lucide-react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
 import './ChatView.css';
 
@@ -39,6 +39,7 @@ export default function ChatView() {
   const [inputValue, setInputValue] = useState('');
   const [companyId, setCompanyId] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   
   // CRM Form state
   const [crmName, setCrmName] = useState('');
@@ -738,6 +739,25 @@ export default function ChatView() {
                 onChange={e => setSearchQuery(e.target.value)}
               />
             </div>
+            <button 
+              className={`filter-unread-btn ${showUnreadOnly ? 'active' : ''}`} 
+              onClick={() => setShowUnreadOnly(!showUnreadOnly)} 
+              title="Filtrar Não Lidas"
+              style={{
+                background: showUnreadOnly ? 'rgba(0, 229, 204, 0.2)' : 'transparent',
+                border: `1px solid ${showUnreadOnly ? '#00E5CC' : 'rgba(255,255,255,0.1)'}`,
+                color: showUnreadOnly ? '#00E5CC' : '#8892b0',
+                borderRadius: '8px',
+                padding: '8px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s'
+              }}
+            >
+              <Filter size={20} />
+            </button>
             <button className="new-chat-btn" onClick={() => setShowNewChatModal(true)} title="Nova Conversa">
               <Plus size={20} />
             </button>
@@ -746,12 +766,18 @@ export default function ChatView() {
         <div className="chat-list">
           {(() => {
             const q = searchQuery.trim().toLowerCase();
-            const filtered = q
-              ? contacts.filter(c =>
-                  (c.name || '').toLowerCase().includes(q) ||
-                  (c.phone || '').includes(q)
-                )
-              : contacts;
+            let filtered = contacts;
+            
+            if (showUnreadOnly) {
+              filtered = filtered.filter(c => c.unread_count && c.unread_count > 0);
+            }
+
+            if (q) {
+              filtered = filtered.filter(c =>
+                (c.name || '').toLowerCase().includes(q) ||
+                (c.phone || '').includes(q)
+              );
+            }
 
             if (filtered.length === 0) {
               return (
