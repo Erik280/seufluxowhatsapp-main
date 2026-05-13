@@ -23,16 +23,17 @@ async def process_incoming_media(
     message_obj: dict
 ):
     """
-    Tenta baixar o base64 da mídia (áudio, imagem, vídeo, doc) da Evolution API,
-    faz upload no MinIO e atualiza a mensagem no banco com a URL e tipo corretos.
+    Baixa o base64 da mídia (áudio, imagem, vídeo, doc) da Evolution API,
+    comprime e faz upload no Supabase Storage (bucket 'lead-media').
+    Gera Signed URL com TTL de 7 dias e salva no banco.
+    MinIO NÃO é usado aqui — apenas para Media Library (mídias da empresa).
     """
     try:
         from app.services.evolution import EvolutionAPI
-        from app.services.storage import StorageService
+        from app.services.lead_media_storage import LeadMediaStorage
         import base64
-        import uuid
 
-        # Identificar tipo de mídia
+        # ── 1. Identificar tipo de mídia ──────────────────────────────────────
         media_type = None
         if "audioMessage" in message_obj:
             media_type = "audio"
@@ -42,62 +43,66 @@ async def process_incoming_media(
             media_type = "video"
         elif "documentMessage" in message_obj:
             media_type = "document"
-            
+
         if not media_type:
             return
 
-        logger.info(f"Processando mídia recebida ({media_type}) para mensagem {message_id}...")
-        
-        # Obter o Base64 da Evolution API
+        logger.info(f"[media] Processando {media_type} para mensagem {message_id}...")
+
+        # ── 2. Baixar base64 da Evolution API ─────────────────────────────────
         evo = EvolutionAPI(instance_name, evolution_apikey)
         resp = await evo.get_base64_from_message(message_obj)
         if "error" in resp:
-            logger.error(f"Erro ao buscar media base64: {resp['error']}")
+            logger.error(f"[media] Erro ao buscar base64: {resp['error']}")
             return
 
         b64_string = resp.get("base64", "")
         if not b64_string:
-            logger.warning(f"Base64 vazio retornado pela Evolution API para msg {message_id}")
+            logger.warning(f"[media] Base64 vazio para msg {message_id}")
             return
 
-        # Separar prefixo do conteúdo real do base64 (ex: data:audio/ogg;base64,xxxxx)
+        # ── 3. Decodificar base64 ─────────────────────────────────────────────
         if "," in b64_string:
             header, b64_data = b64_string.split(",", 1)
             content_type = header.split(";")[0].replace("data:", "")
         else:
             b64_data = b64_string
             content_type = "application/octet-stream"
-            
+
         file_bytes = base64.b64decode(b64_data)
-        
-        # Determinar extensão
-        ext = "bin"
-        if "ogg" in content_type: ext = "ogg"
-        elif "mp4" in content_type: ext = "mp4"
-        elif "jpeg" in content_type or "jpg" in content_type: ext = "jpg"
-        elif "png" in content_type: ext = "png"
-        elif "pdf" in content_type: ext = "pdf"
-        elif "mpeg" in content_type: ext = "mp3"
-        elif "wa" in content_type: ext = "wav"
-        
-        filename = f"{company_id}/in_{uuid.uuid4().hex}.{ext}"
-        
-        # Upload para MinIO
-        storage = StorageService()
-        media_url = storage.upload_file(file_bytes, filename, content_type)
-        
+
+        # ── 4. Upload com compressão → Supabase Storage ───────────────────────
+        storage = LeadMediaStorage()
+        result = storage.upload_lead_media(
+            file_bytes=file_bytes,
+            media_type=media_type,
+            content_type=content_type,
+            company_id=company_id,
+            message_id=message_id,
+        )
+
+        signed_url = result["signed_url"]
+        storage_path = result["storage_path"]
+        expires_at = result["expires_at"]
+
+        # ── 5. Atualizar mensagem no banco ────────────────────────────────────
         from app.database import get_supabase
-        # Atualizar banco de dados
         db = get_supabase()
         db.table("messages").update({
-            "media_url": media_url,
-            "media_type": media_type
+            "media_url": signed_url,
+            "media_type": media_type,
+            "media_storage_path": storage_path,
+            "media_expires_at": expires_at,
         }).eq("id", message_id).execute()
-        
-        logger.info(f"Mídia salva com sucesso: {media_url}")
-        
+
+        logger.info(
+            f"[media] Salvo OK: {storage_path} | "
+            f"{result['original_size_kb']}KB → {result['final_size_kb']}KB | "
+            f"expira: {expires_at}"
+        )
+
     except Exception as e:
-        logger.error(f"Erro ao processar mídia recebida: {e}")
+        logger.error(f"[media] Erro ao processar mídia recebida: {e}")
 
 def _get_or_create_default_stage(db, company_id: str) -> str | None:
     """

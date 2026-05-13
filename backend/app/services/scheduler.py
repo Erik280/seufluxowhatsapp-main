@@ -245,6 +245,27 @@ async def process_campaigns():
         logger.info(f"[Campaign {campaign_id}] {scheduled_count} mensagens agendadas com sucesso.")
 
 
+# ── Job de Limpeza: Mídias Temporárias de Leads ─────────────────────────────
+
+async def cleanup_expired_lead_media():
+    """
+    Executado uma vez por dia (às 03:00 UTC).
+    Deleta arquivos expirados (TTL = 7 dias) do Supabase Storage bucket 'lead-media'
+    e limpa as referências no banco de dados.
+    MinIO (Media Library) não é afetado.
+    """
+    try:
+        from app.services.lead_media_storage import LeadMediaStorage
+        storage = LeadMediaStorage()
+        deleted = storage.delete_expired_media()
+        if deleted > 0:
+            logger.info(f"[Scheduler] cleanup_expired_lead_media: {deleted} arquivo(s) deletado(s).")
+        else:
+            logger.debug("[Scheduler] cleanup_expired_lead_media: nenhum arquivo expirado.")
+    except Exception as e:
+        logger.error(f"[Scheduler] Erro no cleanup de mídias: {e}")
+
+
 # ── Setup do Scheduler ───────────────────────────────────────────────────────
 
 def start_scheduler():
@@ -262,6 +283,15 @@ def start_scheduler():
         trigger="interval",
         seconds=60,
         id="campaigns",
+        replace_existing=True,
+        max_instances=1,
+    )
+    scheduler.add_job(
+        cleanup_expired_lead_media,
+        trigger="cron",
+        hour=3,
+        minute=0,
+        id="cleanup_lead_media",
         replace_existing=True,
         max_instances=1,
     )
