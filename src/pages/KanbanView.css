@@ -33,6 +33,67 @@
 .kanban-header h2 {
   font-size: 1.5rem;
   color: var(--color-text-primary);
+  margin: 0;
+}
+
+.kanban-header-left {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.kanban-search {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0 12px;
+  width: 300px;
+  transition: all 0.2s;
+}
+
+.kanban-search:focus-within {
+  border-color: var(--color-neon-cyan);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 2px rgba(0, 229, 204, 0.1);
+}
+
+.kanban-search svg {
+  color: var(--color-text-muted);
+  margin-right: 8px;
+}
+
+.kanban-search input {
+  background: transparent;
+  border: none;
+  color: var(--color-text-primary);
+  padding: 10px 0;
+  font-size: 0.9rem;
+  width: 100%;
+  outline: none;
+}
+
+.search-clear-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.search-clear-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text-primary);
+}
+
+.kanban-search input::placeholder {
+  color: var(--color-text-muted);
 }
 
 .kb-btn-new-col {

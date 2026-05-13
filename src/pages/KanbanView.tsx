@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
-import { Zap, Settings, X, ToggleLeft, ToggleRight, Plus, Trash2, GripVertical, AlertTriangle } from 'lucide-react';
+import { Zap, Settings, X, ToggleLeft, ToggleRight, Plus, Trash2, GripVertical, AlertTriangle, Search } from 'lucide-react';
 import QuickChat from '../components/QuickChat';
 import './KanbanView.css';
 
@@ -303,6 +303,7 @@ export default function KanbanView() {
   // ── Quick Chat State ───────────────────────────────────────────────────────
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [isQuickChatOpen, setIsQuickChatOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const colSaveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Ref para polling de fluxos ativos — evita stale closure no setInterval
   const contactsRef = useRef<Contact[]>([]);
@@ -602,7 +603,23 @@ export default function KanbanView() {
   return (
     <div className="kanban-view-root">
       <header className="kanban-header">
-        <h2>Gestão de Funil</h2>
+        <div className="kanban-header-left">
+          <h2>Gestão de Funil</h2>
+          <div className="kanban-search">
+            <Search size={16} />
+            <input 
+              type="text" 
+              placeholder="Pesquisar leads por nome ou telefone..." 
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
+            {searchTerm && (
+              <button className="search-clear-btn" onClick={() => setSearchTerm('')}>
+                <X size={14} />
+              </button>
+            )}
+          </div>
+        </div>
         <button className="kb-btn-new-col" onClick={openNewStageModal}>
           <Plus size={16} /> Nova Coluna
         </button>
@@ -613,6 +630,14 @@ export default function KanbanView() {
           {stages.map((stage, colIdx) => {
             const stageContacts = contacts
               .filter(c => c.stage_id === stage.id)
+              .filter(c => {
+                if (!searchTerm.trim()) return true;
+                const search = searchTerm.toLowerCase();
+                return (
+                  c.name?.toLowerCase().includes(search) || 
+                  c.phone?.toLowerCase().includes(search)
+                );
+              })
               .sort((a, b) => new Date(b.last_message || 0).getTime() - new Date(a.last_message || 0).getTime());
               
             const isCardTarget = dragOverStageId === stage.id && draggedCardId !== null;
