@@ -20,7 +20,8 @@ async def process_incoming_media(
     company_id: str,
     instance_name: str,
     evolution_apikey: str,
-    message_obj: dict
+    message_obj: dict,
+    full_message_data: dict | None = None
 ):
     """
     Baixa o base64 da mídia (áudio, imagem, vídeo, doc) da Evolution API,
@@ -50,8 +51,11 @@ async def process_incoming_media(
         logger.info(f"[media] Processando {media_type} para mensagem {message_id}...")
 
         # ── 2. Baixar base64 da Evolution API ─────────────────────────────────
+        # A Evolution API exige o objeto 'data' completo do webhook (com key,
+        # messageTimestamp, pushName), não apenas o campo 'message' interno.
         evo = EvolutionAPI(instance_name, evolution_apikey)
-        resp = await evo.get_base64_from_message(message_obj)
+        payload_for_evo = full_message_data if full_message_data else message_obj
+        resp = await evo.get_base64_from_message(payload_for_evo)
         if "error" in resp:
             logger.error(f"[media] Erro ao buscar base64: {resp['error']}")
             return
@@ -368,13 +372,17 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
         # Disparar background task para mídia se for áudio/imagem/vídeo/doc
         has_media = any(k in message_obj for k in ["audioMessage", "imageMessage", "videoMessage", "documentMessage"])
         if has_media:
+            # Passa o objeto 'data' COMPLETO (com key, messageTimestamp, pushName...)
+            # A Evolution API getBase64FromMediaMessage precisa da estrutura inteira,
+            # não apenas do campo 'message' interno.
             background_tasks.add_task(
                 process_incoming_media,
                 message_id=message_id,
                 company_id=company_id,
                 instance_name=instance_name,
                 evolution_apikey=evolution_apikey,
-                message_obj=message_obj
+                message_obj=message_obj,
+                full_message_data=data
             )
 
     # Determine preview content
