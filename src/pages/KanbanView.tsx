@@ -713,7 +713,10 @@ export default function KanbanView() {
                     >
                       <div className="task-name">
                         {isRunning && <span className="task-flow-icon" title="Automação em andamento"><Zap size={12} /></span>}
-                        {contact.name || contact.phone}
+                        <span className="task-name-text">{contact.name || contact.phone}</span>
+                        {(contact.unread_count || 0) > 0 && (
+                          <span className="task-unread-badge">{contact.unread_count}</span>
+                        )}
                       </div>
 
                       {contact.name && (

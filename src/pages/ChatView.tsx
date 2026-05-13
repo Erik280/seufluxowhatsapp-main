@@ -1020,6 +1020,13 @@ export default function ChatView() {
               </div>
               <h2>{selectedContact.name || 'Sem Nome'}</h2>
               <p className="phone">{selectedContact.phone}</p>
+              
+              <button 
+                className={`bot-status-btn ${selectedContact.chat_status === 'bot' ? 'active' : 'paused'}`}
+                onClick={toggleBot}
+              >
+                {selectedContact.chat_status === 'bot' ? 'Pausar Fluxo' : 'Ativar Fluxo'}
+              </button>
             </header>
             
             <div className="crm-section">
@@ -1093,19 +1100,7 @@ export default function ChatView() {
               </button>
             </div>
 
-            <div className="crm-section">
-              <h3>Controle do Bot</h3>
-              <div className="bot-toggle">
-                <label>
-                  <input 
-                    type="checkbox" 
-                    checked={selectedContact.chat_status === 'bot'} 
-                    onChange={toggleBot}
-                  />
-                  Bot Ativo
-                </label>
-              </div>
-            </div>
+            {/* Bot control moved to header */}
           </div>
         ) : (
           <div className="empty-state">

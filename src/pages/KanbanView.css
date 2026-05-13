@@ -300,7 +300,29 @@
   margin-bottom: 4px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  min-width: 0;
+}
+
+.task-name-text {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.task-unread-badge {
+  background-color: #00E5CC;
+  color: #0a0a0a;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+  box-shadow: 0 0 8px rgba(0, 229, 204, 0.4);
+  flex-shrink: 0;
+  margin-left: 4px;
 }
 
 .task-preview {
@@ -327,12 +349,7 @@
   opacity: 0.85;
 }
 
-.task-name {
-  font-weight: 600;
-  color: var(--color-text-primary);
-  margin-bottom: 6px;
-  font-size: 0.9rem;
-}
+/* Consolidated above */
 
 .task-phone {
   font-size: 0.75rem;
