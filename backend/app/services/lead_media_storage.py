@@ -249,8 +249,8 @@ class LeadMediaStorage:
                 path=storage_path,
                 file=compressed_bytes,
                 file_options={
-                    "content-type": final_ct,
-                    "upsert": "false",
+                    "content-type": final_ct,   # supabase-py v2 aceita content-type aqui
+                    "upsert": False,             # bool, não string
                 },
             )
             logger.info(
