@@ -886,6 +886,7 @@ export default function ChatView() {
                 <div key={msg.id || idx} className={`message ${msg.direction}`}>
                   <div className="bubble">
                     {msg.media_type === 'image' && <img src={msg.media_url!} alt="midia" style={{maxWidth: '100%', borderRadius: '8px'}} />}
+                    {msg.media_type === 'video' && <video src={msg.media_url!} controls style={{maxWidth: '100%', borderRadius: '8px'}} />}
                     {msg.media_type === 'audio' && <audio src={msg.media_url!} controls style={{maxWidth: '200px'}} />}
                     {msg.media_type === 'document' && (
                       <a
