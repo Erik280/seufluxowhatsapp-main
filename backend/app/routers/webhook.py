@@ -70,16 +70,22 @@ async def process_incoming_media(
             content_type = "application/octet-stream"
 
         file_bytes = base64.b64decode(b64_data)
+        logger.info(f"[media] Base64 decodificado: {len(file_bytes)/1024:.1f}KB | type={content_type}")
 
         # ── 4. Upload com compressão → Supabase Storage ───────────────────────
-        storage = LeadMediaStorage()
-        result = storage.upload_lead_media(
-            file_bytes=file_bytes,
-            media_type=media_type,
-            content_type=content_type,
-            company_id=company_id,
-            message_id=message_id,
-        )
+        # LeadMediaStorage usa supabase-py SÍNCRONO — deve rodar em thread separada
+        # para não bloquear o event loop do asyncio
+        def _do_upload():
+            storage = LeadMediaStorage()
+            return storage.upload_lead_media(
+                file_bytes=file_bytes,
+                media_type=media_type,
+                content_type=content_type,
+                company_id=company_id,
+                message_id=message_id,
+            )
+
+        result = await asyncio.to_thread(_do_upload)
 
         signed_url = result["signed_url"]
         storage_path = result["storage_path"]
@@ -96,7 +102,7 @@ async def process_incoming_media(
         }).eq("id", message_id).execute()
 
         logger.info(
-            f"[media] Salvo OK: {storage_path} | "
+            f"[media] ✅ Salvo OK: {storage_path} | "
             f"{result['original_size_kb']}KB → {result['final_size_kb']}KB | "
             f"expira: {expires_at}"
         )

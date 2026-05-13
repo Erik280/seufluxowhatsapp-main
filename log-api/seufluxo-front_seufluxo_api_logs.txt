@@ -1,0 +1,400 @@
+INFO:     10.0.1.14:45688 - "POST /api/webhook/evolution HTTP/1.1" 200 OK
+2026-05-13 01:00:47 │ httpx                        │ INFO    │ HTTP Request: POST https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/messages "HTTP/2 201 Created"
+2026-05-13 01:00:47 │ httpx                        │ INFO    │ HTTP Request: PATCH https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/contacts?id=eq.321685d1-b899-4e82-b2bb-16bdedf4b0e9 "HTTP/2 200 OK"
+2026-05-13 01:00:47 │ httpx                        │ INFO    │ HTTP Request: PATCH https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/contacts?id=eq.321685d1-b899-4e82-b2bb-16bdedf4b0e9 "HTTP/2 200 OK"
+2026-05-13 01:00:47 │ seufluxo.bot_engine          │ INFO    │ Fluxo 'edcb6715-daaa-46f2-8763-d42d17f98466' concluído para 5527999035720
+INFO:     10.0.1.14:45688 - "POST /api/webhook/evolution HTTP/1.1" 200 OK
+INFO:     10.0.1.14:45688 - "POST /api/webhook/evolution HTTP/1.1" 200 OK
+2026-05-13 01:00:54 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/kanban_stages?select=%2A&company_id=eq.93577cd9-27e4-4a02-9ce7-dbfaa138f3d1&is_default=eq.True&limit=1 "HTTP/2 200 OK"
+INFO:     10.0.1.14:46178 - "POST /api/kanban_stages/ensure_default HTTP/1.1" 200 OK
+2026-05-13 01:01:22 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 01:02:22 UTC)" (scheduled at 2026-05-13 01:01:22.039060+00:00)
+2026-05-13 01:01:22 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 01:02:22 UTC)" (scheduled at 2026-05-13 01:01:22.052616+00:00)
+2026-05-13 01:01:22 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T01%3A01%3A22.040891%2B00%3A00&limit=50 "HTTP/2 200 OK"
+2026-05-13 01:01:22 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 01:02:22 UTC)" executed successfully
+2026-05-13 01:01:22 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 01:02:22 UTC)" (scheduled at 2026-05-13 01:01:22.039272+00:00)
+2026-05-13 01:01:22 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T01%3A01%3A22.053585%2B00%3A00&limit=50 "HTTP/2 200 OK"
+2026-05-13 01:01:22 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 01:02:22 UTC)" executed successfully
+2026-05-13 01:01:22 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 01:02:22 UTC)" (scheduled at 2026-05-13 01:01:22.052816+00:00)
+2026-05-13 01:01:22 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T01%3A01%3A22.104143%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 01:01:22 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 01:02:22 UTC)" executed successfully
+2026-05-13 01:01:22 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T01%3A01%3A22.106739%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 01:01:22 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 01:02:22 UTC)" executed successfully
+2026-05-13 01:02:22 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 01:03:22 UTC)" (scheduled at 2026-05-13 01:02:22.039060+00:00)
+2026-05-13 01:02:22 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 01:03:22 UTC)" (scheduled at 2026-05-13 01:02:22.052616+00:00)
+2026-05-13 01:02:22 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T01%3A02%3A22.053646%2B00%3A00&limit=50 "HTTP/2 200 OK"
+2026-05-13 01:02:22 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 01:03:22 UTC)" executed successfully
+2026-05-13 01:02:22 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 01:03:22 UTC)" (scheduled at 2026-05-13 01:02:22.052816+00:00)
+2026-05-13 01:02:22 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T01%3A02%3A22.039960%2B00%3A00&limit=50 "HTTP/2 200 OK"
+2026-05-13 01:02:22 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 01:03:22 UTC)" executed successfully
+2026-05-13 01:02:22 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 01:03:22 UTC)" (scheduled at 2026-05-13 01:02:22.039272+00:00)
+2026-05-13 01:02:22 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T01%3A02%3A22.467937%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 01:02:22 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 01:03:22 UTC)" executed successfully
+2026-05-13 01:02:22 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T01%3A02%3A22.465465%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 01:02:22 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 01:03:22 UTC)" executed successfully
+2026-05-13 01:03:22 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 01:04:22 UTC)" (scheduled at 2026-05-13 01:03:22.039060+00:00)
+2026-05-13 01:03:22 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 01:04:22 UTC)" (scheduled at 2026-05-13 01:03:22.052616+00:00)
+2026-05-13 01:03:22 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T01%3A03%3A22.041332%2B00%3A00&limit=50 "HTTP/2 200 OK"
+2026-05-13 01:03:22 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T01%3A03%3A22.053109%2B00%3A00&limit=50 "HTTP/2 200 OK"
+2026-05-13 01:03:22 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 01:04:22 UTC)" executed successfully
+2026-05-13 01:03:22 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 01:04:22 UTC)" (scheduled at 2026-05-13 01:03:22.039272+00:00)
+2026-05-13 01:03:22 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 01:04:22 UTC)" executed successfully
+2026-05-13 01:03:22 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 01:04:22 UTC)" (scheduled at 2026-05-13 01:03:22.052816+00:00)
+2026-05-13 01:03:22 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T01%3A03%3A22.375555%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 22:17:17 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:18:17 UTC)" (scheduled at 2026-05-13 22:17:17.855661+00:00)
+2026-05-13 01:03:22 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 01:04:22 UTC)" executed successfully
+2026-05-13 22:17:17 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T22%3A17%3A17.844522%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 01:03:22 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T01%3A03%3A22.374568%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 22:17:17 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:18:17 UTC)" executed successfully
+2026-05-13 01:03:22 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 01:04:22 UTC)" executed successfully
+2026-05-13 22:17:17 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T22%3A17%3A17.856426%2B00%3A00&limit=50 "HTTP/2 200 OK"
+2026-05-13 01:04:22 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 01:05:22 UTC)" (scheduled at 2026-05-13 01:04:22.039060+00:00)
+2026-05-13 22:17:17 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:18:17 UTC)" executed successfully
+2026-05-13 22:17:17 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:18:17 UTC)" (scheduled at 2026-05-13 22:17:17.857494+00:00)
+2026-05-13 22:17:17 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T22%3A17%3A17.904738%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 01:04:22 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 01:05:22 UTC)" (scheduled at 2026-05-13 01:04:22.052616+00:00)
+2026-05-13 22:17:17 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:18:17 UTC)" executed successfully
+2026-05-13 22:18:17 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:19:17 UTC)" (scheduled at 2026-05-13 22:18:17.757803+00:00)
+2026-05-13 01:04:22 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T01%3A04%3A22.039682%2B00%3A00&limit=50 "HTTP/2 200 OK"
+2026-05-13 22:18:17 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T22%3A18%3A17.758291%2B00%3A00&limit=50 "HTTP/2 200 OK"
+2026-05-13 22:18:17 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:19:17 UTC)" executed successfully
+2026-05-13 01:04:22 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 01:05:22 UTC)" executed successfully
+2026-05-13 22:18:17 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:19:17 UTC)" (scheduled at 2026-05-13 22:18:17.757988+00:00)
+2026-05-13 01:04:22 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 01:05:22 UTC)" (scheduled at 2026-05-13 01:04:22.039272+00:00)
+2026-05-13 22:18:17 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:19:17 UTC)" (scheduled at 2026-05-13 22:18:17.855661+00:00)
+2026-05-13 22:18:17 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T22%3A18%3A17.853349%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 01:04:22 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T01%3A04%3A22.119939%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 22:18:17 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:19:17 UTC)" executed successfully
+2026-05-13 22:18:17 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T22%3A18%3A17.856461%2B00%3A00&limit=50 "HTTP/2 200 OK"
+INFO:     10.0.1.14:38532 - "POST /api/webhook/evolution HTTP/1.1" 200 OK
+2026-05-13 22:18:17 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:19:17 UTC)" executed successfully
+2026-05-13 22:18:17 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:19:17 UTC)" (scheduled at 2026-05-13 22:18:17.857494+00:00)
+2026-05-13 22:18:17 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T22%3A18%3A17.916404%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 01:04:22 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 01:05:22 UTC)" executed successfully
+2026-05-13 22:18:17 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:19:17 UTC)" executed successfully
+2026-05-13 22:19:17 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:20:17 UTC)" (scheduled at 2026-05-13 22:19:17.757803+00:00)
+2026-05-13 01:04:22 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T01%3A04%3A22.053250%2B00%3A00&limit=50 "HTTP/2 200 OK"
+2026-05-13 22:19:17 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:20:17 UTC)" (scheduled at 2026-05-13 22:19:17.855661+00:00)
+2026-05-13 01:04:22 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 01:05:22 UTC)" executed successfully
+2026-05-13 22:19:18 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T22%3A19%3A17.758765%2B00%3A00&limit=50 "HTTP/2 200 OK"
+2026-05-13 22:19:18 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T22%3A19%3A17.856052%2B00%3A00&limit=50 "HTTP/2 200 OK"
+2026-05-13 01:04:22 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 01:05:22 UTC)" (scheduled at 2026-05-13 01:04:22.052816+00:00)
+2026-05-13 22:19:18 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:20:17 UTC)" executed successfully
+2026-05-13 22:19:18 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:20:17 UTC)" (scheduled at 2026-05-13 22:19:17.857494+00:00)
+2026-05-13 01:04:22 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T01%3A04%3A22.188937%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 22:19:18 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:20:17 UTC)" executed successfully
+2026-05-13 01:04:22 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 01:05:22 UTC)" executed successfully
+2026-05-13 22:19:18 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:20:17 UTC)" (scheduled at 2026-05-13 22:19:17.757988+00:00)
+2026-05-13 22:19:18 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T22%3A19%3A18.117299%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 01:04:36 │ seufluxo.webhook             │ INFO    │ [inst_4dl9vgl] ← recebida 558596131340: Olá quero mais informações sobre a Bancada Automática, por favor!
+2026-05-13 22:19:18 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:20:17 UTC)" executed successfully
+2026-05-13 01:04:36 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/companies?select=%2A&evolution_instance=eq.inst_4dl9vgl&limit=1 "HTTP/2 200 OK"
+2026-05-13 22:19:18 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T22%3A19%3A18.116204%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 22:19:18 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:20:17 UTC)" executed successfully
+2026-05-13 01:04:36 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/kanban_stages?select=id&company_id=eq.93577cd9-27e4-4a02-9ce7-dbfaa138f3d1&is_default=eq.True&limit=1 "HTTP/2 200 OK"
+2026-05-13 22:20:17 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:21:17 UTC)" (scheduled at 2026-05-13 22:20:17.757803+00:00)
+2026-05-13 22:20:17 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T22%3A20%3A17.759139%2B00%3A00&limit=50 "HTTP/2 200 OK"
+2026-05-13 01:04:36 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/contacts?select=%2A&company_id=eq.93577cd9-27e4-4a02-9ce7-dbfaa138f3d1&phone=eq.558596131340&limit=1 "HTTP/2 200 OK"
+2026-05-13 22:20:17 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:21:17 UTC)" executed successfully
+2026-05-13 01:04:36 │ httpx                        │ INFO    │ HTTP Request: POST https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/contacts "HTTP/2 201 Created"
+2026-05-13 22:20:17 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:21:17 UTC)" (scheduled at 2026-05-13 22:20:17.757988+00:00)
+2026-05-13 22:20:17 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:21:17 UTC)" (scheduled at 2026-05-13 22:20:17.855661+00:00)
+2026-05-13 22:20:17 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T22%3A20%3A17.829158%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 01:04:36 │ seufluxo.webhook             │ INFO    │ [558596131340] Novo lead criado → stage NOVOS LEADS (2a646311-193b-40a1-a979-c4189b118a7d)
+2026-05-13 22:20:17 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:21:17 UTC)" executed successfully
+2026-05-13 22:20:17 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T22%3A20%3A17.857108%2B00%3A00&limit=50 "HTTP/2 200 OK"
+2026-05-13 22:20:17 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:21:17 UTC)" executed successfully
+2026-05-13 01:04:36 │ httpx                        │ INFO    │ HTTP Request: POST https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/messages "HTTP/2 201 Created"
+2026-05-13 22:20:17 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:21:17 UTC)" (scheduled at 2026-05-13 22:20:17.857494+00:00)
+2026-05-13 01:04:36 │ httpx                        │ INFO    │ HTTP Request: PATCH https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/contacts?id=eq.8219e66e-36c9-4649-a159-edd9e79fa9eb "HTTP/2 200 OK"
+2026-05-13 22:20:17 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T22%3A20%3A17.929060%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 01:04:36 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/kanban_stages?select=id%2C%20name%2C%20entry_keywords%2C%20trigger_flow_id%2C%20is_trigger_enabled&company_id=eq.93577cd9-27e4-4a02-9ce7-dbfaa138f3d1&is_default=eq.False&order=order_index "HTTP/2 200 OK"
+2026-05-13 22:20:17 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:21:17 UTC)" executed successfully
+2026-05-13 22:21:17 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:22:17 UTC)" (scheduled at 2026-05-13 22:21:17.757803+00:00)
+2026-05-13 01:04:36 │ seufluxo.webhook             │ INFO    │ [keyword-routing] Keyword 'informações sobre a bancada automática' encontrada → stage 'B-AUTOMATICA01'
+2026-05-13 22:21:17 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:22:17 UTC)" (scheduled at 2026-05-13 22:21:17.855661+00:00)
+2026-05-13 22:21:17 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T22%3A21%3A17.758350%2B00%3A00&limit=50 "HTTP/2 200 OK"
+2026-05-13 01:04:36 │ httpx                        │ INFO    │ HTTP Request: PATCH https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/contacts?id=eq.8219e66e-36c9-4649-a159-edd9e79fa9eb "HTTP/2 200 OK"
+2026-05-13 22:21:17 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:22:17 UTC)" executed successfully
+2026-05-13 01:04:36 │ seufluxo.webhook             │ INFO    │ [558596131340] Roteado por keyword → stage 'B-AUTOMATICA01'
+2026-05-13 22:21:17 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:22:17 UTC)" (scheduled at 2026-05-13 22:21:17.757988+00:00)
+2026-05-13 22:21:17 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T22%3A21%3A17.867235%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 01:04:36 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/chat_flows?select=id%2C%20name%2C%20trigger_once&id=eq.edcb6715-daaa-46f2-8763-d42d17f98466 "HTTP/2 200 OK"
+2026-05-13 22:21:17 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:22:17 UTC)" executed successfully
+INFO:     10.0.1.14:43002 - "POST /api/webhook/evolution HTTP/1.1" 200 OK
+2026-05-13 01:04:36 │ httpx                        │ INFO    │ HTTP Request: PATCH https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/contacts?id=eq.8219e66e-36c9-4649-a159-edd9e79fa9eb "HTTP/2 200 OK"
+2026-05-13 22:21:17 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T22%3A21%3A17.857489%2B00%3A00&limit=50 "HTTP/2 200 OK"
+2026-05-13 22:21:17 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:22:17 UTC)" executed successfully
+2026-05-13 22:21:17 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:22:17 UTC)" (scheduled at 2026-05-13 22:21:17.857494+00:00)
+2026-05-13 01:04:36 │ seufluxo.webhook             │ INFO    │ [558596131340] Fluxo 'edcb6715-daaa-46f2-8763-d42d17f98466' disparado por keyword routing.
+2026-05-13 22:21:17 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T22%3A21%3A17.946358%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 01:04:37 │ httpx                        │ INFO    │ HTTP Request: POST https://evo.transformafuturo.com.br/chat/fetchProfilePictureUrl/inst_4dl9vgl "HTTP/1.1 200 OK"
+2026-05-13 22:21:17 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:22:17 UTC)" executed successfully
+2026-05-13 01:04:37 │ seufluxo.thumbnail           │ INFO    │ [558596131340] Nenhuma foto de perfil encontrada.
+2026-05-13 22:22:17 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:23:17 UTC)" (scheduled at 2026-05-13 22:22:17.757803+00:00)
+2026-05-13 22:22:17 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:23:17 UTC)" (scheduled at 2026-05-13 22:22:17.855661+00:00)
+2026-05-13 01:04:37 │ httpx                        │ INFO    │ HTTP Request: PATCH https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/contacts?id=eq.8219e66e-36c9-4649-a159-edd9e79fa9eb "HTTP/2 200 OK"
+2026-05-13 22:22:17 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T22%3A22%3A17.758237%2B00%3A00&limit=50 "HTTP/2 200 OK"
+2026-05-13 01:04:37 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/flow_steps?select=%2A&flow_id=eq.edcb6715-daaa-46f2-8763-d42d17f98466&order=order_index "HTTP/2 200 OK"
+2026-05-13 22:22:17 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:23:17 UTC)" executed successfully
+2026-05-13 22:22:17 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:23:17 UTC)" (scheduled at 2026-05-13 22:22:17.757988+00:00)
+2026-05-13 01:04:37 │ seufluxo.bot_engine          │ INFO    │ Executando fluxo 'edcb6715-daaa-46f2-8763-d42d17f98466' com 12 steps para 558596131340
+2026-05-13 22:22:17 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T22%3A22%3A17.856816%2B00%3A00&limit=50 "HTTP/2 200 OK"
+2026-05-13 01:04:37 │ httpx                        │ INFO    │ HTTP Request: PATCH https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/contacts?id=eq.8219e66e-36c9-4649-a159-edd9e79fa9eb "HTTP/2 200 OK"
+2026-05-13 22:22:17 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:23:17 UTC)" executed successfully
+2026-05-13 01:04:37 │ httpx                        │ INFO    │ HTTP Request: PATCH https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/contacts?id=eq.8219e66e-36c9-4649-a159-edd9e79fa9eb "HTTP/2 200 OK"
+2026-05-13 22:22:17 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:23:17 UTC)" (scheduled at 2026-05-13 22:22:17.857494+00:00)
+2026-05-13 01:04:37 │ seufluxo.bot_engine          │ INFO    │   [delay] 7s silencioso
+2026-05-13 22:22:17 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T22%3A22%3A17.865184%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 22:22:17 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:23:17 UTC)" executed successfully
+INFO:     Received SIGTERM, exiting.
+INFO:     Terminated child process [8]
+2026-05-13 22:22:17 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T22%3A22%3A17.916753%2B00%3A00 "HTTP/2 200 OK"
+INFO:     Terminated child process [9]
+2026-05-13 22:22:17 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:23:17 UTC)" executed successfully
+2026-05-13 22:23:17 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:24:17 UTC)" (scheduled at 2026-05-13 22:23:17.757803+00:00)
+INFO:     Waiting for child process [8]
+2026-05-13 22:23:17 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T22%3A23%3A17.759203%2B00%3A00&limit=50 "HTTP/2 200 OK"
+INFO:     Shutting down
+2026-05-13 22:23:17 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:24:17 UTC)" executed successfully
+INFO:     Shutting down
+2026-05-13 22:23:17 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:24:17 UTC)" (scheduled at 2026-05-13 22:23:17.757988+00:00)
+2026-05-13 22:23:17 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:24:17 UTC)" (scheduled at 2026-05-13 22:23:17.855661+00:00)
+INFO:     Waiting for application shutdown.
+2026-05-13 22:23:17 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T22%3A23%3A17.834064%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 01:04:42 │ seufluxo.scheduler           │ INFO    │ [Scheduler] Motor de agendamento encerrado.
+2026-05-13 22:23:17 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:24:17 UTC)" executed successfully
+2026-05-13 01:04:42 │ seufluxo                     │ INFO    │ SeuFluxo WhatsApp API — Encerrado.
+2026-05-13 22:23:17 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T22%3A23%3A17.857791%2B00%3A00&limit=50 "HTTP/2 200 OK"
+2026-05-13 22:23:17 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:24:17 UTC)" executed successfully
+2026-05-13 01:04:42 │ apscheduler.scheduler        │ INFO    │ Scheduler has been shut down
+2026-05-13 22:23:17 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:24:17 UTC)" (scheduled at 2026-05-13 22:23:17.857494+00:00)
+INFO:     Application shutdown complete.
+2026-05-13 22:23:17 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T22%3A23%3A17.904607%2B00%3A00 "HTTP/2 200 OK"
+INFO:     Finished server process [8]
+2026-05-13 22:23:17 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:24:17 UTC)" executed successfully
+INFO:     Received SIGTERM, exiting.
+INFO:     Waiting for child process [9]
+INFO:     Terminated child process [8]
+INFO:     Terminated child process [9]
+INFO:     Waiting for background tasks to complete. (CTRL+C to force quit)
+INFO:     Waiting for child process [8]
+2026-05-13 01:04:44 │ httpx                        │ INFO    │ HTTP Request: PATCH https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/contacts?id=eq.8219e66e-36c9-4649-a159-edd9e79fa9eb "HTTP/2 200 OK"
+INFO:     Shutting down
+2026-05-13 01:04:44 │ seufluxo.bot_engine          │ INFO    │   [composing] 3s digitando...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2026-05-13 01:04:45 │ httpx                        │ INFO    │ HTTP Request: POST https://evo.transformafuturo.com.br/chat/sendPresence/inst_4dl9vgl "HTTP/1.1 201 Created"
+INFO:     Waiting for application shutdown.
+2026-05-13 01:04:48 │ httpx                        │ INFO    │ HTTP Request: PATCH https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/contacts?id=eq.8219e66e-36c9-4649-a159-edd9e79fa9eb "HTTP/2 200 OK"
+2026-05-13 22:23:32 │ seufluxo.scheduler           │ INFO    │ [Scheduler] Motor de agendamento encerrado.
+2026-05-13 22:23:32 │ seufluxo                     │ INFO    │ SeuFluxo WhatsApp API — Encerrado.
+2026-05-13 22:23:32 │ seufluxo.scheduler           │ INFO    │ [Scheduler] Motor de agendamento encerrado.
+2026-05-13 01:04:49 │ httpx                        │ INFO    │ HTTP Request: POST https://evo.transformafuturo.com.br/chat/sendPresence/inst_4dl9vgl "HTTP/1.1 201 Created"
+2026-05-13 22:23:32 │ seufluxo                     │ INFO    │ SeuFluxo WhatsApp API — Encerrado.
+2026-05-13 22:23:32 │ apscheduler.scheduler        │ INFO    │ Scheduler has been shut down
+INFO:     Application shutdown complete.
+INFO:     10.0.1.14:38532 - "POST /api/webhook/evolution HTTP/1.1" 200 OK
+2026-05-13 22:23:32 │ apscheduler.scheduler        │ INFO    │ Scheduler has been shut down
+INFO:     10.0.1.14:35524 - "OPTIONS /api/messages/send HTTP/1.1" 200 OK
+INFO:     Application shutdown complete.
+2026-05-13 01:14:47 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/companies?select=evolution_instance%2C%20evolution_apikey&id=eq.93577cd9-27e4-4a02-9ce7-dbfaa138f3d1 "HTTP/2 200 OK"
+INFO:     Finished server process [9]
+INFO:     Finished server process [8]
+2026-05-13 01:14:47 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/contacts?select=phone&id=eq.321685d1-b899-4e82-b2bb-16bdedf4b0e9 "HTTP/2 200 OK"
+INFO:     Waiting for child process [9]
+2026-05-13 01:14:48 │ httpx                        │ INFO    │ HTTP Request: POST https://evo.transformafuturo.com.br/chat/sendPresence/inst_4dl9vgl "HTTP/1.1 201 Created"
+2026-05-13 01:14:49 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/companies?select=evolution_instance%2C%20evolution_apikey&id=eq.93577cd9-27e4-4a02-9ce7-dbfaa138f3d1 "HTTP/2 200 OK"
+INFO:     Stopping parent process [1]
+2026-05-13 01:14:49 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/contacts?select=phone&id=eq.321685d1-b899-4e82-b2bb-16bdedf4b0e9 "HTTP/2 200 OK"
+2026-05-13 01:14:49 │ httpx                        │ INFO    │ HTTP Request: POST https://evo.transformafuturo.com.br/message/sendText/inst_4dl9vgl "HTTP/1.1 201 Created"
+INFO:     10.0.1.14:45210 - "POST /api/webhook/evolution HTTP/1.1" 200 OK
+2026-05-13 01:14:49 │ httpx                        │ INFO    │ HTTP Request: POST https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/messages "HTTP/2 201 Created"
+2026-05-13 01:14:49 │ httpx                        │ INFO    │ HTTP Request: PATCH https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/contacts?id=eq.321685d1-b899-4e82-b2bb-16bdedf4b0e9 "HTTP/2 200 OK"
+INFO:     10.0.1.14:35524 - "POST /api/messages/send HTTP/1.1" 200 OK
+INFO:     10.0.1.14:35524 - "POST /api/webhook/evolution HTTP/1.1" 200 OK
+INFO:     10.0.1.14:35524 - "POST /api/webhook/evolution HTTP/1.1" 200 OK
+2026-05-13 01:14:50 │ httpx                        │ INFO    │ HTTP Request: POST https://evo.transformafuturo.com.br/chat/sendPresence/inst_4dl9vgl "HTTP/1.1 201 Created"
+INFO:     10.0.1.14:45208 - "POST /api/contacts/321685d1-b899-4e82-b2bb-16bdedf4b0e9/presence HTTP/1.1" 200 OK
+INFO:     10.0.1.14:45208 - "POST /api/webhook/evolution HTTP/1.1" 200 OK
+2026-05-13 01:15:03 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 01:16:03 UTC)" (scheduled at 2026-05-13 01:15:03.851780+00:00)
+2026-05-13 01:15:03 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 01:16:03 UTC)" (scheduled at 2026-05-13 01:15:03.864503+00:00)
+2026-05-13 01:15:04 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T01%3A15%3A03.865085%2B00%3A00&limit=50 "HTTP/2 200 OK"
+2026-05-13 01:15:04 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 01:16:03 UTC)" executed successfully
+2026-05-13 01:15:04 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T01%3A15%3A03.854275%2B00%3A00&limit=50 "HTTP/2 200 OK"
+2026-05-13 01:15:04 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 01:16:03 UTC)" (scheduled at 2026-05-13 01:15:03.864801+00:00)
+2026-05-13 01:15:04 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 01:16:03 UTC)" executed successfully
+2026-05-13 01:15:04 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 01:16:03 UTC)" (scheduled at 2026-05-13 01:15:03.853105+00:00)
+2026-05-13 01:15:04 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T01%3A15%3A04.044194%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 01:15:04 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T01%3A15%3A04.047980%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 01:15:04 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 01:16:03 UTC)" executed successfully
+2026-05-13 01:15:04 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 01:16:03 UTC)" executed successfully
+2026-05-13 01:15:06 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/companies?select=evolution_instance%2C%20evolution_apikey&id=eq.93577cd9-27e4-4a02-9ce7-dbfaa138f3d1 "HTTP/2 200 OK"
+2026-05-13 01:15:06 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/contacts?select=phone&id=eq.321685d1-b899-4e82-b2bb-16bdedf4b0e9 "HTTP/2 200 OK"
+2026-05-13 01:15:07 │ httpx                        │ INFO    │ HTTP Request: POST https://evo.transformafuturo.com.br/chat/sendPresence/inst_4dl9vgl "HTTP/1.1 201 Created"
+2026-05-13 22:32:09 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:33:09 UTC)" executed successfully
+INFO:     10.0.1.14:47556 - "POST /api/contacts/321685d1-b899-4e82-b2bb-16bdedf4b0e9/presence HTTP/1.1" 200 OK
+2026-05-13 01:15:12 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/companies?select=evolution_instance%2C%20evolution_apikey&id=eq.93577cd9-27e4-4a02-9ce7-dbfaa138f3d1 "HTTP/2 200 OK"
+2026-05-13 22:32:09 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:33:09 UTC)" (scheduled at 2026-05-13 22:32:09.444663+00:00)
+2026-05-13 01:15:12 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/contacts?select=phone&id=eq.321685d1-b899-4e82-b2bb-16bdedf4b0e9 "HTTP/2 200 OK"
+2026-05-13 22:32:09 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:33:09 UTC)" executed successfully
+2026-05-13 01:15:13 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/companies?select=evolution_instance%2C%20evolution_apikey&id=eq.93577cd9-27e4-4a02-9ce7-dbfaa138f3d1 "HTTP/2 200 OK"
+2026-05-13 01:15:13 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/contacts?select=phone&id=eq.321685d1-b899-4e82-b2bb-16bdedf4b0e9 "HTTP/2 200 OK"
+2026-05-13 22:32:09 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:33:09 UTC)" (scheduled at 2026-05-13 22:32:09.357988+00:00)
+2026-05-13 01:15:13 │ httpx                        │ INFO    │ HTTP Request: POST https://evo.transformafuturo.com.br/chat/sendPresence/inst_4dl9vgl "HTTP/1.1 201 Created"
+INFO:     10.0.1.14:47556 - "POST /api/contacts/321685d1-b899-4e82-b2bb-16bdedf4b0e9/presence HTTP/1.1" 200 OK
+2026-05-13 22:32:09 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T22%3A32%3A09.532701%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 01:15:14 │ httpx                        │ INFO    │ HTTP Request: POST https://evo.transformafuturo.com.br/chat/sendPresence/inst_4dl9vgl "HTTP/1.1 201 Created"
+2026-05-13 22:32:09 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:33:09 UTC)" executed successfully
+2026-05-13 01:15:15 │ httpx                        │ INFO    │ HTTP Request: POST https://evo.transformafuturo.com.br/message/sendText/inst_4dl9vgl "HTTP/1.1 201 Created"
+INFO:     10.0.1.14:47556 - "POST /api/webhook/evolution HTTP/1.1" 200 OK
+2026-05-13 22:32:09 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T22%3A32%3A09.533170%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 01:15:15 │ httpx                        │ INFO    │ HTTP Request: POST https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/messages "HTTP/2 201 Created"
+2026-05-13 22:32:09 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:33:09 UTC)" executed successfully
+2026-05-13 22:33:09 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:34:09 UTC)" (scheduled at 2026-05-13 22:33:09.357781+00:00)
+2026-05-13 01:15:15 │ httpx                        │ INFO    │ HTTP Request: PATCH https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/contacts?id=eq.321685d1-b899-4e82-b2bb-16bdedf4b0e9 "HTTP/2 200 OK"
+INFO:     10.0.1.14:43454 - "POST /api/messages/send HTTP/1.1" 200 OK
+2026-05-13 22:33:09 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:34:09 UTC)" (scheduled at 2026-05-13 22:33:09.444433+00:00)
+2026-05-13 22:33:09 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T22%3A33%3A09.446168%2B00%3A00&limit=50 "HTTP/2 200 OK"
+INFO:     10.0.1.14:43454 - "POST /api/webhook/evolution HTTP/1.1" 200 OK
+INFO:     10.0.1.14:43454 - "POST /api/webhook/evolution HTTP/1.1" 200 OK
+2026-05-13 22:33:09 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:34:09 UTC)" executed successfully
+INFO:     10.0.1.14:43454 - "POST /api/webhook/evolution HTTP/1.1" 200 OK
+2026-05-13 22:33:09 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:34:09 UTC)" (scheduled at 2026-05-13 22:33:09.444663+00:00)
+2026-05-13 01:15:19 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/companies?select=evolution_instance%2C%20evolution_apikey&id=eq.93577cd9-27e4-4a02-9ce7-dbfaa138f3d1 "HTTP/2 200 OK"
+2026-05-13 22:33:09 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T22%3A33%3A09.358826%2B00%3A00&limit=50 "HTTP/2 200 OK"
+2026-05-13 01:15:19 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/contacts?select=phone&id=eq.321685d1-b899-4e82-b2bb-16bdedf4b0e9 "HTTP/2 200 OK"
+2026-05-13 22:33:09 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:34:09 UTC)" executed successfully
+2026-05-13 22:33:09 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:34:09 UTC)" (scheduled at 2026-05-13 22:33:09.357988+00:00)
+2026-05-13 01:15:20 │ httpx                        │ INFO    │ HTTP Request: POST https://evo.transformafuturo.com.br/chat/sendPresence/inst_4dl9vgl "HTTP/1.1 201 Created"
+2026-05-13 22:33:09 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T22%3A33%3A09.908215%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 22:33:09 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:34:09 UTC)" executed successfully
+INFO:     10.0.1.14:43454 - "POST /api/contacts/321685d1-b899-4e82-b2bb-16bdedf4b0e9/presence HTTP/1.1" 200 OK
+2026-05-13 22:33:10 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T22%3A33%3A09.919880%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 01:15:44 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/companies?select=evolution_instance%2C%20evolution_apikey&id=eq.93577cd9-27e4-4a02-9ce7-dbfaa138f3d1 "HTTP/2 200 OK"
+2026-05-13 22:33:10 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:34:09 UTC)" executed successfully
+2026-05-13 22:34:09 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:35:09 UTC)" (scheduled at 2026-05-13 22:34:09.357781+00:00)
+2026-05-13 01:15:44 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/contacts?select=phone&id=eq.321685d1-b899-4e82-b2bb-16bdedf4b0e9 "HTTP/2 200 OK"
+2026-05-13 22:34:09 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T22%3A34%3A09.358297%2B00%3A00&limit=50 "HTTP/2 200 OK"
+2026-05-13 01:15:45 │ httpx                        │ INFO    │ HTTP Request: POST https://evo.transformafuturo.com.br/chat/sendPresence/inst_4dl9vgl "HTTP/1.1 201 Created"
+2026-05-13 22:34:09 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:35:09 UTC)" executed successfully
+2026-05-13 22:34:09 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:35:09 UTC)" (scheduled at 2026-05-13 22:34:09.357988+00:00)
+2026-05-13 01:15:46 │ httpx                        │ INFO    │ HTTP Request: POST https://evo.transformafuturo.com.br/message/sendText/inst_4dl9vgl "HTTP/1.1 201 Created"
+2026-05-13 22:34:09 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:35:09 UTC)" (scheduled at 2026-05-13 22:34:09.444433+00:00)
+INFO:     10.0.1.14:60110 - "POST /api/webhook/evolution HTTP/1.1" 200 OK
+2026-05-13 22:34:09 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T22%3A34%3A09.444531%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 22:34:09 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:35:09 UTC)" executed successfully
+2026-05-13 01:15:46 │ httpx                        │ INFO    │ HTTP Request: POST https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/messages "HTTP/2 201 Created"
+2026-05-13 22:34:09 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T22%3A34%3A09.445647%2B00%3A00&limit=50 "HTTP/2 200 OK"
+2026-05-13 22:34:09 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:35:09 UTC)" executed successfully
+2026-05-13 01:15:46 │ httpx                        │ INFO    │ HTTP Request: PATCH https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/contacts?id=eq.321685d1-b899-4e82-b2bb-16bdedf4b0e9 "HTTP/2 200 OK"
+2026-05-13 22:34:09 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:35:09 UTC)" (scheduled at 2026-05-13 22:34:09.444663+00:00)
+INFO:     10.0.1.14:60096 - "POST /api/messages/send HTTP/1.1" 200 OK
+INFO:     10.0.1.14:60096 - "POST /api/webhook/evolution HTTP/1.1" 200 OK
+2026-05-13 22:34:09 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T22%3A34%3A09.497681%2B00%3A00 "HTTP/2 200 OK"
+INFO:     10.0.1.14:60096 - "POST /api/webhook/evolution HTTP/1.1" 200 OK
+2026-05-13 22:34:09 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:35:09 UTC)" executed successfully
+2026-05-13 01:16:03 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 01:17:03 UTC)" (scheduled at 2026-05-13 01:16:03.851780+00:00)
+2026-05-13 01:16:03 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 01:17:03 UTC)" (scheduled at 2026-05-13 01:16:03.864503+00:00)
+2026-05-13 22:35:09 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:36:09 UTC)" (scheduled at 2026-05-13 22:35:09.357781+00:00)
+2026-05-13 01:16:03 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T01%3A16%3A03.864938%2B00%3A00&limit=50 "HTTP/2 200 OK"
+2026-05-13 01:16:03 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T01%3A16%3A03.852613%2B00%3A00&limit=50 "HTTP/2 200 OK"
+2026-05-13 22:35:09 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:36:09 UTC)" (scheduled at 2026-05-13 22:35:09.444433+00:00)
+2026-05-13 01:16:03 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 01:17:03 UTC)" executed successfully
+2026-05-13 22:35:09 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T22%3A35%3A09.358630%2B00%3A00&limit=50 "HTTP/2 200 OK"
+2026-05-13 22:35:09 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:36:09 UTC)" executed successfully
+2026-05-13 22:35:09 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:36:09 UTC)" (scheduled at 2026-05-13 22:35:09.357988+00:00)
+2026-05-13 01:16:03 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 01:17:03 UTC)" executed successfully
+2026-05-13 01:16:03 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 01:17:03 UTC)" (scheduled at 2026-05-13 01:16:03.853105+00:00)
+2026-05-13 01:16:03 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 01:17:03 UTC)" (scheduled at 2026-05-13 01:16:03.864801+00:00)
+2026-05-13 01:16:03 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T01%3A16%3A03.923847%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 22:35:09 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T22%3A35%3A09.444902%2B00%3A00&limit=50 "HTTP/2 200 OK"
+2026-05-13 01:16:03 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T01%3A16%3A03.924152%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 01:16:03 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 01:17:03 UTC)" executed successfully
+2026-05-13 22:35:09 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:36:09 UTC)" executed successfully
+2026-05-13 22:35:09 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:36:09 UTC)" (scheduled at 2026-05-13 22:35:09.444663+00:00)
+2026-05-13 01:16:03 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 01:17:03 UTC)" executed successfully
+INFO:     10.0.1.14:56086 - "OPTIONS /api/contacts/321685d1-b899-4e82-b2bb-16bdedf4b0e9/crm HTTP/1.1" 200 OK
+2026-05-13 22:35:09 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T22%3A35%3A09.561302%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 01:16:29 │ httpx                        │ INFO    │ HTTP Request: PATCH https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/contacts?id=eq.321685d1-b899-4e82-b2bb-16bdedf4b0e9 "HTTP/2 200 OK"
+2026-05-13 22:35:09 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:36:09 UTC)" executed successfully
+2026-05-13 01:16:30 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/contacts?select=%2A&id=eq.321685d1-b899-4e82-b2bb-16bdedf4b0e9 "HTTP/2 200 OK"
+2026-05-13 22:35:09 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T22%3A35%3A09.584041%2B00%3A00 "HTTP/2 200 OK"
+     2026-05-13 01:16:30 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/contact_tags?select=tag_id%2C%20tags%28id%2C%20name%2C%20color%29&contact_id=eq.321685d1-b899-4e82-b2bb-16bdedf4b0e9 "HTTP/2 200 OK"
+2026-05-13 22:35:09 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:36:09 UTC)" executed successfully
+INFO:     10.0.1.14:56086 - "PATCH /api/contacts/321685d1-b899-4e82-b2bb-16bdedf4b0e9/crm HTTP/1.1" 200 OK
+2026-05-13 22:36:09 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:37:09 UTC)" (scheduled at 2026-05-13 22:36:09.357781+00:00)
+2026-05-13 22:36:09 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:37:09 UTC)" (scheduled at 2026-05-13 22:36:09.444433+00:00)
+INFO:     Received SIGTERM, exiting.
+2026-05-13 22:36:09 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T22%3A36%3A09.358466%2B00%3A00&limit=50 "HTTP/2 200 OK"
+INFO:     Terminated child process [8]
+2026-05-13 22:36:09 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:37:09 UTC)" executed successfully
+INFO:     Terminated child process [9]
+2026-05-13 22:36:09 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:37:09 UTC)" (scheduled at 2026-05-13 22:36:09.357988+00:00)
+INFO:     Waiting for child process [8]
+2026-05-13 22:36:09 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T22%3A36%3A09.445921%2B00%3A00&limit=50 "HTTP/2 200 OK"
+INFO:     Shutting down
+2026-05-13 22:36:09 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:37:09 UTC)" executed successfully
+INFO:     Shutting down
+2026-05-13 22:36:09 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:37:09 UTC)" (scheduled at 2026-05-13 22:36:09.444663+00:00)
+INFO:     Waiting for application shutdown.
+2026-05-13 22:36:09 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T22%3A36%3A09.458374%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 01:16:59 │ seufluxo.scheduler           │ INFO    │ [Scheduler] Motor de agendamento encerrado.
+2026-05-13 22:36:09 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:37:09 UTC)" executed successfully
+2026-05-13 01:16:59 │ seufluxo                     │ INFO    │ SeuFluxo WhatsApp API — Encerrado.
+2026-05-13 22:36:09 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T22%3A36%3A09.503994%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 01:16:59 │ apscheduler.scheduler        │ INFO    │ Scheduler has been shut down
+2026-05-13 22:36:09 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:37:09 UTC)" executed successfully
+INFO:     Application shutdown complete.
+2026-05-13 22:37:09 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:38:09 UTC)" (scheduled at 2026-05-13 22:37:09.357781+00:00)
+INFO:     Finished server process [9]
+2026-05-13 22:37:09 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T22%3A37%3A09.358715%2B00%3A00&limit=50 "HTTP/2 200 OK"
+INFO:     Waiting for application shutdown.
+2026-05-13 22:37:09 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:38:09 UTC)" executed successfully
+2026-05-13 01:16:59 │ seufluxo.scheduler           │ INFO    │ [Scheduler] Motor de agendamento encerrado.
+2026-05-13 22:37:09 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:38:09 UTC)" (scheduled at 2026-05-13 22:37:09.357988+00:00)
+2026-05-13 01:16:59 │ seufluxo                     │ INFO    │ SeuFluxo WhatsApp API — Encerrado.
+2026-05-13 22:37:09 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:38:09 UTC)" (scheduled at 2026-05-13 22:37:09.444433+00:00)
+2026-05-13 01:16:59 │ apscheduler.scheduler        │ INFO    │ Scheduler has been shut down
+INFO:     Application shutdown complete.
+2026-05-13 22:37:09 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T22%3A37%3A09.438792%2B00%3A00 "HTTP/2 200 OK"
+INFO:     Finished server process [8]
+2026-05-13 22:37:09 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:38:09 UTC)" executed successfully
+2026-05-13 22:37:09 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T22%3A37%3A09.445562%2B00%3A00&limit=50 "HTTP/2 200 OK"
+2026-05-13 22:37:09 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:38:09 UTC)" executed successfully
+2026-05-13 22:37:09 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:38:09 UTC)" (scheduled at 2026-05-13 22:37:09.444663+00:00)
+2026-05-13 22:37:09 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T22%3A37%3A09.555397%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 22:37:09 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:38:09 UTC)" executed successfully
+INFO:     Waiting for child process [9]
+2026-05-13 22:38:09 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:39:09 UTC)" (scheduled at 2026-05-13 22:38:09.357781+00:00)
+2026-05-13 22:38:09 │ apscheduler.executors.default │ INFO    │ Running job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:39:09 UTC)" (scheduled at 2026-05-13 22:38:09.444433+00:00)
+INFO:     Stopping parent process [1]
+2026-05-13 22:38:09 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T22%3A38%3A09.359029%2B00%3A00&limit=50 "HTTP/2 200 OK"
+2026-05-13 22:38:09 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:39:09 UTC)" executed successfully
+2026-05-13 22:38:09 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:39:09 UTC)" (scheduled at 2026-05-13 22:38:09.357988+00:00)
+2026-05-13 22:38:09 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T22%3A38%3A09.474650%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 22:38:09 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:39:09 UTC)" executed successfully
+2026-05-13 22:38:09 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/scheduled_messages?select=%2A%2C%20contacts%28phone%2C%20name%2C%20email%29%2C%20companies%28evolution_instance%2C%20evolution_apikey%29&status=eq.pending&scheduled_for=lte.2026-05-13T22%3A38%3A09.444966%2B00%3A00&limit=50 "HTTP/2 200 OK"
+2026-05-13 22:38:09 │ apscheduler.executors.default │ INFO    │ Job "process_scheduled_messages (trigger: interval[0:01:00], next run at: 2026-05-13 22:39:09 UTC)" executed successfully
+2026-05-13 22:38:09 │ apscheduler.executors.default │ INFO    │ Running job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:39:09 UTC)" (scheduled at 2026-05-13 22:38:09.444663+00:00)
+2026-05-13 22:38:09 │ httpx                        │ INFO    │ HTTP Request: GET https://pamhgjhijftcnfbhjoyk.supabase.co/rest/v1/campaigns?select=%2A&status=eq.scheduled&scheduled_for=lte.2026-05-13T22%3A38%3A09.511779%2B00%3A00 "HTTP/2 200 OK"
+2026-05-13 22:38:09 │ apscheduler.executors.default │ INFO    │ Job "process_campaigns (trigger: interval[0:01:00], next run at: 2026-05-13 22:39:09 UTC)" executed successfully
+INFO:     Received SIGTERM, exiting.
+INFO:     Terminated child process [8]
+INFO:     Terminated child process [9]
+INFO:     Waiting for child process [8]
+INFO:     Shutting down
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2026-05-13 22:38:53 │ seufluxo.scheduler           │ INFO    │ [Scheduler] Motor de agendamento encerrado.
+2026-05-13 22:38:53 │ seufluxo                     │ INFO    │ SeuFluxo WhatsApp API — Encerrado.
+2026-05-13 22:38:53 │ apscheduler.scheduler        │ INFO    │ Scheduler has been shut down
+INFO:     Application shutdown complete.
+INFO:     Finished server process [8]
+INFO:     Waiting for child process [9]
+INFO:     Waiting for application shutdown.
+2026-05-13 22:38:53 │ seufluxo.scheduler           │ INFO    │ [Scheduler] Motor de agendamento encerrado.
+2026-05-13 22:38:53 │ seufluxo                     │ INFO    │ SeuFluxo WhatsApp API — Encerrado.
+2026-05-13 22:38:53 │ apscheduler.scheduler        │ INFO    │ Scheduler has been shut down
+INFO:     Application shutdown complete.
+INFO:     Finished server process [9]
+INFO:     Stopping parent process [1]
