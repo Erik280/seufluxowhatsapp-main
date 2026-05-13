@@ -273,6 +273,13 @@
   font-size: 0.9rem;
 }
 
+.task-phone {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #8892b0);
+  margin-bottom: 6px;
+  margin-top: -2px;
+}
+
 .task-footer {
   display: flex;
   justify-content: flex-end;
@@ -899,4 +906,16 @@
 .quick-chat-body {
   flex: 1;
   overflow: hidden;
+}
+
+.quick-chat-user-info {
+  display: flex;
+  flex-direction: column;
+  max-width: 85%;
+}
+
+.quick-chat-phone {
+  font-size: 0.85rem;
+  color: #8892b0;
+  margin-top: 2px;
 }

@@ -690,6 +690,10 @@ export default function KanbanView() {
                         {isRunning && <span className="task-flow-icon" title="Automação em andamento"><Zap size={12} /></span>}
                         {contact.name || contact.phone}
                       </div>
+
+                      {contact.name && (
+                        <div className="task-phone">{contact.phone}</div>
+                      )}
                       
                       {contact.last_message_content && (
                         <div className="task-preview">
@@ -752,7 +756,10 @@ export default function KanbanView() {
       {isQuickChatOpen && selectedContact && (
         <div className="kanban-quick-chat">
           <div className="quick-chat-header">
-            <h3>{selectedContact.name || selectedContact.phone}</h3>
+            <div className="quick-chat-user-info">
+              <h3>{selectedContact.name || selectedContact.phone}</h3>
+              {selectedContact.name && <div className="quick-chat-phone">{selectedContact.phone}</div>}
+            </div>
             <button className="close-quick-chat" onClick={() => setIsQuickChatOpen(false)}>
               <X size={18} />
             </button>
