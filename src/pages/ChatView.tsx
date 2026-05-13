@@ -1217,7 +1217,20 @@ export default function ChatView() {
                               placeholder="Digite a mensagem..."
                             />
                           )}
-                          {step.type === 'delay' && (
+                          {['image', 'video', 'audio'].includes(step.type) && (
+                            <input 
+                              type="text"
+                              className="step-input"
+                              value={step.content}
+                              onChange={(e) => {
+                                const newSteps = [...scheduleSteps];
+                                newSteps[index].content = e.target.value;
+                                setScheduleSteps(newSteps);
+                              }}
+                              placeholder={`URL da ${step.type === 'image' ? 'Imagem' : step.type === 'video' ? 'Vídeo' : 'Áudio'}...`}
+                            />
+                          )}
+                          {['delay', 'composing', 'recording'].includes(step.type) && (
                             <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
                               <input 
                                 type="number" 
@@ -1230,7 +1243,7 @@ export default function ChatView() {
                                 }}
                                 style={{ width: '80px' }}
                                 min="1" max="60"
-                              /> segundos
+                              /> segundos {(step.type === 'composing' ? '(digitando)' : step.type === 'recording' ? '(gravando)' : '')}
                             </div>
                           )}
                           <button 
@@ -1246,9 +1259,14 @@ export default function ChatView() {
                     </div>
                   )}
 
-                  <div className="add-step-buttons">
+                  <div className="add-step-buttons" style={{ flexWrap: 'wrap' }}>
                     <button type="button" onClick={() => handleAddScheduleStep('text')}>+ Texto</button>
-                    <button type="button" onClick={() => handleAddScheduleStep('delay')}>+ Delay</button>
+                    <button type="button" onClick={() => handleAddScheduleStep('image')}>+ Imagem</button>
+                    <button type="button" onClick={() => handleAddScheduleStep('video')}>+ Vídeo</button>
+                    <button type="button" onClick={() => handleAddScheduleStep('audio')}>+ Áudio</button>
+                    <button type="button" onClick={() => handleAddScheduleStep('delay')}>+ Pausa</button>
+                    <button type="button" onClick={() => handleAddScheduleStep('composing')}>+ Digitando</button>
+                    <button type="button" onClick={() => handleAddScheduleStep('recording')}>+ Gravando</button>
                   </div>
 
                   <div className="save-as-flow">
