@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
-import { Send, File, FolderOpen, Plus, Mic, Trash2, Zap, FileText } from 'lucide-react';
+import { Send, FolderOpen, Plus, Mic, Trash2, FileText } from 'lucide-react';
 import '../pages/ChatView.css'; // Reusing chat styles
 
 interface Message {
@@ -252,7 +252,7 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
         if (audioBlob.size > 0) {
           const ext = mimeType.includes('ogg') ? 'ogg' : 'webm';
-          const audioFile = new File([audioBlob], `voice_note_${Date.now()}.${ext}`, { type: mimeType });
+          const audioFile = new window.File([audioBlob], `voice_note_${Date.now()}.${ext}`, { type: mimeType });
           await handleUploadFile(audioFile);
         }
         setRecordingTime(0);
