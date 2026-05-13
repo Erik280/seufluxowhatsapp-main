@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
-import { Send, File } from 'lucide-react';
+import { Send, File, FolderOpen, Plus, Mic, Trash2, Zap, FileText } from 'lucide-react';
 import '../pages/ChatView.css'; // Reusing chat styles
 
 interface Message {
@@ -8,9 +8,15 @@ interface Message {
   contact_id: string;
   direction: 'in' | 'out';
   content: string;
-  media_url?: string;
-  media_type?: string;
+  media_url?: string | null;
+  media_type?: string | null;
   created_at: string;
+}
+
+interface QuickReply {
+  id: string;
+  shortcut: string;
+  content: string;
 }
 
 interface QuickChatProps {
@@ -23,6 +29,30 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Media Library state
+  const [showMediaModal, setShowMediaModal] = useState(false);
+  const [libraryMedia, setLibraryMedia] = useState<any[]>([]);
+
+  // Voice recording state
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const recordingStartRef = useRef<number>(0);
+  const presenceIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const typingDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isTypingRef = useRef(false);
+
+  // Drag-and-drop state
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCounterRef = useRef(0);
+
+  // Quick Replies state
+  const [quickReplies, setQuickReplies] = useState<QuickReply[]>([]);
+  const [showQRMenu, setShowQRMenu] = useState(false);
+  const [filteredQRs, setFilteredQRs] = useState<QuickReply[]>([]);
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -39,6 +69,27 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
     
     fetchMessages();
 
+    // Fetch Media Library
+    const fetchMedia = async () => {
+      const { data } = await supabase
+        .from('media_library')
+        .select('*')
+        .eq('company_id', companyId);
+      if (data) setLibraryMedia(data);
+    };
+    fetchMedia();
+
+    // Fetch Quick Replies
+    const fetchQuickReplies = async () => {
+      const { data } = await supabase
+        .from('quick_replies')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('shortcut', { ascending: true });
+      if (data) setQuickReplies(data);
+    };
+    fetchQuickReplies();
+
     const msgSub = supabase
       .channel(`quick-chat-${contactId}-${Math.random()}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `contact_id=eq.${contactId}` }, (payload) => {
@@ -52,7 +103,7 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
     return () => {
       supabase.removeChannel(msgSub);
     };
-  }, [contactId]);
+  }, [contactId, companyId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -62,6 +113,7 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
     if (!inputValue.trim()) return;
     const text = inputValue.trim();
     setInputValue('');
+    setShowQRMenu(false);
 
     try {
       await fetch(`${API_BASE_URL}/api/messages/send`, {
@@ -72,6 +124,198 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
     } catch (e) {
       console.error('Failed to send message', e);
       alert('Falha ao enviar mensagem.');
+    }
+  };
+
+  const handleUploadFile = useCallback(async (file: File) => {
+    const formData = new FormData();
+    formData.append('contact_id', contactId);
+    formData.append('company_id', companyId);
+    formData.append('file', file);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/messages/send/media`, {
+        method: 'POST',
+        body: formData
+      });
+      if (!response.ok) {
+        const errData = await response.json();
+        alert(`Erro ao enviar arquivo: ${errData.detail || 'Erro desconhecido'}`);
+      }
+    } catch (error) {
+      console.error('Upload falhou', error);
+      alert('Falha ao enviar arquivo.');
+    }
+  }, [contactId, companyId]);
+
+  // Drag & Drop handlers
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current += 1;
+    if (dragCounterRef.current === 1) setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current -= 1;
+    if (dragCounterRef.current === 0) setIsDragging(false);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current = 0;
+    setIsDragging(false);
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length === 0) return;
+    for (const file of files) {
+      await handleUploadFile(file);
+    }
+  }, [handleUploadFile]);
+
+  // Voice Recording
+  const sendPresenceRecording = useCallback(async () => {
+    try {
+      await fetch(`${API_BASE_URL}/api/contacts/${contactId}/presence`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company_id: companyId, presence: 'recording' })
+      });
+    } catch (e) { console.error('Presence error', e); }
+  }, [contactId, companyId]);
+
+  const sendPresenceComposing = useCallback(async () => {
+    try {
+      await fetch(`${API_BASE_URL}/api/contacts/${contactId}/presence`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company_id: companyId, presence: 'composing' })
+      });
+    } catch (e) { console.error('Composing presence error', e); }
+  }, [contactId, companyId]);
+
+  const handleTyping = (value: string) => {
+    setInputValue(value);
+    if (value.startsWith('/')) {
+      const search = value.substring(1).toLowerCase();
+      const filtered = quickReplies.filter(qr => qr.shortcut.toLowerCase().includes(search));
+      setFilteredQRs(filtered);
+      setShowQRMenu(true);
+    } else {
+      setShowQRMenu(false);
+    }
+
+    if (!value.trim()) return;
+    if (!isTypingRef.current) {
+      isTypingRef.current = true;
+      sendPresenceComposing();
+    }
+    if (typingDebounceRef.current) clearTimeout(typingDebounceRef.current);
+    typingDebounceRef.current = setTimeout(() => {
+      isTypingRef.current = false;
+    }, 3000);
+  };
+
+  const handleSelectQuickReply = (qr: QuickReply) => {
+    setInputValue(qr.content);
+    setShowQRMenu(false);
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = MediaRecorder.isTypeSupported('audio/ogg; codecs=opus')
+        ? 'audio/ogg; codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm; codecs=opus')
+          ? 'audio/webm; codecs=opus'
+          : 'audio/webm';
+
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) audioChunksRef.current.push(event.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach(track => track.stop());
+        if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+        if (presenceIntervalRef.current) clearInterval(presenceIntervalRef.current);
+        
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        if (audioBlob.size > 0) {
+          const ext = mimeType.includes('ogg') ? 'ogg' : 'webm';
+          const audioFile = new File([audioBlob], `voice_note_${Date.now()}.${ext}`, { type: mimeType });
+          await handleUploadFile(audioFile);
+        }
+        setRecordingTime(0);
+      };
+
+      mediaRecorder.start(250);
+      setIsRecording(true);
+      recordingStartRef.current = Date.now();
+      setRecordingTime(0);
+
+      recordingTimerRef.current = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - recordingStartRef.current) / 1000);
+        setRecordingTime(elapsed);
+      }, 100);
+
+      sendPresenceRecording();
+      presenceIntervalRef.current = setInterval(() => {
+        sendPresenceRecording();
+      }, 5000);
+    } catch (error) {
+      alert('Permissão de microfone negada.');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+    setIsRecording(false);
+  };
+
+  const cancelRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      audioChunksRef.current = [];
+      mediaRecorderRef.current.stop();
+    }
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+    if (presenceIntervalRef.current) clearInterval(presenceIntervalRef.current);
+    setIsRecording(false);
+    setRecordingTime(0);
+  };
+
+  const formatRecordingTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
+
+  const handleSendLibraryMedia = async (mediaId: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/messages/send/media_library`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contact_id: contactId, company_id: companyId, media_id: mediaId })
+      });
+      if (response.ok) {
+        setShowMediaModal(false);
+      } else {
+        const errData = await response.json();
+        alert(`Erro ao enviar: ${errData.detail || 'Erro desconhecido'}`);
+      }
+    } catch (error) {
+      alert("Falha na conexão.");
     }
   };
 
@@ -88,8 +332,17 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
       }
       if (msg.media_type === 'document') {
         return (
-          <a href={msg.media_url} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'inherit', marginTop: '4px', textDecoration: 'underline' }}>
-            <File size={16} /> Baixar Documento
+          <a
+            href={msg.media_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="pdf-bubble"
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'inherit', marginTop: '4px', textDecoration: 'none', background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '8px' }}
+          >
+            <FileText size={28} className="pdf-icon" style={{ color: '#00E5CC' }} />
+            <span className="pdf-name" style={{ fontSize: '0.9rem', flex: 1 }}>
+              {msg.content.replace(/^\[DOCUMENT\]\s*/i, '') || 'Documento'}
+            </span>
           </a>
         );
       }
@@ -103,7 +356,22 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div className="messages-container" style={{ flex: 1, padding: '16px', overflowY: 'auto' }}>
+      <div 
+        className="messages-container" 
+        style={{ flex: 1, padding: '16px', overflowY: 'auto', position: 'relative' }}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
+        {isDragging && (
+          <div className="drag-overlay" style={{ position: 'absolute', inset: 0, background: 'rgba(0, 229, 204, 0.1)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 5, border: '2px dashed #00E5CC' }}>
+            <div style={{ textAlign: 'center', color: '#00E5CC' }}>
+              <Plus size={48} />
+              <p>Solte para enviar</p>
+            </div>
+          </div>
+        )}
         {messages.map(msg => (
           <div key={msg.id} className={`message ${msg.direction}`}>
             <div className="bubble">
@@ -120,20 +388,108 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
         <div ref={messagesEndRef} />
       </div>
       
-      <div className="message-input-area" style={{ padding: '12px' }}>
-        <input 
-          type="text" 
-          placeholder="Digite uma mensagem..." 
-          value={inputValue}
-          onChange={e => setInputValue(e.target.value)}
-          onKeyDown={e => {
-            if (e.key === 'Enter') handleSend();
-          }}
-        />
-        <button className="send-btn" onClick={handleSend}>
-          <Send size={20} />
-        </button>
-      </div>
+      <footer className="message-input-area" style={{ padding: '12px' }}>
+        {isRecording ? (
+          <div className="recording-bar" style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', background: 'rgba(255,255,255,0.05)', padding: '8px 12px', borderRadius: '12px' }}>
+            <button className="recording-cancel-btn" onClick={cancelRecording} style={{ background: 'transparent', border: 'none', color: '#ff6b6b', cursor: 'pointer' }}>
+              <Trash2 size={18} />
+            </button>
+            <div className="recording-indicator" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className="recording-dot" style={{ width: '8px', height: '8px', background: '#ff4b4b', borderRadius: '50%', animation: 'pulse 1s infinite' }}></span>
+              <span className="recording-timer" style={{ color: '#e6f1ff', fontSize: '0.9rem', fontVariantNumeric: 'tabular-nums' }}>{formatRecordingTime(recordingTime)}</span>
+            </div>
+            <button className="recording-send-btn" onClick={stopRecording} style={{ background: '#00E5CC', border: 'none', color: '#000', borderRadius: '50%', padding: '8px', cursor: 'pointer' }}>
+              <Send size={18} />
+            </button>
+          </div>
+        ) : (
+          <>
+            <button className="attach-btn" onClick={() => setShowMediaModal(true)} title="Biblioteca">
+              <FolderOpen size={20} />
+            </button>
+            <label className="attach-btn" style={{ cursor: 'pointer' }}>
+              <input 
+                type="file" 
+                style={{ display: 'none' }} 
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (file) await handleUploadFile(file);
+                  e.target.value = '';
+                }}
+                accept="image/*,audio/*,video/*,application/pdf"
+              />
+              <Plus size={20} />
+            </label>
+            <input 
+              type="text" 
+              placeholder="Digite uma mensagem..." 
+              value={inputValue}
+              onChange={e => handleTyping(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') handleSend();
+              }}
+            />
+            {inputValue.trim() ? (
+              <button className="send-btn" onClick={handleSend}>
+                <Send size={20} />
+              </button>
+            ) : (
+              <button className="mic-btn" onClick={startRecording} title="Gravar áudio">
+                <Mic size={20} />
+              </button>
+            )}
+          </>
+        )}
+
+        {showQRMenu && filteredQRs.length > 0 && (
+          <div className="qr-popup-menu" style={{ position: 'absolute', bottom: '100%', left: '12px', right: '12px', background: '#112240', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', marginBottom: '8px', maxHeight: '200px', overflowY: 'auto', zIndex: 10 }}>
+            {filteredQRs.map(qr => (
+              <div key={qr.id} className="qr-popup-item" onClick={() => handleSelectQuickReply(qr)} style={{ padding: '10px 15px', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: '10px' }}>
+                <span style={{ color: '#00E5CC', fontWeight: 'bold' }}>/{qr.shortcut}</span>
+                <span style={{ color: '#8892b0', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{qr.content}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </footer>
+
+      {showMediaModal && (
+        <div className="media-modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="media-modal-content" style={{ background: '#0e1325', border: '1px solid rgba(0, 229, 204, 0.2)', padding: '24px', borderRadius: '16px', width: '100%', maxWidth: '800px', maxHeight: '80vh', overflowY: 'auto', color: '#e6f1ff', boxShadow: '0 24px 80px rgba(0,0,0,0.6)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>Biblioteca de Mídia</h2>
+              <button onClick={() => setShowMediaModal(false)} style={{ background: 'transparent', border: 'none', color: '#8892b0', fontSize: '24px', cursor: 'pointer' }}>✕</button>
+            </div>
+            
+            {libraryMedia.length === 0 ? (
+              <p style={{ color: '#8892b0', textAlign: 'center', padding: '40px' }}>Nenhuma mídia salva na biblioteca.</p>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '16px' }}>
+                {libraryMedia.map(media => (
+                  <div key={media.id} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', padding: '12px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ height: '120px', background: '#070a16', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                      {media.media_type === 'image' && <img src={media.url} alt={media.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                      {media.media_type === 'audio' && <Mic size={32} style={{ color: '#00E5CC' }} />}
+                      {media.media_type === 'video' && <video src={media.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                      {media.media_type === 'document' && <FileText size={32} style={{ color: '#00E5CC' }} />}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontSize: '0.85rem', fontWeight: '600', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{media.name}</p>
+                      <span style={{ fontSize: '0.7rem', color: '#8892b0', textTransform: 'uppercase' }}>{media.media_type}</span>
+                    </div>
+                    <button 
+                      onClick={() => handleSendLibraryMedia(media.id)}
+                      style={{ background: 'rgba(0, 229, 204, 0.1)', color: '#00E5CC', border: '1px solid rgba(0, 229, 204, 0.3)', padding: '8px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '0.85rem' }}
+                    >
+                      Enviar
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
