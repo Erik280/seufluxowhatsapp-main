@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { FolderOpen, Plus, Mic, Trash2, Send, Calendar, FileText, Zap, Filter } from 'lucide-react';
+import { FolderOpen, Plus, Mic, Trash2, Send, Calendar, FileText, Zap, Filter, ArrowLeft, X } from 'lucide-react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
 import './ChatView.css';
 
@@ -23,6 +23,10 @@ interface Message {
   media_url: string | null;
   media_type: string | null;
   created_at: string;
+  // Feedback de upload
+  status?: 'pending' | 'success' | 'error';
+  temp_id?: string;
+  file?: File;
 }
 
 interface QuickReply {
@@ -98,6 +102,10 @@ export default function ChatView() {
   const [saveQRModal, setSaveQRModal] = useState<{show: boolean, content: string}>({show: false, content: ''});
   const [saveQRShortcut, setSaveQRShortcut] = useState('');
   const [isSavingQR, setIsSavingQR] = useState(false);
+
+  // Mobile view state
+  const [mobileView, setMobileView] = useState<'list' | 'messages' | 'crm'>('list');
+  const [showCrmModal, setShowCrmModal] = useState(false);
 
   // Scroll to bottom of messages
   const scrollToBottom = () => {
@@ -210,7 +218,21 @@ export default function ChatView() {
     const msgSub = supabase
       .channel(`messages-${selectedContact.id}-${Math.random()}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `contact_id=eq.${selectedContact.id}` }, (payload) => {
-        setMessages(prev => [...prev, payload.new as Message]);
+        setMessages(prev => {
+          // Se já existe uma mensagem com esse ID (vinda da resposta da API), não duplica
+          if (prev.some(m => m.id === payload.new.id)) return prev;
+          
+          // Se for uma mensagem de saída com mídia, tenta substituir uma pendente
+          if (payload.new.direction === 'out' && payload.new.media_url) {
+            const pendingIdx = prev.findIndex(m => m.status === 'pending' && m.media_type === payload.new.media_type);
+            if (pendingIdx !== -1) {
+              const next = [...prev];
+              next[pendingIdx] = payload.new as Message;
+              return next;
+            }
+          }
+          return [...prev, payload.new as Message];
+        });
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter: `contact_id=eq.${selectedContact.id}` }, (payload) => {
         setMessages(prev => prev.map(msg => msg.id === payload.new.id ? (payload.new as Message) : msg));
@@ -246,21 +268,50 @@ export default function ChatView() {
   // ── Shared file upload handler (used by button AND drag-and-drop) ──
   const handleUploadFile = useCallback(async (file: File) => {
     if (!selectedContact || !companyId) return;
+
+    // 1. Criar mensagem otimista
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const mediaType = file.type.startsWith('image/') ? 'image' : 
+                      file.type.startsWith('video/') ? 'video' : 
+                      file.type.startsWith('audio/') ? 'audio' : 'document';
+    
+    const optimisticMsg: Message = {
+      id: tempId,
+      temp_id: tempId,
+      direction: 'out',
+      content: file.name,
+      media_url: URL.createObjectURL(file), // Preview local
+      media_type: mediaType,
+      created_at: new Date().toISOString(),
+      status: 'pending',
+      file: file
+    };
+
+    setMessages(prev => [...prev, optimisticMsg]);
+
     const formData = new FormData();
     formData.append('contact_id', selectedContact.id);
     formData.append('company_id', companyId);
     formData.append('file', file);
+
     try {
       const response = await fetch(`${API_BASE_URL}/api/messages/send/media`, {
         method: 'POST',
         body: formData
       });
-      if (!response.ok) {
+
+      if (response.ok) {
+        const data = await response.json();
+        // Atualiza a mensagem otimista com os dados reais do banco
+        setMessages(prev => prev.map(m => m.temp_id === tempId ? { ...data, status: 'success' } : m));
+      } else {
         const errData = await response.json();
+        setMessages(prev => prev.map(m => m.temp_id === tempId ? { ...m, status: 'error' } : m));
         showToast(`Erro ao enviar arquivo: ${errData.detail || 'Erro desconhecido'}`, 'error');
       }
     } catch (error) {
       console.error('Upload falhou', error);
+      setMessages(prev => prev.map(m => m.temp_id === tempId ? { ...m, status: 'error' } : m));
       showToast('Falha ao enviar arquivo.', 'error');
     }
   }, [selectedContact, companyId]);
@@ -725,7 +776,7 @@ export default function ChatView() {
   };
 
   return (
-    <div className="chat-view-root">
+    <div className={`chat-view-root ${mobileView === 'messages' ? 'view-messages' : ''}`}>
       {/* Column 1: Chat List */}
       <section className="chat-list-col">
         <header className="chat-list-header">
@@ -788,11 +839,12 @@ export default function ChatView() {
             }
 
             return filtered.map(contact => (
-            <div 
-              key={contact.id} 
-              className={`chat-item ${selectedContact?.id === contact.id ? 'active' : ''}`} 
+            <div
+              key={contact.id}
+              className={`chat-item ${selectedContact?.id === contact.id ? 'active' : ''}`}
               onClick={async () => {
                 setSelectedContact(contact);
+                setMobileView('messages');
                 if (contact.unread_count && contact.unread_count > 0) {
                   // Zerar localmente primeiro para UX rápido
                   setContacts(prev => prev.map(c => c.id === contact.id ? { ...c, unread_count: 0 } : c));
@@ -852,6 +904,13 @@ export default function ChatView() {
         {selectedContact ? (
           <>
             <header className="message-header">
+              <button
+                className="mobile-back-btn"
+                onClick={() => setMobileView('list')}
+                aria-label="Voltar para lista"
+              >
+                <ArrowLeft size={20} />
+              </button>
               <div className="avatar">
                 {selectedContact.avatar_url ? (
                   <img src={selectedContact.avatar_url} alt={selectedContact.name || selectedContact.phone} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
@@ -865,6 +924,13 @@ export default function ChatView() {
                   {selectedContact.chat_status === 'bot' ? 'Online (Bot Ativo)' : 'Atendimento Humano'}
                 </span>
               </div>
+              <button
+                className="mobile-crm-btn"
+                onClick={() => setShowCrmModal(true)}
+                aria-label="Abrir CRM"
+              >
+                <FileText size={20} />
+              </button>
             </header>
             <div
               className="messages-container"
@@ -1007,7 +1073,7 @@ export default function ChatView() {
         )}
       </section>
 
-      {/* Column 3: CRM Details */}
+      {/* Column 3: CRM Details - Desktop */}
       <section className="crm-details-col">
         {selectedContact ? (
           <div className="crm-content">
@@ -1021,20 +1087,20 @@ export default function ChatView() {
               </div>
               <h2>{selectedContact.name || 'Sem Nome'}</h2>
               <p className="phone">{selectedContact.phone}</p>
-              
-              <button 
+
+              <button
                 className={`bot-status-btn ${selectedContact.chat_status === 'bot' ? 'active' : 'paused'}`}
                 onClick={toggleBot}
               >
                 {selectedContact.chat_status === 'bot' ? 'Pausar Fluxo' : 'Ativar Fluxo'}
               </button>
             </header>
-            
+
             <div className="crm-section">
               <h3>Estágio Kanban</h3>
               <select className="crm-select" value={selectedContact.stage_id || ''} onChange={async (e) => {
                  const newStageId = e.target.value || null;
-                 
+
                  // Optimistic Update
                  setSelectedContact({ ...selectedContact, stage_id: newStageId });
                  setContacts(contacts.map(c => c.id === selectedContact.id ? { ...c, stage_id: newStageId } : c));
@@ -1051,8 +1117,8 @@ export default function ChatView() {
                 ))}
               </select>
 
-              <button 
-                className="crm-schedule-btn" 
+              <button
+                className="crm-schedule-btn"
                 onClick={() => setShowScheduleModal(true)}
                 style={{ marginTop: '15px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
               >
@@ -1064,37 +1130,37 @@ export default function ChatView() {
               <h3>Detalhes do Contato</h3>
               <div className="crm-field">
                 <label>Nome</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   className="crm-input"
-                  value={crmName} 
-                  onChange={e => setCrmName(e.target.value)} 
+                  value={crmName}
+                  onChange={e => setCrmName(e.target.value)}
                   placeholder="Nome do lead"
                 />
               </div>
               <div className="crm-field">
                 <label>E-mail</label>
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   className="crm-input"
-                  value={crmEmail} 
-                  onChange={e => setCrmEmail(e.target.value)} 
+                  value={crmEmail}
+                  onChange={e => setCrmEmail(e.target.value)}
                   placeholder="email@exemplo.com"
                 />
               </div>
               <div className="crm-field">
                 <label>Observações</label>
-                <textarea 
+                <textarea
                   className="crm-textarea"
-                  value={crmNotes} 
-                  onChange={e => setCrmNotes(e.target.value)} 
+                  value={crmNotes}
+                  onChange={e => setCrmNotes(e.target.value)}
                   placeholder="Anotações sobre o lead..."
                   rows={4}
                 />
               </div>
-              <button 
-                className="crm-save-btn" 
-                onClick={handleSaveCRM} 
+              <button
+                className="crm-save-btn"
+                onClick={handleSaveCRM}
                 disabled={isSavingCrm}
               >
                 {isSavingCrm ? 'Salvando...' : 'Salvar Dados'}
@@ -1109,6 +1175,115 @@ export default function ChatView() {
           </div>
         )}
       </section>
+
+      {/* CRM Modal - Mobile */}
+      {showCrmModal && selectedContact && (
+        <div className="crm-modal-overlay" onClick={() => setShowCrmModal(false)}>
+          <div className="crm-modal-content" onClick={e => e.stopPropagation()}>
+            <header className="crm-modal-header">
+              <h2>Detalhes do Lead</h2>
+              <button
+                className="crm-modal-close"
+                onClick={() => setShowCrmModal(false)}
+                aria-label="Fechar"
+              >
+                <X size={24} />
+              </button>
+            </header>
+            <div className="crm-modal-body">
+              <div className="crm-modal-avatar">
+                {selectedContact.avatar_url ? (
+                  <img src={selectedContact.avatar_url} alt={selectedContact.name || selectedContact.phone} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                ) : (
+                  selectedContact.name ? selectedContact.name.substring(0, 2).toUpperCase() : '👤'
+                )}
+              </div>
+              <h3>{selectedContact.name || 'Sem Nome'}</h3>
+              <p className="crm-modal-phone">{selectedContact.phone}</p>
+
+              <button
+                className={`bot-status-btn ${selectedContact.chat_status === 'bot' ? 'active' : 'paused'}`}
+                onClick={toggleBot}
+                style={{ width: '100%', marginTop: '16px' }}
+              >
+                {selectedContact.chat_status === 'bot' ? 'Pausar Fluxo' : 'Ativar Fluxo'}
+              </button>
+
+              <div className="crm-section">
+                <h3>Estágio Kanban</h3>
+                <select className="crm-select" value={selectedContact.stage_id || ''} onChange={async (e) => {
+                   const newStageId = e.target.value || null;
+
+                   // Optimistic Update
+                   setSelectedContact({ ...selectedContact, stage_id: newStageId });
+                   setContacts(contacts.map(c => c.id === selectedContact.id ? { ...c, stage_id: newStageId } : c));
+
+                   await fetch(`${API_BASE_URL}/api/contacts/${selectedContact.id}/stage`, {
+                     method: 'PATCH',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify({ stage_id: newStageId })
+                   });
+                }}>
+                  <option value="">Sem estágio</option>
+                  {stages.map(stage => (
+                    <option key={stage.id} value={stage.id}>{stage.name}</option>
+                  ))}
+                </select>
+
+                <button
+                  className="crm-schedule-btn"
+                  onClick={() => setShowScheduleModal(true)}
+                  style={{ marginTop: '15px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                >
+                  <Calendar size={16} /> Agendar Mensagem
+                </button>
+              </div>
+
+              <div className="crm-section">
+                <h3>Detalhes do Contato</h3>
+                <div className="crm-field">
+                  <label>Nome</label>
+                  <input
+                    type="text"
+                    className="crm-input"
+                    value={crmName}
+                    onChange={e => setCrmName(e.target.value)}
+                    placeholder="Nome do lead"
+                  />
+                </div>
+                <div className="crm-field">
+                  <label>E-mail</label>
+                  <input
+                    type="email"
+                    className="crm-input"
+                    value={crmEmail}
+                    onChange={e => setCrmEmail(e.target.value)}
+                    placeholder="email@exemplo.com"
+                  />
+                </div>
+                <div className="crm-field">
+                  <label>Observações</label>
+                  <textarea
+                    className="crm-textarea"
+                    value={crmNotes}
+                    onChange={e => setCrmNotes(e.target.value)}
+                    placeholder="Anotações sobre o lead..."
+                    rows={4}
+                  />
+                </div>
+                <button
+                  className="crm-save-btn"
+                  onClick={handleSaveCRM}
+                  disabled={isSavingCrm}
+                  style={{ width: '100%' }}
+                >
+                  {isSavingCrm ? 'Salvando...' : 'Salvar Dados'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showMediaModal && (
         <div className="media-modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

@@ -167,3 +167,70 @@
   border-radius: 8px;
   border: 1px dashed var(--border-color);
 }
+
+/* ---- Responsive Mobile ---- */
+@media (max-width: 767px) {
+  .settings-view-root {
+    padding: 16px;
+  }
+
+  .settings-header {
+    margin-bottom: 20px;
+  }
+
+  .settings-header h2 {
+    font-size: 1.5rem;
+  }
+
+  .settings-container {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .settings-sidebar {
+    width: 100%;
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+
+  .tab-btn {
+    padding: 12px 16px;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    min-width: fit-content;
+  }
+
+  .settings-content {
+    padding: 20px;
+  }
+
+  .settings-card h3 {
+    font-size: 1.25rem;
+  }
+
+  .connection-status-panel {
+    padding: 16px;
+  }
+
+  .qr-section {
+    padding: 16px;
+  }
+
+  .qr-display img {
+    width: 200px;
+    height: 200px;
+  }
+
+  .connected-panel {
+    padding: 24px 16px;
+  }
+
+  .connected-panel h4 {
+    font-size: 1.5rem;
+  }
+
+  .placeholder-content {
+    padding: 24px 16px;
+  }
+}

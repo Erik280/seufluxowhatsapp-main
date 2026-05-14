@@ -308,3 +308,81 @@
   opacity: 0.5;
   text-align: center;
 }
+
+/* ---- Responsive Mobile ---- */
+@media (max-width: 767px) {
+  .cv-root {
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .cv-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .cv-header-left h1 {
+    font-size: 1.25rem;
+  }
+
+  .cv-btn-primary {
+    width: 100%;
+    height: 48px;
+    justify-content: center;
+    font-size: 1rem;
+  }
+
+  .cv-form-card {
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .cv-form-card h3 {
+    font-size: 1rem;
+  }
+
+  .cv-field input,
+  .cv-field select,
+  .cv-field textarea {
+    height: 48px;
+    min-height: 48px;
+    font-size: 1rem;
+  }
+
+  .cv-field textarea {
+    min-height: 120px;
+    padding-top: 12px;
+  }
+
+  .cv-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .cv-form-actions {
+    flex-direction: column;
+  }
+
+  .cv-form-actions button {
+    width: 100%;
+    height: 48px;
+    font-size: 1rem;
+  }
+
+  .cv-card {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .cv-card-right {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .cv-empty {
+    padding: 40px 16px;
+  }
+}

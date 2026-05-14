@@ -62,3 +62,107 @@ html, body {
   background: rgba(0, 255, 136, 0.25);
   color: var(--color-text-primary);
 }
+
+/* ---- Responsive Mobile ---- */
+@media (max-width: 767px) {
+  html {
+    font-size: 14px;
+  }
+
+  /* Touch-friendly sizing */
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    min-height: 44px;
+  }
+
+  /* Better tap targets */
+  button,
+  .btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Scrollbar thinner on mobile */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  /* Remove hover effects on mobile */
+  @media (hover: none) {
+    button:hover,
+    a:hover {
+      transform: none;
+    }
+  }
+
+  /* Prevent text selection on touch */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Better input styling */
+  input,
+  select,
+  textarea {
+    font-size: 16px; /* Prevent iOS zoom */
+  }
+
+  /* Generic modal fullscreen on mobile */
+  [class*="modal-overlay"],
+  [class*="Modal-overlay"],
+  [class*="modalBackdrop"],
+  [class*="modal-backdrop"] {
+    padding: 0 !important;
+  }
+
+  [class*="modal-content"],
+  [class*="Modal-content"],
+  [class*="modalContent"],
+  [class*="modal-content"],
+  .kb-modal,
+  .schedule-modal-content {
+    max-width: none !important;
+    max-height: none !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+  }
+
+  [class*="modal-header"],
+  [class*="Modal-header"],
+  .kb-modal-header,
+  .schedule-modal-header {
+    padding: 16px !important;
+  }
+
+  [class*="modal-body"],
+  [class*="Modal-body"],
+  .kb-modal-body,
+  .schedule-modal-body {
+    padding: 16px !important;
+    overflow-y: auto !important;
+  }
+
+  [class*="modal-footer"],
+  [class*="Modal-footer"],
+  .kb-modal-footer,
+  .schedule-modal-footer {
+    padding: 16px !important;
+    gap: 12px !important;
+  }
+
+  /* Modal buttons on mobile */
+  [class*="modal-footer"] button,
+  [class*="Modal-footer"] button,
+  .kb-modal-footer button,
+  .schedule-modal-footer button {
+    height: 52px !important;
+    min-height: 52px !important;
+    font-size: 1rem !important;
+  }
+}

@@ -22,6 +22,7 @@
   width: 320px;
   background: rgba(11, 15, 30, 0.6);
   border-right: 1px solid var(--color-border);
+  flex-shrink: 0;
 }
 
 .chat-list-header {
@@ -216,16 +217,50 @@
 /* ---- Column 2: Message Window ---- */
 .message-window-col {
   flex: 1;
-  background: rgba(5, 8, 16, 0.8);
+  background: var(--color-bg-deep);
+  min-width: 0;
 }
 
 .message-header {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px 24px;
+  gap: 12px;
+  padding: 16px 20px;
   border-bottom: 1px solid var(--color-border);
-  background: rgba(11, 15, 30, 0.9);
+  background: rgba(7, 10, 22, 0.98);
+}
+
+.mobile-back-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all var(--transition-fast);
+}
+
+.mobile-back-btn:hover {
+  color: var(--color-text-primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.mobile-crm-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  margin-left: auto;
+  transition: all var(--transition-fast);
+}
+
+.mobile-crm-btn:hover {
+  color: var(--color-neon-cyan);
+  background: rgba(0, 229, 204, 0.08);
 }
 
 .header-info h3 {
@@ -1122,4 +1157,268 @@
   background: var(--color-neon-cyan);
   color: #000;
   transform: scale(1.1);
+}
+
+/* ---- CRM Modal ---- */
+.crm-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.crm-modal-content {
+  background: rgba(11, 15, 30, 0.98);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.crm-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.crm-modal-header h2 {
+  color: var(--color-text-primary);
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.crm-modal-close {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all var(--transition-fast);
+}
+
+.crm-modal-close:hover {
+  color: var(--color-text-primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.crm-modal-body {
+  padding: 20px;
+}
+
+.crm-modal-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(0, 255, 136, 0.06);
+  border: 2px solid rgba(0, 255, 136, 0.2);
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-neon-green);
+  overflow: hidden;
+}
+
+.crm-modal-body h3 {
+  color: var(--color-text-primary);
+  font-size: 1.25rem;
+  text-align: center;
+  margin: 0 0 8px;
+}
+
+.crm-modal-phone {
+  color: var(--color-text-muted);
+  text-align: center;
+  font-size: 0.9rem;
+  margin-bottom: 20px;
+}
+
+/* ---- Responsive Mobile ---- */
+@media (max-width: 767px) {
+  .chat-view-root {
+    position: relative;
+  }
+
+  .chat-view-root.view-messages .chat-list-col {
+    transform: translateX(-100%);
+  }
+
+  .chat-view-root.view-messages .message-window-col {
+    transform: translateX(0);
+  }
+
+  .chat-list-col {
+    width: 100%;
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    transform: translateX(0);
+    transition: transform var(--transition-med);
+  }
+
+  .message-window-col {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    transform: translateX(100%);
+    transition: transform var(--transition-med);
+  }
+
+  .crm-details-col {
+    display: none;
+  }
+
+  .mobile-back-btn,
+  .mobile-crm-btn {
+    display: flex;
+  }
+
+  .message-header {
+    padding: 12px 16px;
+  }
+
+  .header-info h3 {
+    font-size: 1rem;
+  }
+
+  .header-info .status {
+    font-size: 0.75rem;
+  }
+
+  .message-input-area {
+    padding: 12px;
+  }
+
+  .message-input-area input,
+  .message-input-area button {
+    height: 48px;
+    min-height: 48px;
+  }
+
+  .attach-btn {
+    width: 48px;
+    height: 48px;
+  }
+
+  .send-btn,
+  .mic-btn {
+    padding: 0 20px;
+    font-size: 0.9rem;
+  }
+
+  .messages-container {
+    padding: 16px;
+  }
+
+  .message .bubble {
+    max-width: 85%;
+    padding: 12px 16px;
+    font-size: 0.9rem;
+  }
+
+  .chat-list-header {
+    padding: 16px;
+  }
+
+  .chat-list-header h2 {
+    font-size: 1.1rem;
+  }
+
+  .search-row {
+    gap: 8px;
+  }
+
+  .search-bar input {
+    height: 44px;
+    font-size: 0.9rem;
+  }
+
+  .new-chat-btn,
+  .filter-unread-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .chat-item {
+    padding: 12px 16px;
+  }
+
+  .avatar {
+    width: 48px;
+    height: 48px;
+    font-size: 1rem;
+  }
+
+  .chat-name {
+    font-size: 1rem;
+  }
+
+  .chat-preview {
+    font-size: 0.85rem;
+  }
+
+  /* CRM Modal Fullscreen on Mobile */
+  .crm-modal-overlay {
+    padding: 0;
+  }
+
+  .crm-modal-content {
+    max-width: none;
+    max-height: none;
+    border-radius: 0;
+    height: 100vh;
+  }
+
+  .crm-modal-header {
+    padding: 16px;
+  }
+
+  .crm-modal-body {
+    padding: 16px;
+    overflow-y: auto;
+  }
+
+  .crm-input,
+  .crm-select,
+  .crm-textarea {
+    height: 48px;
+    min-height: 48px;
+    font-size: 1rem;
+  }
+
+  .crm-textarea {
+    min-height: 120px;
+    padding-top: 12px;
+  }
+
+  .crm-save-btn,
+  .crm-schedule-btn,
+  .bot-status-btn {
+    height: 52px;
+    min-height: 52px;
+    font-size: 1rem;
+  }
 }
