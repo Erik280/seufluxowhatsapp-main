@@ -485,6 +485,7 @@
   padding: 8px 12px;
   border-radius: 50%;
   transition: background 0.2s, transform 0.2s;
+  color: #ffffff;
 }
 
 .mic-btn:hover {

@@ -963,7 +963,7 @@ export default function ChatView() {
                       >
                         <FileText size={28} className="pdf-icon" />
                         <span className="pdf-name">
-                          {msg.content.replace(/^\[DOCUMENT\]\s*/i, '') || 'Documento'}
+                          {(msg.content || '').replace(/^\[DOCUMENT\]\s*/i, '') || 'Documento'}
                         </span>
                         <span className="pdf-open">Abrir</span>
                       </a>

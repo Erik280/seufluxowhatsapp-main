@@ -341,7 +341,7 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
           >
             <FileText size={28} className="pdf-icon" style={{ color: '#00E5CC' }} />
             <span className="pdf-name" style={{ fontSize: '0.9rem', flex: 1 }}>
-              {msg.content.replace(/^\[DOCUMENT\]\s*/i, '') || 'Documento'}
+              {(msg.content || '').replace(/^\[DOCUMENT\]\s*/i, '') || 'Documento'}
             </span>
           </a>
         );
