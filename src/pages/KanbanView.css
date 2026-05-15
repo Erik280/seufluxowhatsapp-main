@@ -186,33 +186,56 @@
 }
 
 .column-header {
-  padding: 14px 16px;
-  border-top: 3px solid;
+  padding: 12px 16px 14px;
+  border-top: 4px solid;
   border-top-left-radius: 12px;
   border-top-right-radius: 12px;
   display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--color-border);
+  gap: 12px;
+  background: rgba(11, 15, 30, 0.4);
+}
+
+.column-header-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.column-header-bottom {
+  display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid var(--color-border);
+  width: 100%;
+}
+
+.column-header-bottom-left,
+.column-header-bottom-right {
+  display: flex;
+  align-items: center;
   gap: 8px;
 }
 
 .column-title-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex: 1;
   min-width: 0;
 }
 
 .column-title-row h3 {
-  font-size: 0.85rem;
+  font-size: 1.05rem;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--color-text-primary);
+  letter-spacing: 0.08em;
+  color: #FFFFFF;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  margin: 0;
 }
 
 .column-header-right {
@@ -223,11 +246,14 @@
 }
 
 .task-count {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: var(--color-text-muted);
-  font-size: 0.75rem;
-  padding: 2px 8px;
-  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.05em;
 }
 
 .kb-trigger-badge {
@@ -815,19 +841,15 @@
   background: rgba(245, 158, 11, 0.12);
   border: 1px solid rgba(245, 158, 11, 0.35);
   color: #F59E0B;
-  border-radius: 20px;
-  padding: 3px 10px;
-  font-size: 0.68rem;
-  font-weight: 700;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 0.65rem;
+  font-weight: 800;
   letter-spacing: 0.06em;
   white-space: nowrap;
-  margin-top: 6px;
 }
 
-/* Reflow the column header to be two rows when badge exists */
-.column-header {
-  flex-wrap: wrap;
-}
+
 
 /* ══════════════════════════════════════════════════════════════
    FLOW PROGRESS TIMELINE (on task card)

@@ -660,37 +660,40 @@ export default function KanbanView() {
               onDragEnd={handleColDragEnd}
             >
               <div className="column-header" style={{ borderTopColor: stage.color }}>
-                {/* Column drag handle */}
-                <div
-                  className="kb-col-drag-handle"
-                  draggable
-                  onDragStart={e => handleColDragStart(e, colIdx)}
-                  title="Arrastar para reordenar coluna"
-                >
-                  <GripVertical size={15} />
-                </div>
-
-                <div className="column-title-row">
-                  <h3>{stage.name}</h3>
-                  {stage.is_trigger_enabled && (
-                    <span className="kb-trigger-badge" title="Fluxo automático ativado">
-                      <Zap size={11} />
-                    </span>
-                  )}
-                </div>
-                {/* Steps count badge — only shown for automation columns */}
-                {stage.is_trigger_enabled && stage.trigger_flow_id && flowStepCounts[stage.trigger_flow_id] && (
-                  <div className="kb-steps-count-badge" title={`Este fluxo possui ${flowStepCounts[stage.trigger_flow_id]} passos de automação`}>
-                    <Zap size={10} />
-                    {flowStepCounts[stage.trigger_flow_id]} STEPS
+                <div className="column-header-top">
+                  <div
+                    className="kb-col-drag-handle"
+                    draggable
+                    onDragStart={e => handleColDragStart(e, colIdx)}
+                    title="Arrastar para reordenar coluna"
+                  >
+                    <GripVertical size={16} />
                   </div>
-                )}
+                  <div className="column-title-row">
+                    <h3>{stage.name}</h3>
+                  </div>
+                </div>
 
-                <div className="column-header-right">
-                  <span className="task-count">{stageContacts.length}</span>
-                  <button className="kb-settings-btn" onClick={() => openEditStageModal(stage)} title="Configurar coluna">
-                    <Settings size={14} />
-                  </button>
+                <div className="column-header-bottom">
+                  <div className="column-header-bottom-left">
+                    {stage.is_trigger_enabled && (
+                      <span className="kb-trigger-badge" title="Fluxo automático ativado">
+                        <Zap size={11} />
+                      </span>
+                    )}
+                    {stage.is_trigger_enabled && stage.trigger_flow_id && flowStepCounts[stage.trigger_flow_id] && (
+                      <div className="kb-steps-count-badge" title={`Este fluxo possui ${flowStepCounts[stage.trigger_flow_id]} passos de automação`}>
+                        <Zap size={10} />
+                        {flowStepCounts[stage.trigger_flow_id]} STEPS
+                      </div>
+                    )}
+                  </div>
+                  <div className="column-header-bottom-right">
+                    <span className="task-count">{stageContacts.length} LEADS</span>
+                    <button className="kb-settings-btn" onClick={() => openEditStageModal(stage)} title="Configurar coluna">
+                      <Settings size={14} />
+                    </button>
+                  </div>
                 </div>
               </div>
 
