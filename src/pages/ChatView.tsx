@@ -158,13 +158,16 @@ export default function ChatView() {
           .order('name', { ascending: true });
         if (flowsData) setChatFlows(flowsData);
 
-        // Fetch Quick Replies
-        const { data: qrData } = await supabase
-          .from('quick_replies')
-          .select('*')
-          .eq('company_id', userData.company_id)
-          .order('shortcut', { ascending: true });
-        if (qrData) setQuickReplies(qrData);
+        // Fetch Quick Replies via API to bypass RLS issues
+        try {
+          const qrRes = await fetch(`${API_BASE_URL}/api/quick-replies/${userData.company_id}`);
+          if (qrRes.ok) {
+            const qrData = await qrRes.json();
+            setQuickReplies(qrData);
+          }
+        } catch (err) {
+          console.error('Erro ao buscar respostas rápidas:', err);
+        }
 
         // 3. Subscribe to Realtime Contacts
         const contactSub = supabase
@@ -382,10 +385,14 @@ export default function ChatView() {
   const handleTyping = (value: string) => {
     setInputValue(value);
     
-    // Quick Replies Check
+    // Quick Replies Check - Trigger if value starts with / or if it's the first character
     if (value.startsWith('/')) {
       const search = value.substring(1).toLowerCase();
-      const filtered = quickReplies.filter(qr => qr.shortcut.toLowerCase().includes(search));
+      // Match from start or anywhere in the shortcut
+      const filtered = quickReplies.filter(qr => 
+        qr.shortcut.toLowerCase().startsWith(search) || 
+        qr.shortcut.toLowerCase().includes(search)
+      );
       setFilteredQRs(filtered);
       setShowQRMenu(true);
     } else {
@@ -755,13 +762,12 @@ export default function ChatView() {
         setSaveQRModal({show: false, content: ''});
         setSaveQRShortcut('');
         
-        // Refresh Quick Replies
-        const { data: qrData } = await supabase
-          .from('quick_replies')
-          .select('*')
-          .eq('company_id', companyId)
-          .order('shortcut', { ascending: true });
-        if (qrData) setQuickReplies(qrData);
+        // Refresh Quick Replies via API
+        const qrRes = await fetch(`${API_BASE_URL}/api/quick-replies/${companyId}`);
+        if (qrRes.ok) {
+          const qrData = await qrRes.json();
+          setQuickReplies(qrData);
+        }
         
       } else {
         const error = await res.json();

@@ -1075,17 +1075,18 @@
 .qr-popup-menu {
   position: absolute;
   bottom: 100%;
-  left: 20px;
-  right: 20px;
-  background: rgba(11, 15, 30, 0.95);
-  border: 1px solid rgba(0, 229, 204, 0.3);
+  left: 10px;
+  right: 10px;
+  background: rgba(13, 20, 38, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 229, 204, 0.4);
   border-radius: 12px;
   padding: 8px;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
-  max-height: 250px;
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.6);
+  max-height: 280px;
   overflow-y: auto;
-  z-index: 100;
-  margin-bottom: 10px;
+  z-index: 1000;
+  margin-bottom: 12px;
   display: flex;
   flex-direction: column;
   gap: 4px;

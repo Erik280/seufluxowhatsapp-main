@@ -79,14 +79,17 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
     };
     fetchMedia();
 
-    // Fetch Quick Replies
+    // Fetch Quick Replies via API
     const fetchQuickReplies = async () => {
-      const { data } = await supabase
-        .from('quick_replies')
-        .select('*')
-        .eq('company_id', companyId)
-        .order('shortcut', { ascending: true });
-      if (data) setQuickReplies(data);
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/quick-replies/${companyId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setQuickReplies(data);
+        }
+      } catch (err) {
+        console.error('Error fetching QRs:', err);
+      }
     };
     fetchQuickReplies();
 
@@ -204,7 +207,10 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
     setInputValue(value);
     if (value.startsWith('/')) {
       const search = value.substring(1).toLowerCase();
-      const filtered = quickReplies.filter(qr => qr.shortcut.toLowerCase().includes(search));
+      const filtered = quickReplies.filter(qr => 
+        qr.shortcut.toLowerCase().startsWith(search) ||
+        qr.shortcut.toLowerCase().includes(search)
+      );
       setFilteredQRs(filtered);
       setShowQRMenu(true);
     } else {
