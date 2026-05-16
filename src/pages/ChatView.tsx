@@ -260,8 +260,22 @@ export default function ChatView() {
     const text = inputValue.trim();
     setInputValue('');
 
+    // ── Optimistic UI for Text ──
+    const tempId = `temp-text-${Date.now()}`;
+    const optimisticMsg: Message = {
+      id: tempId,
+      temp_id: tempId,
+      direction: 'out',
+      content: text,
+      media_url: null,
+      media_type: null,
+      created_at: new Date().toISOString(),
+      status: 'pending'
+    };
+    setMessages(prev => [...prev, optimisticMsg]);
+
     try {
-      await fetch(`${API_BASE_URL}/api/messages/send`, {
+      const response = await fetch(`${API_BASE_URL}/api/messages/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -270,8 +284,19 @@ export default function ChatView() {
           text: text
         })
       });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Update optimistic message with real data
+        setMessages(prev => prev.map(m => m.temp_id === tempId ? { ...data, status: 'success' } : m));
+      } else {
+        setMessages(prev => prev.map(m => m.temp_id === tempId ? { ...m, status: 'error' } : m));
+        showToast('Erro ao enviar mensagem.', 'error');
+      }
     } catch (error) {
       console.error("Failed to send message", error);
+      setMessages(prev => prev.map(m => m.temp_id === tempId ? { ...m, status: 'error' } : m));
+      showToast('Falha na conexão ao enviar mensagem.', 'error');
     }
   };
 

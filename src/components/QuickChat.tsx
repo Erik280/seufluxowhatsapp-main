@@ -137,15 +137,34 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
     setInputValue('');
     setShowQRMenu(false);
 
+    // ── Optimistic UI for Text ──
+    const tempId = `temp-text-${Date.now()}`;
+    const optimisticMsg: any = {
+      id: tempId,
+      temp_id: tempId,
+      direction: 'out',
+      content: text,
+      created_at: new Date().toISOString(),
+      status: 'pending'
+    };
+    setMessages(prev => [...prev, optimisticMsg]);
+
     try {
-      await fetch(`${API_BASE_URL}/api/messages/send`, {
+      const response = await fetch(`${API_BASE_URL}/api/messages/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contact_id: contactId, company_id: companyId, text })
       });
+
+      if (response.ok) {
+        const data = await response.json();
+        setMessages(prev => prev.map(m => (m as any).temp_id === tempId ? { ...data, status: 'success' } : m));
+      } else {
+        setMessages(prev => prev.map(m => (m as any).temp_id === tempId ? { ...m, status: 'error' } : m));
+      }
     } catch (e) {
       console.error('Failed to send message', e);
-      alert('Falha ao enviar mensagem.');
+      setMessages(prev => prev.map(m => (m as any).temp_id === tempId ? { ...m, status: 'error' } : m));
     }
   };
 
