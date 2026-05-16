@@ -1025,9 +1025,13 @@ export default function ChatView() {
                         {msg.status === 'pending' ? (
                           <div className="spinner-small" title="Enviando..." />
                         ) : msg.status === 'error' ? (
-                          <Trash2 size={12} title="Erro ao enviar" />
+                          <div title="Erro ao enviar">
+                            <Trash2 size={12} />
+                          </div>
                         ) : (
-                          <Send size={10} title="Enviado" />
+                          <div title="Enviado">
+                            <Send size={10} />
+                          </div>
                         )}
                       </div>
                     )}
