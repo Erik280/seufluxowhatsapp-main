@@ -113,6 +113,7 @@ export default function ChatView() {
   const [mobileView, setMobileView] = useState<'list' | 'messages' | 'crm'>('list');
   const [showCrmModal, setShowCrmModal] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [selectedStageId, setSelectedStageId] = useState<string>('');
 
   // Scroll to bottom of messages
   const scrollToBottom = () => {
@@ -917,6 +918,20 @@ export default function ChatView() {
               <Plus size={20} />
             </button>
           </div>
+          <div className="filter-row">
+            <select
+              className="stage-filter-select"
+              value={selectedStageId}
+              onChange={e => setSelectedStageId(e.target.value)}
+            >
+              <option value="">Todas as Etapas (Kanban)</option>
+              {stages.map(stage => (
+                <option key={stage.id} value={stage.id}>
+                  {stage.name}
+                </option>
+              ))}
+            </select>
+          </div>
         </header>
         <div className="chat-list">
           {(() => {
@@ -925,6 +940,10 @@ export default function ChatView() {
             
             if (showUnreadOnly) {
               filtered = filtered.filter(c => c.unread_count && c.unread_count > 0);
+            }
+
+            if (selectedStageId) {
+              filtered = filtered.filter(c => c.stage_id === selectedStageId);
             }
 
             if (q) {
