@@ -106,6 +106,7 @@ export default function ChatView() {
   // Mobile view state
   const [mobileView, setMobileView] = useState<'list' | 'messages' | 'crm'>('list');
   const [showCrmModal, setShowCrmModal] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Scroll to bottom of messages
   const scrollToBottom = () => {
@@ -270,7 +271,9 @@ export default function ChatView() {
 
   // ── Shared file upload handler (used by button AND drag-and-drop) ──
   const handleUploadFile = useCallback(async (file: File) => {
-    if (!selectedContact || !companyId) return;
+    if (!selectedContact || !companyId || isUploading) return;
+
+    setIsUploading(true);
 
     // 1. Criar mensagem otimista
     const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -312,12 +315,10 @@ export default function ChatView() {
         setMessages(prev => prev.map(m => m.temp_id === tempId ? { ...m, status: 'error' } : m));
         showToast(`Erro ao enviar arquivo: ${errData.detail || 'Erro desconhecido'}`, 'error');
       }
-    } catch (error) {
-      console.error('Upload falhou', error);
-      setMessages(prev => prev.map(m => m.temp_id === tempId ? { ...m, status: 'error' } : m));
-      showToast('Falha ao enviar arquivo.', 'error');
+    } finally {
+      setIsUploading(false);
     }
-  }, [selectedContact, companyId]);
+  }, [selectedContact, companyId, isUploading]);
 
   // ── Drag & Drop handlers ─────────────────────────────────────────
   const handleDragEnter = useCallback((e: React.DragEvent) => {
@@ -456,6 +457,22 @@ export default function ChatView() {
           const ext = mimeType.includes('ogg') ? 'ogg' : 'webm';
           const audioFile = new File([audioBlob], `voice_note_${Date.now()}.${ext}`, { type: mimeType });
           
+          // ── Optimistic UI for Voice Note ──
+          const tempId = `temp-voice-${Date.now()}`;
+          const optimisticMsg: Message = {
+            id: tempId,
+            temp_id: tempId,
+            direction: 'out',
+            content: '[AUDIO]',
+            media_url: URL.createObjectURL(audioFile),
+            media_type: 'audio',
+            created_at: new Date().toISOString(),
+            status: 'pending',
+            file: audioFile
+          };
+          setMessages(prev => [...prev, optimisticMsg]);
+          setIsUploading(true);
+
           const formData = new FormData();
           formData.append('contact_id', selectedContact!.id);
           formData.append('company_id', companyId);
@@ -466,13 +483,20 @@ export default function ChatView() {
               method: 'POST',
               body: formData
             });
-            if (!response.ok) {
+            if (response.ok) {
+              const data = await response.json();
+              setMessages(prev => prev.map(m => m.temp_id === tempId ? { ...data, status: 'success' } : m));
+            } else {
               const errData = await response.json();
-              alert(`Erro ao enviar áudio: ${errData.detail || 'Erro desconhecido'}`);
+              setMessages(prev => prev.map(m => m.temp_id === tempId ? { ...m, status: 'error' } : m));
+              showToast(`Erro ao enviar áudio: ${errData.detail || 'Erro desconhecido'}`, 'error');
             }
           } catch (error) {
             console.error('Failed to send voice note', error);
-            alert('Falha ao enviar áudio.');
+            setMessages(prev => prev.map(m => m.temp_id === tempId ? { ...m, status: 'error' } : m));
+            showToast('Falha ao enviar áudio.', 'error');
+          } finally {
+            setIsUploading(false);
           }
         }
 
@@ -956,10 +980,21 @@ export default function ChatView() {
               )}
               {messages.map((msg, idx) => (
                 <div key={msg.id || idx} className={`message ${msg.direction}`}>
-                  <div className="bubble">
-                    {msg.media_type === 'image' && <img src={msg.media_url!} alt="midia" style={{maxWidth: '100%', borderRadius: '8px'}} />}
-                    {msg.media_type === 'video' && <video src={msg.media_url!} controls style={{maxWidth: '100%', borderRadius: '8px'}} />}
-                    {msg.media_type === 'audio' && <audio src={msg.media_url!} controls style={{maxWidth: '200px'}} />}
+                  <div className={`bubble ${msg.status === 'pending' ? 'pending' : ''}`}>
+                    {msg.media_type === 'image' && (
+                      <img 
+                        src={msg.media_url!} 
+                        alt="midia" 
+                        style={{maxWidth: '100%', borderRadius: '8px', display: 'block'}} 
+                        onLoad={scrollToBottom}
+                      />
+                    )}
+                    {msg.media_type === 'video' && (
+                      <video src={msg.media_url!} controls style={{maxWidth: '100%', borderRadius: '8px'}} />
+                    )}
+                    {msg.media_type === 'audio' && (
+                      <audio src={msg.media_url!} controls style={{maxWidth: '200px'}} />
+                    )}
                     {msg.media_type === 'document' && (
                       <a
                         href={msg.media_url!}
@@ -983,7 +1018,20 @@ export default function ChatView() {
                       </div>
                     )}
                   </div>
-                  <span className="time">{new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                  <div className="message-status">
+                    <span className="time">{new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    {msg.direction === 'out' && (
+                      <div className={`status-icon ${msg.status || 'success'}`}>
+                        {msg.status === 'pending' ? (
+                          <div className="spinner-small" title="Enviando..." />
+                        ) : msg.status === 'error' ? (
+                          <Trash2 size={12} title="Erro ao enviar" />
+                        ) : (
+                          <Send size={10} title="Enviado" />
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
               <div ref={messagesEndRef} />
@@ -1014,10 +1062,11 @@ export default function ChatView() {
                     className="attach-btn" 
                     onClick={() => setShowMediaModal(true)}
                     title="Abrir Biblioteca de Mídia"
+                    disabled={isUploading}
                   >
                     <FolderOpen size={20} />
                   </button>
-                  <label className="attach-btn" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <label className={`attach-btn ${isUploading ? 'disabled' : ''}`} style={{ cursor: isUploading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <input 
                       type="file" 
                       style={{ display: 'none' }} 
@@ -1028,6 +1077,7 @@ export default function ChatView() {
                         e.target.value = ''; // reset
                       }}
                       accept="image/*,audio/*,video/*,application/pdf,.pdf"
+                      disabled={isUploading}
                     />
                     <Plus size={20} />
                   </label>
@@ -1039,8 +1089,9 @@ export default function ChatView() {
                         value={inputValue}
                         onChange={e => handleTyping(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && handleSend()}
+                        disabled={isUploading}
                       />
-                      <button className="send-btn" onClick={handleSend}>Enviar</button>
+                      <button className="send-btn" onClick={handleSend} disabled={isUploading}>Enviar</button>
                     </>
                   ) : (
                     <>
@@ -1050,8 +1101,9 @@ export default function ChatView() {
                         value={inputValue}
                         onChange={e => handleTyping(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && handleSend()}
+                        disabled={isUploading}
                       />
-                      <button className="mic-btn" onClick={startRecording} title="Gravar áudio">
+                      <button className="mic-btn" onClick={startRecording} title="Gravar áudio" disabled={isUploading}>
                         <Mic size={20} />
                       </button>
                     </>

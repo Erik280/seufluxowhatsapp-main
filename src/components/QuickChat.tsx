@@ -44,6 +44,7 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
   const presenceIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const typingDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isTypingRef = useRef(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Drag-and-drop state
   const [isDragging, setIsDragging] = useState(false);
@@ -96,7 +97,19 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
     const msgSub = supabase
       .channel(`quick-chat-${contactId}-${Math.random()}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `contact_id=eq.${contactId}` }, (payload) => {
-        setMessages(prev => [...prev, payload.new as Message]);
+        setMessages(prev => {
+          if (prev.some(m => m.id === payload.new.id)) return prev;
+          // Se for uma mensagem de saída com mídia, tenta substituir uma pendente
+          if (payload.new.direction === 'out' && payload.new.media_url) {
+            const pendingIdx = prev.findIndex(m => (m as any).status === 'pending' && m.media_type === payload.new.media_type);
+            if (pendingIdx !== -1) {
+              const next = [...prev];
+              next[pendingIdx] = payload.new as Message;
+              return next;
+            }
+          }
+          return [...prev, payload.new as Message];
+        });
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter: `contact_id=eq.${contactId}` }, (payload) => {
         setMessages(prev => prev.map(msg => msg.id === payload.new.id ? (payload.new as Message) : msg));
@@ -131,6 +144,26 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
   };
 
   const handleUploadFile = useCallback(async (file: File) => {
+    if (isUploading) return;
+    setIsUploading(true);
+
+    const tempId = `temp-${Date.now()}`;
+    const mediaType = file.type.startsWith('image/') ? 'image' : 
+                      file.type.startsWith('video/') ? 'video' : 
+                      file.type.startsWith('audio/') ? 'audio' : 'document';
+    
+    const optimisticMsg: any = {
+      id: tempId,
+      temp_id: tempId,
+      direction: 'out',
+      content: file.name,
+      media_url: URL.createObjectURL(file),
+      media_type: mediaType,
+      created_at: new Date().toISOString(),
+      status: 'pending'
+    };
+    setMessages(prev => [...prev, optimisticMsg]);
+
     const formData = new FormData();
     formData.append('contact_id', contactId);
     formData.append('company_id', companyId);
@@ -140,15 +173,22 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
         method: 'POST',
         body: formData
       });
-      if (!response.ok) {
+      if (response.ok) {
+        const data = await response.json();
+        setMessages(prev => prev.map(m => (m as any).temp_id === tempId ? { ...data, status: 'success' } : m));
+      } else {
         const errData = await response.json();
+        setMessages(prev => prev.map(m => (m as any).temp_id === tempId ? { ...m, status: 'error' } : m));
         alert(`Erro ao enviar arquivo: ${errData.detail || 'Erro desconhecido'}`);
       }
     } catch (error) {
       console.error('Upload falhou', error);
+      setMessages(prev => prev.map(m => (m as any).temp_id === tempId ? { ...m, status: 'error' } : m));
       alert('Falha ao enviar arquivo.');
+    } finally {
+      setIsUploading(false);
     }
-  }, [contactId, companyId]);
+  }, [contactId, companyId, isUploading]);
 
   // Drag & Drop handlers
   const handleDragEnter = useCallback((e: React.DragEvent) => {
@@ -378,12 +418,25 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
             </div>
           </div>
         )}
-        {messages.map(msg => (
+        {messages.map((msg: any) => (
           <div key={msg.id} className={`message ${msg.direction}`}>
-            <div className="bubble">
+            <div className={`bubble ${msg.status === 'pending' ? 'pending' : ''}`}>
               {renderMessageContent(msg)}
             </div>
-            <span className="time">{new Date(msg.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+            <div className="message-status">
+              <span className="time">{new Date(msg.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+              {msg.direction === 'out' && (
+                <div className={`status-icon ${msg.status || 'success'}`}>
+                  {msg.status === 'pending' ? (
+                    <div className="spinner-small" />
+                  ) : msg.status === 'error' ? (
+                    <Trash2 size={12} />
+                  ) : (
+                    <Send size={10} />
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         ))}
         {messages.length === 0 && (
@@ -410,10 +463,15 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
           </div>
         ) : (
           <>
-            <button className="attach-btn" onClick={() => setShowMediaModal(true)} title="Biblioteca">
+            <button 
+              className="attach-btn" 
+              onClick={() => setShowMediaModal(true)} 
+              title="Biblioteca"
+              disabled={isUploading}
+            >
               <FolderOpen size={20} />
             </button>
-            <label className="attach-btn" style={{ cursor: 'pointer' }}>
+            <label className={`attach-btn ${isUploading ? 'disabled' : ''}`} style={{ cursor: isUploading ? 'not-allowed' : 'pointer' }}>
               <input 
                 type="file" 
                 style={{ display: 'none' }} 
@@ -423,6 +481,7 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
                   e.target.value = '';
                 }}
                 accept="image/*,audio/*,video/*,application/pdf"
+                disabled={isUploading}
               />
               <Plus size={20} />
             </label>
@@ -434,13 +493,14 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
               onKeyDown={e => {
                 if (e.key === 'Enter') handleSend();
               }}
+              disabled={isUploading}
             />
             {inputValue.trim() ? (
-              <button className="send-btn" onClick={handleSend}>
+              <button className="send-btn" onClick={handleSend} disabled={isUploading}>
                 <Send size={20} />
               </button>
             ) : (
-              <button className="mic-btn" onClick={startRecording} title="Gravar áudio">
+              <button className="mic-btn" onClick={startRecording} title="Gravar áudio" disabled={isUploading}>
                 <Mic size={20} />
               </button>
             )}
