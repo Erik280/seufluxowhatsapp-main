@@ -10,6 +10,7 @@ from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
 from app.database import get_supabase
 from app.services.storage import StorageService
+from app.services.lead_media_storage import LeadMediaStorage
 from app.models.schemas import (
     CompanyCreate, CompanyResponse,
     UserCreate, UserResponse,
@@ -343,7 +344,10 @@ async def send_manual_media(
     company_id: str = Form(...),
     file: UploadFile = File(...)
 ):
-    """Envia mídia (imagem, áudio, vídeo) pelo painel e salva no banco."""
+    """
+    Envia mídia (imagem, áudio, vídeo) pelo painel.
+    Agora usa Supabase Storage ( LeadMediaStorage ) para armazenamento efêmero (14 dias).
+    """
     db = get_supabase()
     
     company_res = db.table("companies").select("evolution_instance, evolution_apikey").eq("id", company_id).execute()
@@ -360,15 +364,7 @@ async def send_manual_media(
         
     phone = contact_res.data[0]["phone"]
     
-    # 1. Upload to MinIO
-    content = await file.read()
-    safe_filename = re.sub(r'[^a-zA-Z0-9._-]', '_', file.filename)
-    filename = f"{company_id}/{uuid.uuid4()}_{safe_filename}"
-    
-    storage = StorageService()
-    media_url = storage.upload_file(content, filename, file.content_type)
-    
-    # 2. Determine media type
+    # 1. Determine media type
     content_type = file.content_type or ""
     if content_type.startswith("image/"):
         media_type = "image"
@@ -379,9 +375,34 @@ async def send_manual_media(
     else:
         media_type = "document"
 
+    # 2. Upload to Supabase Storage (LeadMediaStorage) - EFÊMERO
+    content = await file.read()
+    
+    import anyio
+    storage = LeadMediaStorage()
+    
+    # Gerar um ID temporário para o path
+    temp_msg_id = str(uuid.uuid4())
+    
+    # Executar upload (que tem compressão síncrona) em thread para não travar o loop
+    storage_res = await anyio.to_thread.run_sync(
+        storage.upload_lead_media,
+        content,
+        media_type,
+        content_type,
+        company_id,
+        temp_msg_id
+    )
+    
+    media_url = storage_res["signed_url"]
+    storage_path = storage_res["storage_path"]
+    expires_at = storage_res["expires_at"]
+
     # 3. Send via Evolution API
     from app.services.evolution import EvolutionAPI
     evolution = EvolutionAPI(instance, apikey)
+    
+    logger.info(f"Enviando mídia manual: {media_type} para {phone}. URL: {media_url}")
     
     if media_type == "audio":
         await evolution.send_presence(phone, composing=False)
@@ -391,11 +412,11 @@ async def send_manual_media(
     elif media_type == "video":
         resp = await evolution.send_video(phone, media_url)
     else:
-        # Documento (PDF, DOCX, etc.)
         original_filename = re.sub(r'[^a-zA-Z0-9._-]', '_', file.filename or "documento")
         resp = await evolution.send_document(phone, media_url, filename=original_filename)
         
     if "error" in resp:
+        logger.error(f"Erro Evolution API: {resp['error']}")
         raise HTTPException(status_code=500, detail=f"Evolution API Error: {resp['error']}")
         
     # 4. Save to Database
@@ -407,7 +428,9 @@ async def send_manual_media(
         "direction": "out",
         "content": content_text,
         "media_url": media_url,
-        "media_type": media_type
+        "media_type": media_type,
+        "media_storage_path": storage_path,
+        "media_expires_at": expires_at
     }).execute()
     
     # 5. Atualizar contato
@@ -462,8 +485,14 @@ async def upload_media_to_library(
     safe_filename = re.sub(r'[^a-zA-Z0-9._-]', '_', file.filename)
     filename = f"{company_id}/lib_{uuid.uuid4()}_{safe_filename}"
     
+    import anyio
     storage = StorageService()
-    media_url = storage.upload_file(content, filename, file.content_type)
+    media_url = await anyio.to_thread.run_sync(
+        storage.upload_file,
+        content,
+        filename,
+        file.content_type
+    )
     
     # 2. Determine media type
     content_type = file.content_type or ""
@@ -1064,11 +1093,62 @@ async def create_quick_reply(body: QuickReplyCreate):
     check = db.table("quick_replies").select("id").eq("company_id", body.company_id).eq("shortcut", body.shortcut).execute()
     if check.data:
         raise HTTPException(status_code=400, detail="Já existe uma resposta rápida com este atalho")
-        
+    
+    content = body.content
+    
+    # Se o conteúdo parecer ser uma URL de mídia efêmera do Supabase Storage, 
+    # precisamos "promovê-la" para o MinIO (Media Library) para que não expire.
+    if "supabase.co/storage/v1/object/sign/lead-media" in content or "/storage/v1/object/public/lead-media" in content:
+        try:
+            logger.info(f"Promovendo mídia efêmera para Media Library: {content}")
+            import httpx
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                media_resp = await client.get(content)
+                if media_resp.status_code == 200:
+                    media_bytes = media_resp.content
+                    content_type = media_resp.headers.get("content-type", "application/octet-stream")
+                    
+                    # Upload para MinIO
+                    from app.services.storage import StorageService
+                    minio = StorageService()
+                    
+                    # Nome amigável
+                    ext = content_type.split("/")[-1] if "/" in content_type else "bin"
+                    filename = f"{body.company_id}/quick_{uuid.uuid4()}.{ext}"
+                    
+                    import anyio
+                    new_url = await anyio.to_thread.run_sync(
+                        minio.upload_file,
+                        media_bytes,
+                        filename,
+                        content_type
+                    )
+                    
+                    # Determine media type para salvar na biblioteca
+                    media_type = "document"
+                    if content_type.startswith("image/"): media_type = "image"
+                    elif content_type.startswith("audio/"): media_type = "audio"
+                    elif content_type.startswith("video/"): media_type = "video"
+                    
+                    # Salvar na biblioteca de mídias também para o usuário ver
+                    db.table("media_library").insert({
+                        "company_id": body.company_id,
+                        "name": f"QR: {body.shortcut}",
+                        "media_type": media_type,
+                        "url": new_url
+                    }).execute()
+                    
+                    content = new_url
+                    logger.info(f"Mídia promovida com sucesso para {new_url}")
+        except Exception as e:
+            logger.error(f"Erro ao promover mídia para quick reply: {e}")
+            # Se falhar a promoção, salvamos a URL original (pode expirar, mas é o fallback)
+            pass
+
     res = db.table("quick_replies").insert({
         "company_id": body.company_id,
         "shortcut": body.shortcut,
-        "content": body.content
+        "content": content
     }).execute()
     
     if not res.data:

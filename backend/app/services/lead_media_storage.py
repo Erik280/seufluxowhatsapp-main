@@ -20,7 +20,7 @@ logger = logging.getLogger("seufluxo.lead_media_storage")
 LEAD_MEDIA_BUCKET = "lead-media"
 
 # TTL em dias — arquivos são deletados pelo cron após este período
-MEDIA_TTL_DAYS = 7
+MEDIA_TTL_DAYS = 14
 
 
 def _compress_image(file_bytes: bytes, content_type: str) -> Tuple[bytes, str, str]:
@@ -231,7 +231,7 @@ class LeadMediaStorage:
         Returns:
             dict com 'signed_url', 'storage_path', 'expires_at', 'original_size_kb', 'final_size_kb'
         """
-        self._ensure_bucket()
+        # self._ensure_bucket() # Removido para otimizar performance. Assume-se que o bucket já existe.
 
         original_size = len(file_bytes)
 

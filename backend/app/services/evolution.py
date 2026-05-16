@@ -27,7 +27,7 @@ class EvolutionAPI:
         """Faz POST genérico na Evolution API."""
         url = f"{self.base_url}{path}"
         try:
-            async with httpx.AsyncClient(timeout=15.0) as client:
+            async with httpx.AsyncClient(timeout=60.0) as client:
                 resp = await client.post(url, json=payload, headers=self.headers)
                 resp.raise_for_status()
                 return resp.json()
@@ -154,7 +154,7 @@ class EvolutionAdminAPI:
     async def _post(self, path: str, payload: dict) -> dict:
         url = f"{self.base_url}{path}"
         try:
-            async with httpx.AsyncClient(timeout=15.0) as client:
+            async with httpx.AsyncClient(timeout=60.0) as client:
                 resp = await client.post(url, json=payload, headers=self.headers)
                 resp.raise_for_status()
                 return resp.json()
@@ -169,7 +169,7 @@ class EvolutionAdminAPI:
     async def _get(self, path: str) -> dict:
         url = f"{self.base_url}{path}"
         try:
-            async with httpx.AsyncClient(timeout=15.0) as client:
+            async with httpx.AsyncClient(timeout=60.0) as client:
                 resp = await client.get(url, headers=self.headers)
                 resp.raise_for_status()
                 return resp.json()

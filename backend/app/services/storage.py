@@ -10,18 +10,22 @@ class StorageService:
         self.settings = get_settings()
         # Limpar endpoint caso o usuário tenha colocado http:// ou https:// por engano
         endpoint = self.settings.minio_endpoint.replace("https://", "").replace("http://", "").rstrip("/")
-        self.s3 = boto3.client(
-            "s3",
-            endpoint_url=f"http{'s' if self.settings.minio_secure else ''}://{endpoint}",
+        self.s = boto3.Session(
             aws_access_key_id=self.settings.minio_access_key,
             aws_secret_access_key=self.settings.minio_secret_key,
+        )
+        self.s3 = self.s.client(
+            "s3",
+            endpoint_url=f"http{'s' if self.settings.minio_secure else ''}://{endpoint}",
             config=Config(signature_version="s3v4"),
             region_name=self.settings.minio_region
         )
         self.bucket = self.settings.minio_bucket
-        self._ensure_bucket_exists()
+        # Removida a checagem automática no __init__ para evitar overhead em cada request.
+        # A checagem deve ser feita apenas uma vez no startup ou manualmente se necessário.
 
     def _ensure_bucket_exists(self):
+        """Garante que o bucket existe (útil no primeiro setup)."""
         try:
             self.s3.head_bucket(Bucket=self.bucket)
         except Exception:
