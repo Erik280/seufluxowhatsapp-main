@@ -88,6 +88,12 @@ export default function ChatView() {
   const presenceIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const typingDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isTypingRef = useRef(false);
+  
+  // Audio Visualizer Refs
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const [visualizerData, setVisualizerData] = useState<number[]>(new Array(10).fill(10));
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -435,6 +441,41 @@ export default function ChatView() {
       const mediaRecorder = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
+      
+      // ── Audio Visualizer Setup ──
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const analyser = audioContext.createAnalyser();
+      const source = audioContext.createMediaStreamSource(stream);
+      source.connect(analyser);
+      analyser.fftSize = 64; // Smaller FFT for the 10 bars
+      
+      audioContextRef.current = audioContext;
+      analyserRef.current = analyser;
+      
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      
+      const updateVisualizer = () => {
+        if (!analyserRef.current) return;
+        analyserRef.current.getByteFrequencyData(dataArray);
+        
+        // Map frequencies to 10 bars
+        const bars = [];
+        const step = Math.floor(bufferLength / 10);
+        for (let i = 0; i < 10; i++) {
+          let sum = 0;
+          for (let j = 0; j < step; j++) {
+            sum += dataArray[i * step + j];
+          }
+          const avg = sum / step;
+          // Scale to percentage (roughly)
+          bars.push(Math.max(15, (avg / 255) * 100));
+        }
+        setVisualizerData(bars);
+        animationFrameRef.current = requestAnimationFrame(updateVisualizer);
+      };
+      
+      updateVisualizer();
 
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -443,6 +484,13 @@ export default function ChatView() {
       };
 
       mediaRecorder.onstop = async () => {
+        // Stop visualizer
+        if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+        if (audioContextRef.current) audioContextRef.current.close();
+        audioContextRef.current = null;
+        analyserRef.current = null;
+        setVisualizerData(new Array(10).fill(10));
+
         // Stop all tracks
         stream.getTracks().forEach(track => track.stop());
         
@@ -539,6 +587,7 @@ export default function ChatView() {
       audioChunksRef.current = [];
       mediaRecorderRef.current.stop();
     }
+    // Visualizer cleanup is handled in onstop
     if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
     if (presenceIntervalRef.current) clearInterval(presenceIntervalRef.current);
     setIsRecording(false);
@@ -1051,8 +1100,9 @@ export default function ChatView() {
                     <span className="recording-dot"></span>
                     <span className="recording-timer">{formatRecordingTime(recordingTime)}</span>
                     <div className="recording-waveform">
-                      <span></span><span></span><span></span><span></span><span></span>
-                      <span></span><span></span><span></span><span></span><span></span>
+                      {visualizerData.map((height, i) => (
+                        <span key={i} style={{ height: `${height}%` }}></span>
+                      ))}
                     </div>
                   </div>
                   <button className="recording-send-btn" onClick={stopRecording} title="Enviar áudio">

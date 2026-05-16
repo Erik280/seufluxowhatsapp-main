@@ -557,25 +557,10 @@
 .recording-waveform span {
   display: block;
   width: 3px;
-  background: rgba(0, 229, 204, 0.7);
+  background: var(--color-neon-cyan);
   border-radius: 2px;
-  animation: waveform-bar 0.8s ease-in-out infinite;
-}
-
-.recording-waveform span:nth-child(1)  { animation-delay: 0s;    height: 30%; }
-.recording-waveform span:nth-child(2)  { animation-delay: 0.1s;  height: 60%; }
-.recording-waveform span:nth-child(3)  { animation-delay: 0.15s; height: 90%; }
-.recording-waveform span:nth-child(4)  { animation-delay: 0.2s;  height: 50%; }
-.recording-waveform span:nth-child(5)  { animation-delay: 0.25s; height: 80%; }
-.recording-waveform span:nth-child(6)  { animation-delay: 0.3s;  height: 40%; }
-.recording-waveform span:nth-child(7)  { animation-delay: 0.35s; height: 70%; }
-.recording-waveform span:nth-child(8)  { animation-delay: 0.4s;  height: 55%; }
-.recording-waveform span:nth-child(9)  { animation-delay: 0.45s; height: 85%; }
-.recording-waveform span:nth-child(10) { animation-delay: 0.5s;  height: 35%; }
-
-@keyframes waveform-bar {
-  0%, 100% { transform: scaleY(0.4); }
-  50% { transform: scaleY(1); }
+  transition: height 0.05s ease;
+  min-height: 4px;
 }
 
 .recording-cancel-btn {

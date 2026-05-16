@@ -46,6 +46,12 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
   const isTypingRef = useRef(false);
   const [isUploading, setIsUploading] = useState(false);
 
+  // Audio Visualizer Refs
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const [visualizerData, setVisualizerData] = useState<number[]>(new Array(10).fill(10));
+
   // Drag-and-drop state
   const [isDragging, setIsDragging] = useState(false);
   const dragCounterRef = useRef(0);
@@ -286,11 +292,46 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
+      // ── Audio Visualizer Setup ──
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const analyser = audioContext.createAnalyser();
+      const source = audioContext.createMediaStreamSource(stream);
+      source.connect(analyser);
+      analyser.fftSize = 64;
+
+      audioContextRef.current = audioContext;
+      analyserRef.current = analyser;
+
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+
+      const updateVisualizer = () => {
+        if (!analyserRef.current) return;
+        analyserRef.current.getByteFrequencyData(dataArray);
+        const bars = [];
+        const step = Math.floor(bufferLength / 10);
+        for (let i = 0; i < 10; i++) {
+          let sum = 0;
+          for (let j = 0; j < step; j++) sum += dataArray[i * step + j];
+          bars.push(Math.max(15, ((sum / step) / 255) * 100));
+        }
+        setVisualizerData(bars);
+        animationFrameRef.current = requestAnimationFrame(updateVisualizer);
+      };
+      updateVisualizer();
+
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) audioChunksRef.current.push(event.data);
       };
 
       mediaRecorder.onstop = async () => {
+        // Stop visualizer
+        if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+        if (audioContextRef.current) audioContextRef.current.close();
+        audioContextRef.current = null;
+        analyserRef.current = null;
+        setVisualizerData(new Array(10).fill(10));
+
         stream.getTracks().forEach(track => track.stop());
         if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
         if (presenceIntervalRef.current) clearInterval(presenceIntervalRef.current);
@@ -335,6 +376,7 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
       audioChunksRef.current = [];
       mediaRecorderRef.current.stop();
     }
+    // Cleanup handled in onstop
     if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
     if (presenceIntervalRef.current) clearInterval(presenceIntervalRef.current);
     setIsRecording(false);
@@ -456,6 +498,11 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
             <div className="recording-indicator" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span className="recording-dot" style={{ width: '8px', height: '8px', background: '#ff4b4b', borderRadius: '50%', animation: 'pulse 1s infinite' }}></span>
               <span className="recording-timer" style={{ color: '#e6f1ff', fontSize: '0.9rem', fontVariantNumeric: 'tabular-nums' }}>{formatRecordingTime(recordingTime)}</span>
+              <div className="recording-waveform" style={{ display: 'flex', alignItems: 'center', gap: '3px', height: '20px', flex: 1 }}>
+                {visualizerData.map((height, i) => (
+                  <span key={i} style={{ width: '3px', background: '#00E5CC', borderRadius: '2px', height: `${height}%`, transition: 'height 0.05s ease' }}></span>
+                ))}
+              </div>
             </div>
             <button className="recording-send-btn" onClick={stopRecording} style={{ background: '#00E5CC', border: 'none', color: '#000', borderRadius: '50%', padding: '8px', cursor: 'pointer' }}>
               <Send size={18} />
