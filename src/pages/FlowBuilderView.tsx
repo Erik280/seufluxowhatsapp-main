@@ -3,13 +3,13 @@ import { supabase, API_BASE_URL } from '../supabaseClient';
 import {
   Plus, Trash2, GripVertical, ChevronDown, ChevronUp, Copy,
   MessageSquare, Mic, Image, Video, Clock, Keyboard, Radio,
-  Play, Save, ToggleLeft, ToggleRight, X, Tag, Upload
+  Play, Save, ToggleLeft, ToggleRight, X, Tag, Upload, Smile
 } from 'lucide-react';
 import './FlowBuilderView.css';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type StepType = 'text' | 'audio' | 'image' | 'video' | 'delay' | 'composing' | 'recording';
+type StepType = 'text' | 'audio' | 'image' | 'video' | 'delay' | 'composing' | 'recording' | 'react';
 
 interface FlowStep {
   id: string;
@@ -48,6 +48,7 @@ const STEP_TYPES: { type: StepType; label: string; icon: any; color: string; has
   { type: 'audio',     label: 'Áudio PTT',    icon: Mic,     color: '#9b59b6', hasContent: true,  hasDelay: true },
   { type: 'image',     label: 'Imagem',       icon: Image,   color: '#3498db', hasContent: true,  hasDelay: true },
   { type: 'video',     label: 'Vídeo',        icon: Video,   color: '#e67e22', hasContent: true,  hasDelay: true },
+  { type: 'react',     label: 'Reagir',       icon: Smile,   color: '#00ff88', hasContent: true,  hasDelay: true },
 ];
 
 const getStepConfig = (type: StepType) => STEP_TYPES.find(t => t.type === type) || STEP_TYPES[1];
@@ -615,10 +616,12 @@ export default function FlowBuilderView() {
                       <span className="fb-step-preview">
                         {step.type === 'delay' || step.type === 'composing' || step.type === 'recording'
                           ? `${step.delay_duration}s`
-                          : step.media_library_id
-                            // Show library file name when a media item is linked
-                            ? (mediaItems.find(m => m.id === step.media_library_id)?.name || step.content?.slice(0, 50) || '(sem conteúdo)')
-                            : step.content?.slice(0, 50) || '(sem conteúdo)'}
+                          : step.type === 'react'
+                            ? `Reação: ${step.content || '(nenhuma)'}`
+                            : step.media_library_id
+                              // Show library file name when a media item is linked
+                              ? (mediaItems.find(m => m.id === step.media_library_id)?.name || step.content?.slice(0, 50) || '(sem conteúdo)')
+                              : step.content?.slice(0, 50) || '(sem conteúdo)'}
                       </span>
                     </div>
                     <div className="fb-step-actions">
@@ -668,6 +671,34 @@ export default function FlowBuilderView() {
                                 onChange={e => updateStep(step.id, { content: e.target.value })}
                                 placeholder="Olá {{nome}}, tudo bem?"
                               />
+                            </div>
+                          )}
+
+                          {step.type === 'react' && (
+                            <div className="fb-field">
+                              <label>Escolha a Reação (Emoji)</label>
+                              <div className="fb-emoji-selector" style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+                                {['👍', '❤️', '😂', '😮', '😢', '🙏'].map(emoji => (
+                                  <button
+                                    key={emoji}
+                                    type="button"
+                                    className={`fb-emoji-btn ${step.content === emoji ? 'active' : ''}`}
+                                    onClick={() => updateStep(step.id, { content: emoji })}
+                                    style={{
+                                      fontSize: '1.5rem',
+                                      padding: '8px',
+                                      borderRadius: '50%',
+                                      border: step.content === emoji ? '2px solid #00e5cc' : '2px solid transparent',
+                                      background: step.content === emoji ? 'rgba(0, 229, 204, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                                      cursor: 'pointer',
+                                      transition: 'all 0.2s ease',
+                                      transform: step.content === emoji ? 'scale(1.15)' : 'scale(1)',
+                                    }}
+                                  >
+                                    {emoji}
+                                  </button>
+                                ))}
+                              </div>
                             </div>
                           )}
 

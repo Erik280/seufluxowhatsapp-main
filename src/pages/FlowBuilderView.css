@@ -816,3 +816,9 @@
     min-width: 120px;
   }
 }
+
+.fb-emoji-btn:hover {
+  transform: scale(1.25) !important;
+  background: rgba(0, 229, 204, 0.25) !important;
+  box-shadow: 0 0 10px rgba(0, 229, 204, 0.4);
+}

@@ -33,6 +33,7 @@ class StepType(str, Enum):
     image = "image"
     video = "video"
     delay = "delay"
+    react = "react"
 
 
 # ========================

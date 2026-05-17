@@ -51,6 +51,7 @@ async def execute_flow(
     flow_id: str,
     evolution: EvolutionAPI,
     contact: dict | None = None,
+    trigger_message_id: str | None = None,
 ):
     """
     Executa um fluxo completo de atendimento automático passo a passo.
@@ -125,7 +126,44 @@ async def execute_flow(
 
         # ── Processar cada tipo de step ──────────────────────────────────────
 
-        if step_type == "delay":
+        if step_type == "react":
+            logger.info(f"  [react] emoji: {content}")
+            if not content:
+                logger.warning("React step content (emoji) is empty. Skipping.")
+                continue
+
+            target_msg_id = trigger_message_id
+            
+            if not target_msg_id:
+                try:
+                    last_msg_res = db.table("messages")\
+                        .select("whatsapp_id")\
+                        .eq("contact_id", contact_id)\
+                        .eq("direction", "in")\
+                        .order("created_at", desc=True)\
+                        .limit(1)\
+                        .execute()
+                    if last_msg_res.data:
+                        target_msg_id = last_msg_res.data[0].get("whatsapp_id")
+                except Exception as e:
+                    logger.error(f"Erro ao buscar última mensagem para reações do fluxo: {e}")
+
+            if target_msg_id:
+                try:
+                    await evolution.send_reaction(contact_phone, target_msg_id, from_me=False, reaction=content)
+                    
+                    db.table("messages").update({
+                        "reaction": content
+                    }).eq("whatsapp_id", target_msg_id).execute()
+                    
+                    logger.info(f"Reação {content} aplicada com sucesso no whatsapp_id {target_msg_id}")
+                except Exception as e:
+                    logger.error(f"Erro ao enviar reação no fluxo: {e}")
+            else:
+                logger.warning(f"Nenhuma mensagem encontrada para reagir no fluxo para {contact_phone}")
+            continue
+
+        elif step_type == "delay":
             # Pausa silenciosa — não envia nada
             logger.info(f"  [delay] {delay}s silencioso")
             if delay > 0:

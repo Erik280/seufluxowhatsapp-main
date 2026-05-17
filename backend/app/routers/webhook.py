@@ -485,6 +485,7 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
                             flow_id=flow_id,
                             evolution=evo,
                             contact=contact,
+                            trigger_message_id=key.get("id"),
                         )
                         logger.info(
                             f"[{phone}] Fluxo '{flow_id}' disparado por keyword routing."
@@ -523,6 +524,7 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
                     flow_id=flow["id"],
                     evolution=evo,
                     contact=contact,
+                    trigger_message_id=key.get("id"),
                 )
                 logger.info(f"[{phone}] Modo BOT — fluxo '{flow['name']}' disparado.")
             else:
