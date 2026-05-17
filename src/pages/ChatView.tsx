@@ -14,6 +14,7 @@ interface Contact {
   stage_id: string | null;
   avatar_url?: string | null;
   unread_count?: number;
+  contact_tags?: { tag_id: string; tags: { id: string; name: string; color: string } }[];
 }
 
 interface Message {
@@ -1025,7 +1026,7 @@ export default function ChatView() {
             }
 
             if (selectedTagFilterId) {
-              filtered = filtered.filter(c => c.contact_tags?.some(ct => ct.tag_id === selectedTagFilterId));
+              filtered = filtered.filter(c => c.contact_tags?.some((ct: any) => ct.tag_id === selectedTagFilterId));
             }
 
             if (q) {
@@ -1089,7 +1090,7 @@ export default function ChatView() {
                   }}>
                     {contact.chat_status === 'bot' ? 'Bot Ativo' : 'Humano'}
                   </span>
-                  {contact.contact_tags?.map(ct => ct.tags).filter(Boolean).map(tag => (
+                  {contact.contact_tags?.map((ct: any) => ct.tags).filter(Boolean).map((tag: any) => (
                     <span key={tag.id} className="tag" style={{
                       background: 'rgba(255, 255, 255, 0.08)',
                       border: '1px solid rgba(255, 255, 255, 0.15)',
