@@ -114,6 +114,60 @@ export default function ChatView() {
   const [showCrmModal, setShowCrmModal] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [selectedStageId, setSelectedStageId] = useState<string>('');
+  const [companyTags, setCompanyTags] = useState<any[]>([]);
+  const [selectedTags, setSelectedTags] = useState<any[]>([]);
+  const [selectedTagFilterId, setSelectedTagFilterId] = useState<string>('');
+  const [newTagName, setNewTagName] = useState('');
+
+  const fetchTags = async (cId: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/tags/${cId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setCompanyTags(data || []);
+      }
+    } catch (err) {
+      console.error('Error fetching tags:', err);
+    }
+  };
+
+  const handleAddTagToLead = (tagId: string) => {
+    const tag = companyTags.find(t => t.id === tagId);
+    if (tag && !selectedTags.some(t => t.id === tagId)) {
+      setSelectedTags([...selectedTags, tag]);
+    }
+  };
+
+  const handleRemoveTagFromLead = (tagId: string) => {
+    setSelectedTags(selectedTags.filter(t => t.id !== tagId));
+  };
+
+  const handleCreateNewTag = async () => {
+    if (!newTagName.trim() || !companyId) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/tags`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          company_id: companyId,
+          name: newTagName.trim(),
+          color: '#ffffff'
+        })
+      });
+      if (res.ok) {
+        const newTag = await res.json();
+        setCompanyTags([...companyTags, newTag]);
+        setSelectedTags([...selectedTags, newTag]);
+        setNewTagName('');
+        showToast('Tag criada com sucesso!');
+      } else {
+        showToast('Erro ao criar tag.', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Erro ao criar tag.', 'error');
+    }
+  };
 
   // Scroll to bottom of messages
   const scrollToBottom = () => {
@@ -143,11 +197,14 @@ export default function ChatView() {
         // 2. Fetch Contacts
         const { data: contactsData } = await supabase
           .from('contacts')
-          .select('*')
+          .select('*, contact_tags(tag_id, tags(id, name, color))')
           .eq('company_id', userData.company_id)
           .order('last_message', { ascending: false, nullsFirst: false });
           
         if (contactsData) setContacts(contactsData);
+
+        // Fetch company tags
+        fetchTags(userData.company_id);
 
         // Fetch Stages
         const { data: stagesData } = await supabase
@@ -182,7 +239,7 @@ export default function ChatView() {
           .channel(`contacts-${userData.company_id}-${Math.random()}`)
           .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts', filter: `company_id=eq.${userData.company_id}` }, (_payload) => {
             // Very simple refresh for now
-            supabase.from('contacts').select('*').eq('company_id', userData.company_id).order('last_message', { ascending: false, nullsFirst: false })
+            supabase.from('contacts').select('*, contact_tags(tag_id, tags(id, name, color))').eq('company_id', userData.company_id).order('last_message', { ascending: false, nullsFirst: false })
               .then(({data}) => {
                 if (data) setContacts(data);
               });
@@ -212,6 +269,10 @@ export default function ChatView() {
     setCrmName(selectedContact.name || '');
     setCrmEmail(selectedContact.email || '');
     setCrmNotes(selectedContact.notes || '');
+
+    // Sync CRM tags
+    const currentTags = selectedContact.contact_tags?.map((ct: any) => ct.tags).filter(Boolean) || [];
+    setSelectedTags(currentTags);
 
     const fetchMessages = async () => {
       const { data } = await supabase
@@ -674,7 +735,8 @@ export default function ChatView() {
       const payload = {
         name: crmName,
         email: crmEmail,
-        notes: crmNotes
+        notes: crmNotes,
+        tag_ids: selectedTags.map(t => t.id)
       };
 
       const res = await fetch(`${API_BASE_URL}/api/contacts/${selectedContact.id}/crm`, {
@@ -684,7 +746,9 @@ export default function ChatView() {
       });
 
       if (res.ok) {
-        const updatedContact = { ...selectedContact, name: crmName, email: crmEmail, notes: crmNotes };
+        const data = await res.json();
+        const normalizedTags = data.tags ? data.tags.map((t: any) => ({ tag_id: t.id, tags: t })) : [];
+        const updatedContact = { ...data, contact_tags: normalizedTags };
         setSelectedContact(updatedContact);
         setContacts(contacts.map(c => c.id === selectedContact.id ? updatedContact : c));
         showToast('Dados salvos com sucesso!');
@@ -918,16 +982,30 @@ export default function ChatView() {
               <Plus size={20} />
             </button>
           </div>
-          <div className="filter-row">
+          <div className="filter-row" style={{ display: 'flex', gap: '8px' }}>
             <select
               className="stage-filter-select"
               value={selectedStageId}
               onChange={e => setSelectedStageId(e.target.value)}
+              style={{ flex: 1 }}
             >
               <option value="">Todas as Etapas (Kanban)</option>
               {stages.map(stage => (
                 <option key={stage.id} value={stage.id}>
                   {stage.name}
+                </option>
+              ))}
+            </select>
+            <select
+              className="stage-filter-select"
+              value={selectedTagFilterId}
+              onChange={e => setSelectedTagFilterId(e.target.value)}
+              style={{ flex: 1 }}
+            >
+              <option value="">Todas as Tags</option>
+              {companyTags.map(tag => (
+                <option key={tag.id} value={tag.id}>
+                  {tag.name}
                 </option>
               ))}
             </select>
@@ -944,6 +1022,10 @@ export default function ChatView() {
 
             if (selectedStageId) {
               filtered = filtered.filter(c => c.stage_id === selectedStageId);
+            }
+
+            if (selectedTagFilterId) {
+              filtered = filtered.filter(c => c.contact_tags?.some(ct => ct.tag_id === selectedTagFilterId));
             }
 
             if (q) {
@@ -1007,6 +1089,15 @@ export default function ChatView() {
                   }}>
                     {contact.chat_status === 'bot' ? 'Bot Ativo' : 'Humano'}
                   </span>
+                  {contact.contact_tags?.map(ct => ct.tags).filter(Boolean).map(tag => (
+                    <span key={tag.id} className="tag" style={{
+                      background: 'rgba(255, 255, 255, 0.08)',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      color: '#e6f1ff'
+                    }}>
+                      {tag.name}
+                    </span>
+                  ))}
                   <button 
                     className="delete-contact-btn"
                     title="Apagar conversa"
@@ -1314,6 +1405,70 @@ export default function ChatView() {
                   rows={4}
                 />
               </div>
+              <div className="crm-field">
+                <label>Tags (Categorias)</label>
+                <div className="crm-tags-list" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px', minHeight: '24px', alignItems: 'center' }}>
+                  {selectedTags.map(tag => (
+                    <span key={tag.id} className="crm-tag-item" style={{
+                      background: 'rgba(255, 255, 255, 0.06)',
+                      border: '1px solid rgba(255, 255, 255, 0.12)',
+                      padding: '3px 8px',
+                      borderRadius: '4px',
+                      fontSize: '0.75rem',
+                      color: '#ccd6f6',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}>
+                      {tag.name}
+                      <button type="button" onClick={() => handleRemoveTagFromLead(tag.id)} style={{
+                        background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', padding: 0, fontSize: '0.85rem', display: 'flex', alignItems: 'center'
+                      }}>×</button>
+                    </span>
+                  ))}
+                  {selectedTags.length === 0 && <span style={{ color: '#8892b0', fontSize: '0.75rem', fontStyle: 'italic' }}>Nenhuma tag adicionada.</span>}
+                </div>
+                <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
+                  <select
+                    className="crm-select"
+                    value=""
+                    onChange={e => {
+                      const tagId = e.target.value;
+                      if (tagId) handleAddTagToLead(tagId);
+                    }}
+                    style={{ flex: 1, padding: '6px 10px', fontSize: '0.8rem', height: '36px' }}
+                  >
+                    <option value="">+ Adicionar tag existente...</option>
+                    {companyTags.filter(t => !selectedTags.some(st => st.id === t.id)).map(tag => (
+                      <option key={tag.id} value={tag.id}>{tag.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <input
+                    type="text"
+                    className="crm-input"
+                    placeholder="Nova tag..."
+                    value={newTagName}
+                    onChange={e => setNewTagName(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleCreateNewTag();
+                      }
+                    }}
+                    style={{ flex: 1, padding: '6px 10px', fontSize: '0.8rem', height: '36px' }}
+                  />
+                  <button
+                    type="button"
+                    className="crm-schedule-btn"
+                    onClick={handleCreateNewTag}
+                    style={{ margin: 0, padding: '0 12px', fontSize: '0.8rem', height: '36px', width: 'auto', background: 'rgba(0, 229, 204, 0.1)', color: '#00E5CC', border: '1px solid rgba(0, 229, 204, 0.2)' }}
+                  >
+                    Criar
+                  </button>
+                </div>
+              </div>
               <button
                 className="crm-save-btn"
                 onClick={handleSaveCRM}
@@ -1426,6 +1581,70 @@ export default function ChatView() {
                     placeholder="Anotações sobre o lead..."
                     rows={4}
                   />
+                </div>
+                <div className="crm-field">
+                  <label>Tags (Categorias)</label>
+                  <div className="crm-tags-list" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px', minHeight: '24px', alignItems: 'center' }}>
+                    {selectedTags.map(tag => (
+                      <span key={tag.id} className="crm-tag-item" style={{
+                        background: 'rgba(255, 255, 255, 0.06)',
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        padding: '3px 8px',
+                        borderRadius: '4px',
+                        fontSize: '0.75rem',
+                        color: '#ccd6f6',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}>
+                        {tag.name}
+                        <button type="button" onClick={() => handleRemoveTagFromLead(tag.id)} style={{
+                          background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', padding: 0, fontSize: '0.85rem', display: 'flex', alignItems: 'center'
+                        }}>×</button>
+                      </span>
+                    ))}
+                    {selectedTags.length === 0 && <span style={{ color: '#8892b0', fontSize: '0.75rem', fontStyle: 'italic' }}>Nenhuma tag adicionada.</span>}
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
+                    <select
+                      className="crm-select"
+                      value=""
+                      onChange={e => {
+                        const tagId = e.target.value;
+                        if (tagId) handleAddTagToLead(tagId);
+                      }}
+                      style={{ flex: 1, padding: '6px 10px', fontSize: '0.8rem', height: '36px' }}
+                    >
+                      <option value="">+ Adicionar tag existente...</option>
+                      {companyTags.filter(t => !selectedTags.some(st => st.id === t.id)).map(tag => (
+                        <option key={tag.id} value={tag.id}>{tag.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <input
+                      type="text"
+                      className="crm-input"
+                      placeholder="Nova tag..."
+                      value={newTagName}
+                      onChange={e => setNewTagName(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleCreateNewTag();
+                        }
+                      }}
+                      style={{ flex: 1, padding: '6px 10px', fontSize: '0.8rem', height: '36px' }}
+                    />
+                    <button
+                      type="button"
+                      className="crm-schedule-btn"
+                      onClick={handleCreateNewTag}
+                      style={{ margin: 0, padding: '0 12px', fontSize: '0.8rem', height: '36px', width: 'auto', background: 'rgba(0, 229, 204, 0.1)', color: '#00E5CC', border: '1px solid rgba(0, 229, 204, 0.2)' }}
+                    >
+                      Criar
+                    </button>
+                  </div>
                 </div>
                 <button
                   className="crm-save-btn"

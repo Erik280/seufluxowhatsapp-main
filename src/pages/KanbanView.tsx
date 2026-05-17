@@ -28,6 +28,7 @@ interface Contact {
   flow_current_flow_id?: string | null;
   flow_current_step_index?: number | null;
   unread_count?: number;
+  contact_tags?: { tag_id: string; tags: { id: string; name: string; color: string } }[];
 }
 
 interface Flow {
@@ -304,6 +305,20 @@ export default function KanbanView() {
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [isQuickChatOpen, setIsQuickChatOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [companyTags, setCompanyTags] = useState<any[]>([]);
+  const [selectedTagFilterId, setSelectedTagFilterId] = useState<string>('');
+
+  const fetchTags = async (cId: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/tags/${cId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setCompanyTags(data || []);
+      }
+    } catch (err) {
+      console.error('Error fetching tags:', err);
+    }
+  };
   const colSaveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Ref para polling de fluxos ativos — evita stale closure no setInterval
   const contactsRef = useRef<Contact[]>([]);
@@ -330,9 +345,11 @@ export default function KanbanView() {
 
       const [stagesRes, contactsRes, flowsRes] = await Promise.all([
         supabase.from('kanban_stages').select('*').eq('company_id', userData.company_id).order('order_index'),
-        supabase.from('contacts').select('*').eq('company_id', userData.company_id).order('last_message', { ascending: false, nullsFirst: false }),
+        supabase.from('contacts').select('*, contact_tags(tag_id, tags(id, name, color))').eq('company_id', userData.company_id).order('last_message', { ascending: false, nullsFirst: false }),
         supabase.from('chat_flows').select('id, name, is_active').eq('company_id', userData.company_id).order('name'),
       ]);
+
+      fetchTags(userData.company_id);
 
       if (stagesRes.data) {
         // Garantir que NOVOS LEADS (is_default) sempre aparece primeiro
@@ -382,11 +399,11 @@ export default function KanbanView() {
         })
         // INSERT/DELETE: re-fetch completo (precisam do filtro para segurança)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'contacts', filter: `company_id=eq.${userData.company_id}` }, () => {
-          supabase.from('contacts').select('*').eq('company_id', userData.company_id).order('last_message', { ascending: false, nullsFirst: false })
+          supabase.from('contacts').select('*, contact_tags(tag_id, tags(id, name, color))').eq('company_id', userData.company_id).order('last_message', { ascending: false, nullsFirst: false })
             .then(({ data }) => { if (data) setContacts(data); });
         })
         .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'contacts', filter: `company_id=eq.${userData.company_id}` }, () => {
-          supabase.from('contacts').select('*').eq('company_id', userData.company_id).order('last_message', { ascending: false, nullsFirst: false })
+          supabase.from('contacts').select('*, contact_tags(tag_id, tags(id, name, color))').eq('company_id', userData.company_id).order('last_message', { ascending: false, nullsFirst: false })
             .then(({ data }) => { if (data) setContacts(data); });
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'kanban_stages', filter: `company_id=eq.${userData.company_id}` }, () => {
@@ -421,7 +438,7 @@ export default function KanbanView() {
       if (!hasActiveFlow) return; // nada rodando — sem custo de rede
       supabase
         .from('contacts')
-        .select('*')
+        .select('*, contact_tags(tag_id, tags(id, name, color))')
         .eq('company_id', companyId)
         .order('last_message', { ascending: false, nullsFirst: false })
         .then(({ data }) => { if (data) setContacts(data); });
@@ -619,6 +636,29 @@ export default function KanbanView() {
               </button>
             )}
           </div>
+          <div className="kanban-search" style={{ width: '180px' }}>
+            <select
+              value={selectedTagFilterId}
+              onChange={e => setSelectedTagFilterId(e.target.value)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#e6f1ff',
+                width: '100%',
+                height: '100%',
+                outline: 'none',
+                cursor: 'pointer',
+                fontSize: '0.85rem'
+              }}
+            >
+              <option value="" style={{ background: '#0a192f', color: '#e6f1ff' }}>Todas as Tags</option>
+              {companyTags.map(tag => (
+                <option key={tag.id} value={tag.id} style={{ background: '#0a192f', color: '#e6f1ff' }}>
+                  {tag.name}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
         <button className="kb-btn-new-col" onClick={openNewStageModal}>
           <Plus size={16} /> Nova Coluna
@@ -630,6 +670,12 @@ export default function KanbanView() {
           {stages.map((stage, colIdx) => {
             const stageContacts = contacts
               .filter(c => c.stage_id === stage.id)
+              .filter(c => {
+                if (selectedTagFilterId) {
+                  return c.contact_tags?.some(ct => ct.tag_id === selectedTagFilterId);
+                }
+                return true;
+              })
               .filter(c => {
                 if (!searchTerm.trim()) return true;
                 const search = searchTerm.toLowerCase();
@@ -748,6 +794,23 @@ export default function KanbanView() {
                       {isRunning && (
                         <div className="flow-step-label">
                           Passo {currentStep! + 1}/{totalSteps}
+                        </div>
+                      )}
+
+                      {contact.contact_tags && contact.contact_tags.length > 0 && (
+                        <div className="kanban-card-tags" style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '6px' }}>
+                          {contact.contact_tags.map(ct => ct.tags).filter(Boolean).map(tag => (
+                            <span key={tag.id} className="kanban-tag-pill" style={{
+                              background: 'rgba(255, 255, 255, 0.08)',
+                              border: '1px solid rgba(255, 255, 255, 0.15)',
+                              padding: '2px 6px',
+                              borderRadius: '3px',
+                              fontSize: '0.7rem',
+                              color: '#ccd6f6'
+                            }}>
+                              {tag.name}
+                            </span>
+                          ))}
                         </div>
                       )}
 
