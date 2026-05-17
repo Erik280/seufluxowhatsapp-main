@@ -127,10 +127,14 @@ async def execute_flow(
         # ── Processar cada tipo de step ──────────────────────────────────────
 
         if step_type == "react":
-            logger.info(f"  [react] emoji: {content}")
+            logger.info(f"  [react] emoji: {content} (delay: {delay}s)")
             if not content:
                 logger.warning("React step content (emoji) is empty. Skipping.")
                 continue
+
+            # Aguarda o delay configurado antes de reagir
+            if delay > 0:
+                await asyncio.sleep(delay)
 
             target_msg_id = trigger_message_id
             
