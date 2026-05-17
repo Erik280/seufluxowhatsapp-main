@@ -217,6 +217,7 @@ class LeadMediaStorage:
         content_type: str,
         company_id: str,
         message_id: str,
+        filename: str = None,
     ) -> dict:
         """
         Comprime e faz upload de mídia de lead para o Supabase Storage.
@@ -227,6 +228,7 @@ class LeadMediaStorage:
             content_type: MIME type original (ex: 'audio/ogg')
             company_id: UUID da empresa
             message_id: UUID da mensagem (para path único)
+            filename: Nome original do arquivo (para obter a extensão correta)
 
         Returns:
             dict com 'signed_url', 'storage_path', 'expires_at', 'original_size_kb', 'final_size_kb'
@@ -237,6 +239,34 @@ class LeadMediaStorage:
 
         # ── 1. Compressão ──────────────────────────────────────────────────────
         compressed_bytes, final_ct, ext = _compress_media(file_bytes, media_type, content_type)
+
+        # Se um filename foi provido, extrair a extensão real dele para garantir precisão
+        if filename and "." in filename:
+            real_ext = filename.split(".")[-1].lower()
+            if real_ext:
+                ext = real_ext
+                # Ajustar content-type baseado na extensão se ele for genérico
+                if final_ct == "application/octet-stream":
+                    mime_map = {
+                        "pdf": "application/pdf",
+                        "jpg": "image/jpeg",
+                        "jpeg": "image/jpeg",
+                        "png": "image/png",
+                        "gif": "image/gif",
+                        "webp": "image/webp",
+                        "mp4": "video/mp4",
+                        "ogg": "audio/ogg",
+                        "mp3": "audio/mpeg",
+                        "wav": "audio/wav",
+                        "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        "pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                        "txt": "text/plain",
+                        "csv": "text/csv",
+                    }
+                    if real_ext in mime_map:
+                        final_ct = mime_map[real_ext]
+
         final_size = len(compressed_bytes)
 
         # ── 2. Montar path organizado por empresa e data ───────────────────────

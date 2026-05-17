@@ -65,13 +65,29 @@ async def process_incoming_media(
             logger.warning(f"[media] Base64 vazio para msg {message_id}")
             return
 
-        # ── 3. Decodificar base64 ─────────────────────────────────────────────
+        # ── 3. Decodificar base64 e Extrair Mimetype/Nome ─────────────────────
+        original_filename = None
+        if media_type == "document":
+            doc_msg = message_obj.get("documentMessage") or {}
+            original_filename = doc_msg.get("fileName") or doc_msg.get("title") or ""
+
         if "," in b64_string:
             header, b64_data = b64_string.split(",", 1)
             content_type = header.split(";")[0].replace("data:", "")
         else:
             b64_data = b64_string
-            content_type = "application/octet-stream"
+            # Tentar obter mimetype a partir do documentMessage ou inferir pelo media_type
+            if media_type == "document" and "documentMessage" in message_obj:
+                doc_msg = message_obj.get("documentMessage") or {}
+                content_type = doc_msg.get("mimetype") or "application/octet-stream"
+            elif media_type == "audio":
+                content_type = "audio/ogg"
+            elif media_type == "image":
+                content_type = "image/jpeg"
+            elif media_type == "video":
+                content_type = "video/mp4"
+            else:
+                content_type = "application/octet-stream"
 
         file_bytes = base64.b64decode(b64_data)
         logger.info(f"[media] Base64 decodificado: {len(file_bytes)/1024:.1f}KB | type={content_type}")
@@ -87,6 +103,7 @@ async def process_incoming_media(
                 content_type=content_type,
                 company_id=company_id,
                 message_id=message_id,
+                filename=original_filename,
             )
 
         result = await asyncio.to_thread(_do_upload)
@@ -98,12 +115,19 @@ async def process_incoming_media(
         # ── 5. Atualizar mensagem no banco ────────────────────────────────────
         from app.database import get_supabase
         db = get_supabase()
-        db.table("messages").update({
+        
+        update_data = {
             "media_url": signed_url,
             "media_type": media_type,
             "media_storage_path": storage_path,
             "media_expires_at": expires_at,
-        }).eq("id", message_id).execute()
+        }
+        
+        # Para documentos, atualiza o content no banco com o nome real para o chat exibir corretamente
+        if media_type == "document" and original_filename:
+            update_data["content"] = f"[DOCUMENT] {original_filename}"
+
+        db.table("messages").update(update_data).eq("id", message_id).execute()
 
         logger.info(
             f"[media] ✅ Salvo OK: {storage_path} | "
@@ -391,7 +415,10 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
         if "audioMessage" in message_obj: preview_content = "[Áudio]"
         elif "imageMessage" in message_obj: preview_content = "[Imagem]"
         elif "videoMessage" in message_obj: preview_content = "[Vídeo]"
-        elif "documentMessage" in message_obj: preview_content = "[Documento]"
+        elif "documentMessage" in message_obj:
+            doc_msg = message_obj.get("documentMessage") or {}
+            doc_name = doc_msg.get("fileName") or doc_msg.get("title") or ""
+            preview_content = f"[Documento] {doc_name}".strip()
         elif "stickerMessage" in message_obj: preview_content = "[Figurinha]"
         else: preview_content = "[Mídia]"
 
