@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { FolderOpen, Plus, Mic, Trash2, Send, Calendar, FileText, Zap, Filter, ArrowLeft, X } from 'lucide-react';
+import { FolderOpen, Plus, Mic, Trash2, Send, Calendar, FileText, Zap, Filter, ArrowLeft, X, Smile } from 'lucide-react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
 import './ChatView.css';
 
@@ -24,6 +24,8 @@ interface Message {
   media_url: string | null;
   media_type: string | null;
   created_at: string;
+  reaction?: string | null;
+  whatsapp_id?: string | null;
   // Feedback de upload
   status?: 'pending' | 'success' | 'error';
   temp_id?: string;
@@ -121,6 +123,39 @@ export default function ChatView() {
   const [selectedTags, setSelectedTags] = useState<any[]>([]);
   const [selectedTagFilterId, setSelectedTagFilterId] = useState<string>('');
   const [newTagName, setNewTagName] = useState('');
+
+  const [activeReactionMenuMsgId, setActiveReactionMenuMsgId] = useState<string | null>(null);
+
+  const handleReactMessage = async (messageId: string, emoji: string) => {
+    if (!companyId) return;
+
+    // Optimistic Update
+    setMessages(prev => prev.map(m => m.id === messageId ? { ...m, reaction: emoji || null } : m));
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/messages/${messageId}/react`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reaction: emoji
+        })
+      });
+
+      if (!response.ok) {
+        showToast('Erro ao atualizar reação.', 'error');
+        // Recarregar mensagens para sincronizar
+        const { data } = await supabase
+          .from('messages')
+          .select('*')
+          .eq('contact_id', selectedContact!.id)
+          .order('created_at', { ascending: true });
+        if (data) setMessages(data);
+      }
+    } catch (error) {
+      console.error("Failed to react to message", error);
+      showToast('Falha na conexão ao reagir.', 'error');
+    }
+  };
 
   const fetchTags = async (cId: string) => {
     try {
@@ -1248,7 +1283,25 @@ export default function ChatView() {
                       </a>
                     )}
                     {msg.media_type !== 'document' && msg.content}
+                    
+                    {msg.reaction && (
+                      <div 
+                        className={`message-reaction-pill ${msg.direction}`} 
+                        onClick={() => handleReactMessage(msg.id, '')}
+                        title="Clique para remover reação"
+                      >
+                        {msg.reaction}
+                      </div>
+                    )}
+
                     <div className="msg-actions">
+                      <button 
+                        className="react-msg-btn"
+                        onClick={() => setActiveReactionMenuMsgId(activeReactionMenuMsgId === msg.id ? null : msg.id)}
+                        title="Reagir à Mensagem"
+                      >
+                        <Smile size={14} />
+                      </button>
                       <button 
                         className="save-qr-btn" 
                         onClick={() => setSaveQRModal({
@@ -1261,6 +1314,23 @@ export default function ChatView() {
                       >
                         <Zap size={14} />
                       </button>
+
+                      {activeReactionMenuMsgId === msg.id && (
+                        <div className="emoji-picker-floating">
+                          {['👍', '❤️', '😂', '😮', '😢', '🙏'].map(emoji => (
+                            <span 
+                              key={emoji} 
+                              className="emoji-option" 
+                              onClick={() => {
+                                handleReactMessage(msg.id, emoji);
+                                setActiveReactionMenuMsgId(null);
+                              }}
+                            >
+                              {emoji}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="message-status">

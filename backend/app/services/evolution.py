@@ -140,6 +140,20 @@ class EvolutionAPI:
             }
         )
 
+    async def send_reaction(self, phone: str, message_id: str, from_me: bool, reaction: str) -> dict:
+        """Envia ou remove uma reação em uma mensagem específica."""
+        return await self._post(
+            f"/message/sendReaction/{self.instance}",
+            {
+                "key": {
+                    "remoteJid": f"{phone}@s.whatsapp.net",
+                    "fromMe": from_me,
+                    "id": message_id,
+                },
+                "reaction": reaction or "",
+            }
+        )
+
 class EvolutionAdminAPI:
     """Client para gerenciar instâncias na Evolution API v2 (requer Global Key)."""
 

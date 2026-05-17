@@ -285,6 +285,21 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
     company_id = company["id"]
     evolution_apikey = company.get("evolution_apikey", "")
 
+    # ── Interceptar Reações ──
+    reaction_obj = message_obj.get("reactionMessage")
+    if reaction_obj:
+        target_key = reaction_obj.get("key", {})
+        target_whatsapp_id = target_key.get("id")
+        reaction_text = reaction_obj.get("text")
+        
+        if target_whatsapp_id:
+            db.table("messages").update({
+                "reaction": reaction_text or None
+            }).eq("company_id", company_id).eq("whatsapp_id", target_whatsapp_id).execute()
+            
+            logger.info(f"[{instance_name}] Reação atualizada pelo webhook: msg={target_whatsapp_id}, reaction={reaction_text}")
+            return {"status": "ok", "mode": "reaction_updated"}
+
     # ── 2. Mensagens enviadas por mim (WhatsApp Web / App) ──
     if is_from_me:
         # Salvar apenas se o contato JÁ EXISTE no sistema
@@ -303,6 +318,7 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
                 "contact_id": contact_id,
                 "direction": "out",
                 "content": message_text,
+                "whatsapp_id": key.get("id")
             }).execute()
             db.table("contacts").update({"last_message": "now()"}).eq("id", contact_id).execute()
             logger.info(f"[fromMe] Mensagem salva para contato {phone} (direction=out)")
@@ -388,6 +404,7 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
         "contact_id": contact_id,
         "direction": "in",
         "content": message_text or None,
+        "whatsapp_id": key.get("id")
     }).execute()
     
     if msg_res.data:

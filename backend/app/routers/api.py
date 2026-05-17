@@ -321,12 +321,15 @@ async def send_manual_message(body: SendMessageRequest):
     if "error" in resp:
         raise HTTPException(status_code=500, detail=f"Evolution API Error: {resp['error']}")
         
+    whatsapp_id = resp.get("key", {}).get("id")
+        
     # 4. Salvar no banco
     msg_result = db.table("messages").insert({
         "company_id": body.company_id,
         "contact_id": body.contact_id,
         "direction": "out",
         "content": body.text,
+        "whatsapp_id": whatsapp_id,
     }).execute()
     
     # 5. Atualizar contato
@@ -419,6 +422,8 @@ async def send_manual_media(
         logger.error(f"Erro Evolution API: {resp['error']}")
         raise HTTPException(status_code=500, detail=f"Evolution API Error: {resp['error']}")
         
+    whatsapp_id = resp.get("key", {}).get("id")
+        
     # 4. Save to Database
     original_name = file.filename or "documento"
     content_text = f"[{media_type.upper()}] {original_name}"
@@ -430,7 +435,8 @@ async def send_manual_media(
         "media_url": media_url,
         "media_type": media_type,
         "media_storage_path": storage_path,
-        "media_expires_at": expires_at
+        "media_expires_at": expires_at,
+        "whatsapp_id": whatsapp_id
     }).execute()
     
     # 5. Atualizar contato
@@ -594,6 +600,8 @@ async def send_media_library(body: SendMediaLibraryRequest):
         logger.error(f"Erro Evolution API ao enviar mídia da biblioteca: {resp['error']}")
         raise HTTPException(status_code=500, detail=f"Evolution API Error: {resp['error']}")
         
+    whatsapp_id = resp.get("key", {}).get("id")
+        
     # 5. Salvar histórico
     msg_result = db.table("messages").insert({
         "company_id": body.company_id,
@@ -601,7 +609,8 @@ async def send_media_library(body: SendMediaLibraryRequest):
         "direction": "out",
         "content": f"[{media_type.upper()}] {media_name}",
         "media_url": media_url,
-        "media_type": media_type
+        "media_type": media_type,
+        "whatsapp_id": whatsapp_id
     }).execute()
     
     # 6. Atualizar contato
@@ -674,6 +683,8 @@ async def send_media_url(body: SendMediaUrlRequest):
         logger.error(f"Erro Evolution API ao enviar mídia por URL: {resp['error']}")
         raise HTTPException(status_code=500, detail=f"Evolution API Error: {resp['error']}")
         
+    whatsapp_id = resp.get("key", {}).get("id")
+        
     # 4. Salvar histórico
     content_text = f"[{body.media_type.upper()}] {body.media_name or 'Arquivo'}"
     msg_result = db.table("messages").insert({
@@ -682,7 +693,8 @@ async def send_media_url(body: SendMediaUrlRequest):
         "direction": "out",
         "content": content_text,
         "media_url": body.media_url,
-        "media_type": body.media_type
+        "media_type": body.media_type,
+        "whatsapp_id": whatsapp_id
     }).execute()
     
     # 5. Atualizar contato
@@ -692,6 +704,64 @@ async def send_media_url(body: SendMediaUrlRequest):
     }).eq("id", body.contact_id).execute()
     
     return msg_result.data[0] if msg_result.data else {"status": "sent"}
+
+
+from app.models.schemas import ReactMessageRequest
+
+@router.post("/messages/{message_id}/react")
+async def react_message(message_id: str, body: ReactMessageRequest):
+    """Envia uma reação de mensagem via Evolution API e atualiza no banco."""
+    db = get_supabase()
+    
+    # 1. Buscar a mensagem para obter o whatsapp_id, contact_id, company_id e direction
+    msg_res = db.table("messages").select("*").eq("id", message_id).execute()
+    if not msg_res.data:
+        raise HTTPException(status_code=404, detail="Message not found")
+    
+    msg = msg_res.data[0]
+    whatsapp_id = msg.get("whatsapp_id")
+    direction = msg.get("direction")
+    contact_id = msg.get("contact_id")
+    company_id = msg.get("company_id")
+    
+    if not whatsapp_id:
+        raise HTTPException(status_code=400, detail="This message does not have a WhatsApp ID to react to.")
+    
+    # 2. Obter dados da empresa (instância e apikey)
+    company_res = db.table("companies").select("evolution_instance, evolution_apikey").eq("id", company_id).execute()
+    if not company_res.data:
+        raise HTTPException(status_code=404, detail="Company not found")
+    
+    company = company_res.data[0]
+    instance = company.get("evolution_instance")
+    apikey = company.get("evolution_apikey")
+    
+    if not instance or not apikey:
+        raise HTTPException(status_code=400, detail="Evolution API not configured")
+    
+    # 3. Obter telefone do contato
+    contact_res = db.table("contacts").select("phone").eq("id", contact_id).execute()
+    if not contact_res.data:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    
+    phone = contact_res.data[0]["phone"]
+    
+    # 4. Chamar Evolution API
+    from app.services.evolution import EvolutionAPI
+    evolution = EvolutionAPI(instance, apikey)
+    
+    from_me = direction == "out"
+    resp = await evolution.send_reaction(phone, whatsapp_id, from_me, body.reaction)
+    
+    if "error" in resp:
+        raise HTTPException(status_code=500, detail=f"Evolution API Error: {resp['error']}")
+    
+    # 5. Salvar reação no banco de dados
+    db.table("messages").update({
+        "reaction": body.reaction or None
+    }).eq("id", message_id).execute()
+    
+    return {"status": "ok", "reaction": body.reaction}
 
 
 # ========================

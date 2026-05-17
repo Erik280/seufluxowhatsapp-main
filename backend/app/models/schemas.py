@@ -143,6 +143,8 @@ class MessageBase(BaseModel):
     content: Optional[str] = None
     media_url: Optional[str] = None
     media_type: Optional[str] = None
+    whatsapp_id: Optional[str] = None
+    reaction: Optional[str] = None
 
 class MessageCreate(MessageBase):
     company_id: str
@@ -153,6 +155,10 @@ class MessageResponse(MessageBase):
     company_id: str
     contact_id: str
     created_at: datetime
+
+class ReactMessageRequest(BaseModel):
+    reaction: str
+
 
 
 # ========================
