@@ -223,6 +223,8 @@ class ScheduleMessageRequest(BaseModel):
 class QuickReplyBase(BaseModel):
     shortcut: str
     content: str
+    media_url: Optional[str] = None
+    media_type: Optional[str] = None
 
 class QuickReplyCreate(QuickReplyBase):
     company_id: str

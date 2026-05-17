@@ -34,6 +34,8 @@ interface QuickReply {
   id: string;
   shortcut: string;
   content: string;
+  media_url?: string | null;
+  media_type?: string | null;
 }
 
 export default function ChatView() {
@@ -106,7 +108,7 @@ export default function ChatView() {
   const [quickReplies, setQuickReplies] = useState<QuickReply[]>([]);
   const [showQRMenu, setShowQRMenu] = useState(false);
   const [filteredQRs, setFilteredQRs] = useState<QuickReply[]>([]);
-  const [saveQRModal, setSaveQRModal] = useState<{show: boolean, content: string}>({show: false, content: ''});
+  const [saveQRModal, setSaveQRModal] = useState<{show: boolean, content: string, media_url?: string | null, media_type?: string | null}>({show: false, content: ''});
   const [saveQRShortcut, setSaveQRShortcut] = useState('');
   const [isSavingQR, setIsSavingQR] = useState(false);
 
@@ -509,9 +511,58 @@ export default function ChatView() {
     }, 3000);
   };
 
-  const handleSelectQuickReply = (qr: QuickReply) => {
-    setInputValue(qr.content);
+  const handleSelectQuickReply = async (qr: QuickReply) => {
     setShowQRMenu(false);
+    
+    if (qr.media_url && qr.media_type) {
+      if (!selectedContact || !companyId) return;
+      
+      const friendlyName = qr.shortcut ? `${qr.shortcut}` : "midia";
+      
+      // ── Optimistic UI for Media URL Send ──
+      const tempId = `temp-qr-media-${Date.now()}`;
+      const optimisticMsg: Message = {
+        id: tempId,
+        temp_id: tempId,
+        direction: 'out',
+        content: qr.content || `[${qr.media_type.toUpperCase()}] ${friendlyName}`,
+        media_url: qr.media_url,
+        media_type: qr.media_type as any,
+        created_at: new Date().toISOString(),
+        status: 'pending'
+      };
+      setMessages(prev => [...prev, optimisticMsg]);
+      setInputValue(''); // Clear "/shortcut"
+      
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/messages/send/media_url`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contact_id: selectedContact.id,
+            company_id: companyId,
+            media_url: qr.media_url,
+            media_type: qr.media_type,
+            media_name: friendlyName
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setMessages(prev => prev.map(m => m.temp_id === tempId ? { ...data, status: 'success' } : m));
+        } else {
+          setMessages(prev => prev.map(m => m.temp_id === tempId ? { ...m, status: 'error' } : m));
+          showToast('Erro ao enviar resposta rápida de mídia.', 'error');
+        }
+      } catch (error) {
+        console.error("Failed to send media quick reply", error);
+        setMessages(prev => prev.map(m => m.temp_id === tempId ? { ...m, status: 'error' } : m));
+        showToast('Falha ao enviar resposta rápida de mídia.', 'error');
+      }
+    } else {
+      // Standard text quick reply
+      setInputValue(qr.content);
+    }
   };
 
   const startRecording = async () => {
@@ -917,7 +968,9 @@ export default function ChatView() {
         body: JSON.stringify({
           company_id: companyId,
           shortcut: saveQRShortcut.trim().toLowerCase(),
-          content: saveQRModal.content
+          content: saveQRModal.content,
+          media_url: saveQRModal.media_url || null,
+          media_type: saveQRModal.media_type || null
         })
       });
 
@@ -1195,13 +1248,20 @@ export default function ChatView() {
                       </a>
                     )}
                     {msg.media_type !== 'document' && msg.content}
-                    {msg.media_type !== 'document' && msg.content && (
-                      <div className="msg-actions">
-                        <button className="save-qr-btn" onClick={() => setSaveQRModal({show: true, content: msg.content})} title="Salvar como Resposta Rápida">
-                          <Zap size={14} />
-                        </button>
-                      </div>
-                    )}
+                    <div className="msg-actions">
+                      <button 
+                        className="save-qr-btn" 
+                        onClick={() => setSaveQRModal({
+                          show: true, 
+                          content: msg.content || '', 
+                          media_url: msg.media_url || null, 
+                          media_type: msg.media_type || null
+                        })} 
+                        title="Salvar como Resposta Rápida"
+                      >
+                        <Zap size={14} />
+                      </button>
+                    </div>
                   </div>
                   <div className="message-status">
                     <span className="time">{new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
@@ -1933,9 +1993,29 @@ export default function ChatView() {
               </div>
               <div className="crm-field">
                 <label>Conteúdo</label>
-                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px', borderRadius: '8px', fontSize: '0.85rem', color: '#8892b0', maxHeight: '100px', overflowY: 'auto' }}>
-                  {saveQRModal.content}
-                </div>
+                {saveQRModal.media_url && saveQRModal.media_type ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'rgba(255,255,255,0.02)', padding: '10px', borderRadius: '8px', fontSize: '0.85rem' }}>
+                    <span style={{ fontSize: '0.75rem', background: '#233554', padding: '2px 6px', borderRadius: '4px', alignSelf: 'flex-start', color: '#00E5CC', fontWeight: 'bold' }}>
+                      MÍDIA: {saveQRModal.media_type.toUpperCase()}
+                    </span>
+                    {saveQRModal.media_type === 'image' && (
+                      <img src={saveQRModal.media_url} alt="preview" style={{ maxWidth: '100%', maxHeight: '100px', borderRadius: '4px', objectFit: 'contain' }} />
+                    )}
+                    {saveQRModal.media_type === 'audio' && (
+                      <audio src={saveQRModal.media_url} controls style={{ maxWidth: '100%' }} />
+                    )}
+                    {saveQRModal.media_type === 'video' && (
+                      <video src={saveQRModal.media_url} controls style={{ maxWidth: '100%', maxHeight: '100px' }} />
+                    )}
+                    {saveQRModal.media_type === 'document' && (
+                      <span style={{ color: '#8892b0' }}>📄 {saveQRModal.content.replace(/^\[DOCUMENT\]\s*/i, '') || 'Documento'}</span>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px', borderRadius: '8px', fontSize: '0.85rem', color: '#8892b0', maxHeight: '100px', overflowY: 'auto' }}>
+                    {saveQRModal.content}
+                  </div>
+                )}
               </div>
             </div>
             <div className="schedule-modal-footer">

@@ -8,6 +8,8 @@ interface QuickReply {
   company_id: string;
   shortcut: string;
   content: string;
+  media_url?: string | null;
+  media_type?: string | null;
   created_at: string;
 }
 
@@ -20,6 +22,11 @@ export default function QuickRepliesView() {
   const [newShortcut, setNewShortcut] = useState('');
   const [newContent, setNewContent] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // Library Media integration
+  const [libraryMedia, setLibraryMedia] = useState<any[]>([]);
+  const [selectedMediaId, setSelectedMediaId] = useState<string>('');
+  const [replyMode, setReplyMode] = useState<'text' | 'media'>('text');
 
   // Toast
   const [toast, setToast] = useState<{message: string, type: 'success'|'error'} | null>(null);
@@ -43,12 +50,25 @@ export default function QuickRepliesView() {
       if (userData && userData.company_id) {
         setCompanyId(userData.company_id);
         fetchReplies(userData.company_id);
+        fetchLibraryMedia(userData.company_id);
       } else {
         setLoading(false);
       }
     };
     init();
   }, []);
+
+  const fetchLibraryMedia = async (compId: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/media/${compId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setLibraryMedia(data || []);
+      }
+    } catch (err) {
+      console.error('Error fetching library media:', err);
+    }
+  };
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -72,9 +92,34 @@ export default function QuickRepliesView() {
   };
 
   const handleSave = async () => {
-    if (!newShortcut.trim() || !newContent.trim()) {
-      showToast('Preencha atalho e conteúdo.', 'error');
+    if (!newShortcut.trim()) {
+      showToast('Preencha o atalho.', 'error');
       return;
+    }
+
+    let content = '';
+    let mediaUrl = null;
+    let mediaType = null;
+
+    if (replyMode === 'text') {
+      if (!newContent.trim()) {
+        showToast('Preencha o conteúdo da mensagem.', 'error');
+        return;
+      }
+      content = newContent.trim();
+    } else {
+      if (!selectedMediaId) {
+        showToast('Selecione uma mídia da biblioteca.', 'error');
+        return;
+      }
+      const chosenMedia = libraryMedia.find(m => m.id === selectedMediaId);
+      if (!chosenMedia) {
+        showToast('Mídia inválida.', 'error');
+        return;
+      }
+      content = `[${chosenMedia.media_type.toUpperCase()}] ${chosenMedia.name}`;
+      mediaUrl = chosenMedia.url;
+      mediaType = chosenMedia.media_type;
     }
 
     setSaving(true);
@@ -85,7 +130,9 @@ export default function QuickRepliesView() {
         body: JSON.stringify({
           company_id: companyId,
           shortcut: newShortcut.trim().toLowerCase(),
-          content: newContent.trim()
+          content,
+          media_url: mediaUrl,
+          media_type: mediaType
         })
       });
       if (res.ok) {
@@ -93,6 +140,8 @@ export default function QuickRepliesView() {
         setShowModal(false);
         setNewShortcut('');
         setNewContent('');
+        setSelectedMediaId('');
+        setReplyMode('text');
         if (companyId) fetchReplies(companyId);
       } else {
         const err = await res.json();
@@ -157,7 +206,19 @@ export default function QuickRepliesView() {
                   </button>
                 </div>
                 <div className="qr-card-body">
-                  {reply.content}
+                  {reply.media_url && reply.media_type ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
+                      <span style={{ fontSize: '0.7rem', color: '#00E5CC', background: 'rgba(0, 229, 204, 0.1)', padding: '2px 6px', borderRadius: '4px', alignSelf: 'flex-start', fontWeight: 'bold' }}>
+                        {reply.media_type.toUpperCase()}
+                      </span>
+                      {reply.media_type === 'image' && <img src={reply.media_url} alt="preview" style={{ maxWidth: '100%', maxHeight: '80px', borderRadius: '4px', objectFit: 'contain', background: '#112240' }} />}
+                      {reply.media_type === 'audio' && <audio src={reply.media_url} controls style={{ width: '100%', height: '32px' }} />}
+                      {reply.media_type === 'video' && <video src={reply.media_url} controls style={{ maxWidth: '100%', maxHeight: '80px' }} />}
+                      {reply.media_type === 'document' && <span style={{ color: '#8892b0', fontSize: '0.8rem' }}>📄 {reply.content.replace(/^\[DOCUMENT\]\s*/i, '')}</span>}
+                    </div>
+                  ) : (
+                    reply.content
+                  )}
                 </div>
               </div>
             ))}
@@ -186,16 +247,87 @@ export default function QuickRepliesView() {
                   />
                 </div>
               </div>
-              <div className="crm-field">
-                <label>Conteúdo da Mensagem</label>
-                <textarea 
-                  className="crm-textarea" 
-                  value={newContent}
-                  onChange={e => setNewContent(e.target.value)}
-                  placeholder="Olá, segue a nossa chave PIX..."
-                  rows={5}
-                />
+              <div className="reply-mode-selector" style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                <button
+                  type="button"
+                  style={{
+                    flex: 1,
+                    padding: '8px',
+                    borderRadius: '6px',
+                    border: '1px solid rgba(0, 229, 204, 0.2)',
+                    background: replyMode === 'text' ? 'rgba(0, 229, 204, 0.1)' : 'transparent',
+                    color: replyMode === 'text' ? '#00e5cc' : '#8892b0',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    fontSize: '0.85rem'
+                  }}
+                  onClick={() => setReplyMode('text')}
+                >
+                  Texto Simples
+                </button>
+                <button
+                  type="button"
+                  style={{
+                    flex: 1,
+                    padding: '8px',
+                    borderRadius: '6px',
+                    border: '1px solid rgba(0, 229, 204, 0.2)',
+                    background: replyMode === 'media' ? 'rgba(0, 229, 204, 0.1)' : 'transparent',
+                    color: replyMode === 'media' ? '#00e5cc' : '#8892b0',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    fontSize: '0.85rem'
+                  }}
+                  onClick={() => setReplyMode('media')}
+                >
+                  Mídia da Biblioteca
+                </button>
               </div>
+
+              {replyMode === 'text' ? (
+                <div className="crm-field">
+                  <label>Conteúdo da Mensagem</label>
+                  <textarea 
+                    className="crm-textarea" 
+                    value={newContent}
+                    onChange={e => setNewContent(e.target.value)}
+                    placeholder="Olá, segue a nossa chave PIX..."
+                    rows={5}
+                  />
+                </div>
+              ) : (
+                <div className="crm-field">
+                  <label>Selecionar Mídia da Biblioteca</label>
+                  {libraryMedia.length === 0 ? (
+                    <div style={{ color: '#8892b0', fontSize: '0.85rem', padding: '10px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px dashed rgba(255,255,255,0.1)', textAlign: 'center' }}>
+                      Nenhuma mídia encontrada na biblioteca. Cadastre mídias primeiro na aba Biblioteca.
+                    </div>
+                  ) : (
+                    <select
+                      className="crm-select"
+                      style={{
+                        width: '100%',
+                        background: '#112240',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: '8px',
+                        padding: '10px',
+                        color: '#e6f1ff',
+                        outline: 'none',
+                        cursor: 'pointer'
+                      }}
+                      value={selectedMediaId}
+                      onChange={e => setSelectedMediaId(e.target.value)}
+                    >
+                      <option value="">-- Escolha uma Mídia --</option>
+                      {libraryMedia.map(media => (
+                        <option key={media.id} value={media.id}>
+                          {media.name} ({media.media_type.toUpperCase()})
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              )}
             </div>
             <div className="schedule-modal-footer">
               <button className="cancel-btn" onClick={() => setShowModal(false)}>Cancelar</button>

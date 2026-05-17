@@ -612,6 +612,88 @@ async def send_media_library(body: SendMediaLibraryRequest):
     
     return msg_result.data[0] if msg_result.data else {"status": "sent"}
 
+
+class SendMediaUrlRequest(BaseModel):
+    contact_id: str
+    company_id: str
+    media_url: str
+    media_type: str
+    media_name: Optional[str] = "midia"
+
+@router.post("/messages/send/media_url")
+async def send_media_url(body: SendMediaUrlRequest):
+    db = get_supabase()
+    
+    # 1. Validar empresa
+    company_res = db.table("companies").select("evolution_instance, evolution_apikey").eq("id", body.company_id).execute()
+    if not company_res.data:
+        raise HTTPException(status_code=404, detail="Company not found")
+        
+    company = company_res.data[0]
+    instance = company.get("evolution_instance")
+    apikey = company.get("evolution_apikey")
+    
+    # 2. Validar contato
+    contact_res = db.table("contacts").select("phone").eq("id", body.contact_id).execute()
+    if not contact_res.data:
+        raise HTTPException(status_code=404, detail="Contact not found")
+        
+    phone = contact_res.data[0]["phone"]
+    
+    # 3. Enviar via Evolution API
+    from app.services.evolution import EvolutionAPI
+    evolution = EvolutionAPI(instance, apikey)
+    
+    logger.info(f"Enviando mídia por URL: {body.media_type} para {phone}. URL: {body.media_url}")
+    
+    if body.media_type == "audio":
+        await evolution.send_presence(phone, composing=False)
+        resp = await evolution.send_audio(phone, body.media_url)
+    elif body.media_type == "image":
+        resp = await evolution.send_image(phone, body.media_url)
+    elif body.media_type == "video":
+        resp = await evolution.send_video(phone, body.media_url)
+        # Fallback para Base64 se falhar (Axios timeout no Evolution)
+        if "error" in resp and "Failed to fetch stream" in resp["error"]:
+            logger.warning(f"Fallback Base64 para vídeo por URL {body.media_url}")
+            import httpx
+            import base64
+            try:
+                async with httpx.AsyncClient(timeout=120.0) as client:
+                    vid_res = await client.get(body.media_url)
+                    vid_res.raise_for_status()
+                    b64 = base64.b64encode(vid_res.content).decode("utf-8")
+                    b64_url = f"data:video/mp4;base64,{b64}"
+                    resp = await evolution.send_video(phone, b64_url)
+            except Exception as e:
+                logger.error(f"Erro no fallback Base64 do vídeo por URL: {e}")
+    else:
+        resp = await evolution.send_document(phone, body.media_url, filename=body.media_name or "documento")
+        
+    if "error" in resp:
+        logger.error(f"Erro Evolution API ao enviar mídia por URL: {resp['error']}")
+        raise HTTPException(status_code=500, detail=f"Evolution API Error: {resp['error']}")
+        
+    # 4. Salvar histórico
+    content_text = f"[{body.media_type.upper()}] {body.media_name or 'Arquivo'}"
+    msg_result = db.table("messages").insert({
+        "company_id": body.company_id,
+        "contact_id": body.contact_id,
+        "direction": "out",
+        "content": content_text,
+        "media_url": body.media_url,
+        "media_type": body.media_type
+    }).execute()
+    
+    # 5. Atualizar contato
+    db.table("contacts").update({
+        "last_message": "now()",
+        "last_message_content": f"[{body.media_type.capitalize()}]"
+    }).eq("id", body.contact_id).execute()
+    
+    return msg_result.data[0] if msg_result.data else {"status": "sent"}
+
+
 # ========================
 # KANBAN STAGES & TAGS
 # ========================
@@ -1095,6 +1177,8 @@ async def create_quick_reply(body: QuickReplyCreate):
         raise HTTPException(status_code=400, detail="Já existe uma resposta rápida com este atalho")
     
     content = body.content
+    promoted_url = None
+    promoted_type = None
     
     # Se o conteúdo parecer ser uma URL de mídia efêmera do Supabase Storage, 
     # precisamos "promovê-la" para o MinIO (Media Library) para que não expire.
@@ -1139,6 +1223,8 @@ async def create_quick_reply(body: QuickReplyCreate):
                     }).execute()
                     
                     content = new_url
+                    promoted_url = new_url
+                    promoted_type = media_type
                     logger.info(f"Mídia promovida com sucesso para {new_url}")
         except Exception as e:
             logger.error(f"Erro ao promover mídia para quick reply: {e}")
@@ -1148,7 +1234,9 @@ async def create_quick_reply(body: QuickReplyCreate):
     res = db.table("quick_replies").insert({
         "company_id": body.company_id,
         "shortcut": body.shortcut,
-        "content": content
+        "content": content,
+        "media_url": body.media_url or promoted_url,
+        "media_type": body.media_type or promoted_type
     }).execute()
     
     if not res.data:
