@@ -175,6 +175,7 @@
     padding: 20px;
     align-items: stretch;
     border-right: 1px solid var(--color-border);
+    z-index: 30;
   }
 
   .dashboard-sidebar.mobile-open {
