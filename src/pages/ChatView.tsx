@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { FolderOpen, Plus, Mic, Trash2, Send, Calendar, FileText, Zap, Filter, ArrowLeft, X, Smile } from 'lucide-react';
+import { FolderOpen, Plus, Mic, Trash2, Send, FileText, Zap, Filter, ArrowLeft, Smile } from 'lucide-react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
 import ContactCrmModal from '../components/ContactCrmModal';
 import './ChatView.css';
@@ -51,28 +51,6 @@ export default function ChatView() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   
-  // CRM Form state
-  const [crmName, setCrmName] = useState('');
-  const [crmEmail, setCrmEmail] = useState('');
-  const [crmNotes, setCrmNotes] = useState('');
-  const [isSavingCrm, setIsSavingCrm] = useState(false);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  };
-
-  // Schedule Modal State
-  const [chatFlows, setChatFlows] = useState<any[]>([]);
-  const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const [scheduleDate, setScheduleDate] = useState('');
-  const [scheduleMode, setScheduleMode] = useState<'existing' | 'new'>('new');
-  const [scheduleFlowId, setScheduleFlowId] = useState('');
-  const [scheduleSteps, setScheduleSteps] = useState<{type: string, content: string, delay_duration: number}[]>([]);
-  const [saveAsFlow, setSaveAsFlow] = useState(false);
-  const [newFlowName, setNewFlowName] = useState('');
-  const [isScheduling, setIsScheduling] = useState(false);
 
   // Media Library state
   const [showMediaModal, setShowMediaModal] = useState(false);
@@ -122,9 +100,14 @@ export default function ChatView() {
   const [isUploading, setIsUploading] = useState(false);
   const [selectedStageId, setSelectedStageId] = useState<string>('');
   const [companyTags, setCompanyTags] = useState<any[]>([]);
-  const [selectedTags, setSelectedTags] = useState<any[]>([]);
   const [selectedTagFilterId, setSelectedTagFilterId] = useState<string>('');
-  const [newTagName, setNewTagName] = useState('');
+
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const [activeReactionMenuMsgId, setActiveReactionMenuMsgId] = useState<string | null>(null);
 
@@ -168,44 +151,6 @@ export default function ChatView() {
       }
     } catch (err) {
       console.error('Error fetching tags:', err);
-    }
-  };
-
-  const handleAddTagToLead = (tagId: string) => {
-    const tag = companyTags.find(t => t.id === tagId);
-    if (tag && !selectedTags.some(t => t.id === tagId)) {
-      setSelectedTags([...selectedTags, tag]);
-    }
-  };
-
-  const handleRemoveTagFromLead = (tagId: string) => {
-    setSelectedTags(selectedTags.filter(t => t.id !== tagId));
-  };
-
-  const handleCreateNewTag = async () => {
-    if (!newTagName.trim() || !companyId) return;
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/tags`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          company_id: companyId,
-          name: newTagName.trim(),
-          color: '#ffffff'
-        })
-      });
-      if (res.ok) {
-        const newTag = await res.json();
-        setCompanyTags([...companyTags, newTag]);
-        setSelectedTags([...selectedTags, newTag]);
-        setNewTagName('');
-        showToast('Tag criada com sucesso!');
-      } else {
-        showToast('Erro ao criar tag.', 'error');
-      }
-    } catch (err) {
-      console.error(err);
-      showToast('Erro ao criar tag.', 'error');
     }
   };
 
@@ -254,15 +199,6 @@ export default function ChatView() {
           .order('order_index', { ascending: true });
         if (stagesData) setStages(stagesData);
 
-        // Fetch Chat Flows
-        const { data: flowsData } = await supabase
-          .from('chat_flows')
-          .select('id, name')
-          .eq('company_id', userData.company_id)
-          .eq('is_active', true)
-          .order('name', { ascending: true });
-        if (flowsData) setChatFlows(flowsData);
-
         // Fetch Quick Replies via API to bypass RLS issues
         try {
           const qrRes = await fetch(`${API_BASE_URL}/api/quick-replies/${userData.company_id}`);
@@ -304,15 +240,6 @@ export default function ChatView() {
   // Fetch Messages when Contact is Selected
   useEffect(() => {
     if (!selectedContact) return;
-
-    // Sync CRM form state
-    setCrmName(selectedContact.name || '');
-    setCrmEmail(selectedContact.email || '');
-    setCrmNotes(selectedContact.notes || '');
-
-    // Sync CRM tags
-    const currentTags = selectedContact.contact_tags?.map((ct: any) => ct.tags).filter(Boolean) || [];
-    setSelectedTags(currentTags);
 
     const fetchMessages = async () => {
       const { data } = await supabase
@@ -801,127 +728,7 @@ export default function ChatView() {
     }
   };
 
-  const toggleBot = async () => {
-    if (!selectedContact) return;
-    const newStatus: 'bot' | 'human' = selectedContact.chat_status === 'bot' ? 'human' : 'bot';
-    
-    const updatedContact = { ...selectedContact, chat_status: newStatus };
-    setSelectedContact(updatedContact);
-    setContacts(contacts.map(c => c.id === selectedContact.id ? updatedContact : c));
 
-    await fetch(`${API_BASE_URL}/api/contacts/${selectedContact.id}/status`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_status: newStatus })
-    });
-  };
-
-  const handleSaveCRM = async () => {
-    if (!selectedContact) return;
-    setIsSavingCrm(true);
-
-    try {
-      const payload = {
-        name: crmName,
-        email: crmEmail,
-        notes: crmNotes,
-        tag_ids: selectedTags.map(t => t.id)
-      };
-
-      const res = await fetch(`${API_BASE_URL}/api/contacts/${selectedContact.id}/crm`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        const normalizedTags = data.tags ? data.tags.map((t: any) => ({ tag_id: t.id, tags: t })) : [];
-        const updatedContact = { ...data, contact_tags: normalizedTags };
-        setSelectedContact(updatedContact);
-        setContacts(contacts.map(c => c.id === selectedContact.id ? updatedContact : c));
-        showToast('Dados salvos com sucesso!');
-      } else {
-        showToast('Erro ao salvar os dados.', 'error');
-      }
-    } catch (error) {
-      console.error(error);
-      showToast('Erro ao salvar os dados.', 'error');
-    } finally {
-      setIsSavingCrm(false);
-    }
-  };
-
-  // ── Scheduling Logic ──
-  const setScheduleOffset = (hours: number) => {
-    const d = new Date();
-    d.setHours(d.getHours() + hours);
-    // Format to YYYY-MM-DDTHH:mm
-    const tzoffset = d.getTimezoneOffset() * 60000;
-    const localISOTime = (new Date(d.getTime() - tzoffset)).toISOString().slice(0, 16);
-    setScheduleDate(localISOTime);
-  };
-
-  const handleAddScheduleStep = (type: string) => {
-    setScheduleSteps([...scheduleSteps, { type, content: '', delay_duration: 3 }]);
-  };
-
-  const handleScheduleSubmit = async () => {
-    if (!selectedContact || !scheduleDate) {
-      alert("Por favor, selecione uma data e hora válida.");
-      return;
-    }
-
-    if (scheduleMode === 'existing' && !scheduleFlowId) {
-      alert("Por favor, selecione um fluxo.");
-      return;
-    }
-
-    if (scheduleMode === 'new' && scheduleSteps.length === 0) {
-      alert("Por favor, adicione pelo menos um passo no mini-fluxo.");
-      return;
-    }
-
-    if (scheduleMode === 'new' && saveAsFlow && !newFlowName) {
-      alert("Por favor, dê um nome para salvar o modelo de fluxo.");
-      return;
-    }
-
-    setIsScheduling(true);
-
-    try {
-      const payload = {
-        scheduled_for: new Date(scheduleDate).toISOString(),
-        flow_id: scheduleMode === 'existing' ? scheduleFlowId : null,
-        save_as_flow: saveAsFlow,
-        flow_name: newFlowName,
-        steps: scheduleMode === 'new' ? scheduleSteps : null
-      };
-
-      const res = await fetch(`${API_BASE_URL}/api/contacts/${selectedContact.id}/schedule`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (res.ok) {
-        showToast('Agendamento realizado com sucesso!');
-        setShowScheduleModal(false);
-        // Reset state
-        setScheduleDate('');
-        setScheduleSteps([]);
-        setSaveAsFlow(false);
-        setNewFlowName('');
-      } else {
-        showToast('Erro ao agendar.', 'error');
-      }
-    } catch (err) {
-      console.error(err);
-      showToast('Erro ao agendar.', 'error');
-    } finally {
-      setIsScheduling(false);
-    }
-  };
 
   const handleDeleteContact = async (contactId: string, e: React.MouseEvent) => {
     e.stopPropagation();

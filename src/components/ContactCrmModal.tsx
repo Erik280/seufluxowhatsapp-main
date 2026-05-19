@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
 import { X, Calendar, Trash2 } from 'lucide-react';
 import '../pages/ChatView.css';
