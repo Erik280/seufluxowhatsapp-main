@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
-import { Zap, Settings, X, ToggleLeft, ToggleRight, Plus, Trash2, GripVertical, AlertTriangle, Search } from 'lucide-react';
+import { Zap, Settings, X, ToggleLeft, ToggleRight, Plus, Trash2, GripVertical, AlertTriangle, Search, FileText } from 'lucide-react';
 import QuickChat from '../components/QuickChat';
+import ContactCrmModal from '../components/ContactCrmModal';
 import './KanbanView.css';
 
 interface KanbanStage {
@@ -304,6 +305,7 @@ export default function KanbanView() {
   // ── Quick Chat State ───────────────────────────────────────────────────────
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [isQuickChatOpen, setIsQuickChatOpen] = useState(false);
+  const [showCrmModal, setShowCrmModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [companyTags, setCompanyTags] = useState<any[]>([]);
   const [selectedTagFilterId, setSelectedTagFilterId] = useState<string>('');
@@ -848,20 +850,37 @@ export default function KanbanView() {
       </div>
       
       {isQuickChatOpen && selectedContact && (
-        <div className="kanban-quick-chat">
-          <div className="quick-chat-header">
-            <div className="quick-chat-user-info">
-              <h3>{selectedContact.name || selectedContact.phone}</h3>
-              {selectedContact.name && <div className="quick-chat-phone">{selectedContact.phone}</div>}
+        <div className="crm-modal-overlay" onClick={() => setIsQuickChatOpen(false)} style={{ zIndex: 10000 }}>
+          <div className="crm-modal-content" onClick={e => e.stopPropagation()} style={{ padding: 0, height: '90vh', display: 'flex', flexDirection: 'column' }}>
+            <div className="quick-chat-header" style={{ padding: '16px', borderBottom: '1px solid #233554', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="quick-chat-user-info">
+                <h3 onClick={() => setShowCrmModal(true)} style={{ cursor: 'pointer', display: 'inline-block', color: '#e6f1ff', margin: 0 }}>
+                  {selectedContact.name || selectedContact.phone}
+                </h3>
+                {selectedContact.name && <div className="quick-chat-phone" style={{ color: '#8892b0', fontSize: '0.85rem' }}>{selectedContact.phone}</div>}
+              </div>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <button className="crm-btn" onClick={() => setShowCrmModal(true)} title="Abrir Detalhes do Lead (CRM)" style={{ background: 'transparent', border: 'none', color: '#8892b0', cursor: 'pointer', display: 'flex', padding: '4px' }}>
+                  <FileText size={20} />
+                </button>
+                <button className="close-quick-chat" onClick={() => setIsQuickChatOpen(false)} style={{ background: 'transparent', border: 'none', color: '#8892b0', cursor: 'pointer', display: 'flex', padding: '4px' }}>
+                  <X size={20} />
+                </button>
+              </div>
             </div>
-            <button className="close-quick-chat" onClick={() => setIsQuickChatOpen(false)}>
-              <X size={18} />
-            </button>
-          </div>
-          <div className="quick-chat-body">
-            <QuickChat contactId={selectedContact.id} companyId={companyId} />
+            <div className="quick-chat-body" style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+              <QuickChat contactId={selectedContact.id} companyId={companyId} />
+            </div>
           </div>
         </div>
+      )}
+      
+      {showCrmModal && selectedContact && (
+        <ContactCrmModal
+          contactId={selectedContact.id}
+          companyId={companyId}
+          onClose={() => setShowCrmModal(false)}
+        />
       )}
       </div>
 
