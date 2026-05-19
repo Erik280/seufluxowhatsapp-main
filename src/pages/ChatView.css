@@ -1145,56 +1145,11 @@
   text-overflow: ellipsis;
 }
 
-/* ── Save QR Button in Message ── */
-.message .bubble {
-  position: relative;
-}
-
-.msg-actions {
-  position: absolute;
-  /* Posicionado na parte inferior do bubble, fora da área do player de áudio */
-  bottom: -14px;
-  right: -6px;
-  display: none;
-  gap: 4px;
-  z-index: 10;
-}
-
-.message.in .msg-actions {
-  left: -6px;
-  right: auto;
-}
-
-.message:hover .msg-actions,
-.msg-actions.active {
-  display: flex;
-}
-
-/* Garante que o player de áudio nativo tenha z-index maior que os botões de ação */
+/* Garante que o player de áudio nativo tenha prioridade de cliques */
 .bubble audio {
   position: relative;
   z-index: 2;
   pointer-events: all;
-}
-
-.react-msg-btn, .save-qr-btn {
-  background: rgba(11, 15, 30, 0.9);
-  border: 1px solid rgba(0, 229, 204, 0.3);
-  color: var(--color-neon-cyan);
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.react-msg-btn:hover, .save-qr-btn:hover {
-  background: var(--color-neon-cyan);
-  color: #000;
-  transform: scale(1.1);
 }
 
 /* ---- CRM Modal ---- */
@@ -1557,7 +1512,8 @@
   left: -85px;
 }
 
-.message:hover .msg-actions {
+.message:hover .msg-actions,
+.msg-actions.active {
   opacity: 1;
   pointer-events: auto;
 }
