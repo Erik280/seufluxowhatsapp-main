@@ -1294,7 +1294,7 @@ export default function ChatView() {
                       </div>
                     )}
 
-                    <div className="msg-actions">
+                    <div className={`msg-actions ${activeReactionMenuMsgId === msg.id ? 'active' : ''}`}>
                       <button 
                         className="react-msg-btn"
                         onClick={() => setActiveReactionMenuMsgId(activeReactionMenuMsgId === msg.id ? null : msg.id)}

@@ -315,6 +315,8 @@
   display: flex;
   flex-direction: column;
   max-width: 70%;
+  /* Espaço na borda inferior para o msg-actions não colidir com a próxima mensagem */
+  margin-bottom: 6px;
 }
 
 .message.in {
@@ -331,6 +333,8 @@
   font-size: 0.95rem;
   line-height: 1.4;
   position: relative;
+  /* Permite que msg-actions absolute vaze para fora sem ser cortado */
+  overflow: visible;
 }
 
 .message.in .bubble {
@@ -1148,21 +1152,32 @@
 
 .msg-actions {
   position: absolute;
-  top: -10px;
-  right: -10px;
+  /* Posicionado na parte inferior do bubble, fora da área do player de áudio */
+  bottom: -14px;
+  right: -6px;
   display: none;
+  gap: 4px;
+  z-index: 10;
 }
 
 .message.in .msg-actions {
-  left: -10px;
+  left: -6px;
   right: auto;
 }
 
-.message:hover .msg-actions {
+.message:hover .msg-actions,
+.msg-actions.active {
   display: flex;
 }
 
-.save-qr-btn {
+/* Garante que o player de áudio nativo tenha z-index maior que os botões de ação */
+.bubble audio {
+  position: relative;
+  z-index: 2;
+  pointer-events: all;
+}
+
+.react-msg-btn, .save-qr-btn {
   background: rgba(11, 15, 30, 0.9);
   border: 1px solid rgba(0, 229, 204, 0.3);
   color: var(--color-neon-cyan);
@@ -1176,7 +1191,7 @@
   transition: all 0.2s;
 }
 
-.save-qr-btn:hover {
+.react-msg-btn:hover, .save-qr-btn:hover {
   background: var(--color-neon-cyan);
   color: #000;
   transform: scale(1.1);
