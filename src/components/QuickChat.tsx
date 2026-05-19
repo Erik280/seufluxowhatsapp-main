@@ -33,6 +33,7 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
   // Media Library state
   const [showMediaModal, setShowMediaModal] = useState(false);
   const [libraryMedia, setLibraryMedia] = useState<any[]>([]);
+  const [searchMediaLibraryQuery, setSearchMediaLibraryQuery] = useState('');
 
   // Voice recording state
   const [isRecording, setIsRecording] = useState(false);
@@ -593,11 +594,25 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
               <button onClick={() => setShowMediaModal(false)} style={{ background: 'transparent', border: 'none', color: '#8892b0', fontSize: '24px', cursor: 'pointer' }}>✕</button>
             </div>
             
+            {libraryMedia.length > 0 && (
+              <div style={{ marginBottom: '20px' }}>
+                <input
+                  type="text"
+                  placeholder="Pesquisar por nome ou tipo de mídia..."
+                  value={searchMediaLibraryQuery}
+                  onChange={(e) => setSearchMediaLibraryQuery(e.target.value)}
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid rgba(0, 229, 204, 0.2)', background: 'rgba(255,255,255,0.03)', color: '#e6f1ff', outline: 'none' }}
+                />
+              </div>
+            )}
+            
             {libraryMedia.length === 0 ? (
               <p style={{ color: '#8892b0', textAlign: 'center', padding: '40px' }}>Nenhuma mídia salva na biblioteca.</p>
+            ) : libraryMedia.filter(m => m.name.toLowerCase().includes(searchMediaLibraryQuery.toLowerCase()) || m.media_type.toLowerCase().includes(searchMediaLibraryQuery.toLowerCase())).length === 0 ? (
+              <p style={{ color: '#8892b0', textAlign: 'center', padding: '40px' }}>Nenhuma mídia encontrada com esta pesquisa.</p>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '16px' }}>
-                {libraryMedia.map(media => (
+                {libraryMedia.filter(m => m.name.toLowerCase().includes(searchMediaLibraryQuery.toLowerCase()) || m.media_type.toLowerCase().includes(searchMediaLibraryQuery.toLowerCase())).map(media => (
                   <div key={media.id} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', padding: '12px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <div style={{ height: '120px', background: '#070a16', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                       {media.media_type === 'image' && <img src={media.url} alt={media.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}

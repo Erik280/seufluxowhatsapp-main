@@ -76,6 +76,7 @@ export default function ChatView() {
   // Media Library state
   const [showMediaModal, setShowMediaModal] = useState(false);
   const [libraryMedia, setLibraryMedia] = useState<any[]>([]);
+  const [searchMediaLibraryQuery, setSearchMediaLibraryQuery] = useState('');
 
   // New Chat Modal state
   const [showNewChatModal, setShowNewChatModal] = useState(false);
@@ -1799,11 +1800,25 @@ export default function ChatView() {
               <button onClick={() => setShowMediaModal(false)} style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '20px', cursor: 'pointer' }}>✕</button>
             </div>
             
+            {libraryMedia.length > 0 && (
+              <div style={{ marginBottom: '20px' }}>
+                <input
+                  type="text"
+                  placeholder="Pesquisar por nome ou tipo de mídia..."
+                  value={searchMediaLibraryQuery}
+                  onChange={(e) => setSearchMediaLibraryQuery(e.target.value)}
+                  style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #233554', background: '#0a192f', color: '#e6f1ff', outline: 'none' }}
+                />
+              </div>
+            )}
+            
             {libraryMedia.length === 0 ? (
               <p>Nenhuma mídia salva. Vá na aba "Biblioteca" para adicionar arquivos.</p>
+            ) : libraryMedia.filter(m => m.name.toLowerCase().includes(searchMediaLibraryQuery.toLowerCase()) || m.media_type.toLowerCase().includes(searchMediaLibraryQuery.toLowerCase())).length === 0 ? (
+              <p>Nenhuma mídia encontrada com esta pesquisa.</p>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px' }}>
-                {libraryMedia.map(media => (
+                {libraryMedia.filter(m => m.name.toLowerCase().includes(searchMediaLibraryQuery.toLowerCase()) || m.media_type.toLowerCase().includes(searchMediaLibraryQuery.toLowerCase())).map(media => (
                   <div key={media.id} style={{ background: '#0a192f', padding: '10px', borderRadius: '6px', textAlign: 'center', position: 'relative' }}>
                     <p style={{ margin: '0 0 10px 0', fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{media.name}</p>
                     <span style={{ fontSize: '10px', background: '#233554', padding: '2px 4px', borderRadius: '4px', marginBottom: '10px', display: 'inline-block' }}>{media.media_type.toUpperCase()}</span>

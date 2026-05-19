@@ -33,6 +33,47 @@ export default function DashboardLayout({ children, activeView, onViewChange }: 
     };
   }, [navigate]);
 
+  useEffect(() => {
+    let messageSub: any = null;
+
+    const setupRealtime = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      
+      const { data: userData } = await supabase
+        .from('users')
+        .select('company_id')
+        .eq('auth_id', session.user.id)
+        .single();
+        
+      if (userData?.company_id) {
+        const audio = new Audio('/sound/notification.mp3');
+        
+        messageSub = supabase
+          .channel(`global-messages-${userData.company_id}`)
+          .on('postgres_changes', { 
+            event: 'INSERT', 
+            schema: 'public', 
+            table: 'messages', 
+            filter: `company_id=eq.${userData.company_id}` 
+          }, (payload) => {
+            if (payload.new && payload.new.direction === 'in') {
+              audio.play().catch(e => console.warn('Notificação de áudio bloqueada (Autoplay Policy):', e));
+            }
+          })
+          .subscribe();
+      }
+    };
+
+    setupRealtime();
+
+    return () => {
+      if (messageSub) {
+        supabase.removeChannel(messageSub);
+      }
+    };
+  }, []);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate('/');
