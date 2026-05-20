@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
-import { X, Calendar, Trash2 } from 'lucide-react';
+import { X, Calendar, Trash2, Copy, Check } from 'lucide-react';
 import '../pages/ChatView.css';
 
 interface Contact {
@@ -38,6 +38,16 @@ interface ContactCrmModalProps {
 
 export default function ContactCrmModal({ contactId, companyId, onClose }: ContactCrmModalProps) {
   const [contact, setContact] = useState<Contact | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyContact = () => {
+    if (!contact) return;
+    const text = `${contact.name || 'Sem Nome'}\n${contact.phone}`;
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
   const [stages, setStages] = useState<Stage[]>([]);
   const [companyTags, setCompanyTags] = useState<Tag[]>([]);
   const [chatFlows, setChatFlows] = useState<Flow[]>([]);
@@ -263,6 +273,29 @@ export default function ContactCrmModal({ contactId, companyId, onClose }: Conta
             </div>
             <h3>{contact.name || 'Sem Nome'}</h3>
             <p className="crm-modal-phone">{contact.phone}</p>
+
+            <button
+              onClick={handleCopyContact}
+              title="Copiar nome e telefone"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                margin: '8px auto 0',
+                background: copied ? 'rgba(0, 255, 136, 0.12)' : 'rgba(255, 255, 255, 0.04)',
+                border: `1px solid ${copied ? 'rgba(0, 255, 136, 0.4)' : 'rgba(255, 255, 255, 0.1)'}`,
+                borderRadius: '20px',
+                padding: '5px 14px',
+                color: copied ? '#00FF88' : '#8892b0',
+                fontSize: '0.78rem',
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: 'all 0.25s ease',
+              }}
+            >
+              {copied ? <Check size={13} /> : <Copy size={13} />}
+              {copied ? 'Copiado!' : 'Copiar contato'}
+            </button>
 
             <button
               className={`bot-status-btn ${contact.chat_status === 'bot' ? 'active' : 'paused'}`}
