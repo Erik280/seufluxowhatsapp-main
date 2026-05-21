@@ -903,7 +903,7 @@ async def update_contact_stage(contact_id: str, body: ContactStageUpdate, backgr
                     for tag_id in tag_ids_to_add:
                         existing = (
                             db.table("contact_tags")
-                            .select("id")
+                            .select("contact_id")
                             .eq("contact_id", contact_id)
                             .eq("tag_id", tag_id)
                             .execute()
