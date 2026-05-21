@@ -281,6 +281,7 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
                 break
 
     if ext_ctx:
+        logger.info(f"DEBUG QUOTED ext_ctx: {ext_ctx}")
         quoted_whatsapp_id = ext_ctx.get("stanzaId")  # ID da mensagem original no WhatsApp
         quoted_msg_obj = ext_ctx.get("quotedMessage") or {}
         if quoted_msg_obj:
