@@ -16,6 +16,8 @@ interface KanbanStage {
   trigger_flow_id: string | null;
   entry_keywords: string[];
   tag_ids_to_add: string[];
+  is_ai_managed?: boolean;
+  ai_instructions?: string | null;
 }
 
 interface Contact {
@@ -323,7 +325,7 @@ function StageModal({ stage, flows, companyId, companyTags, onClose, onSaved, on
               </div>
               <button className={`kb-toggle-btn ${isAiManaged ? 'active' : ''}`}
                 style={isAiManaged ? { background: 'rgba(168,85,247,0.2)', borderColor: '#A855F7', color: '#A855F7' } : {}}
-                onClick={() => setIsAiManaged(p => !p)}>
+                onClick={() => setIsAiManaged((p: boolean) => !p)}>
                 {isAiManaged ? <><ToggleRight size={20} /> Ativo</> : <><ToggleLeft size={20} /> Desativado</>}
               </button>
             </div>

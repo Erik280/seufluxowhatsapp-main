@@ -11,7 +11,7 @@ apscheduler==3.10.4
 Pillow==10.4.0            # Compressão de imagens de leads
 
 # --- AI Agent ---
-langchain-groq==0.1.3
-langchain-openai==0.1.7
-langchain-core==0.2.1
-langgraph==0.0.65
+langchain-groq
+langchain-openai
+langchain-core
+langgraph
