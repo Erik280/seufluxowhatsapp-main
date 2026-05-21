@@ -261,9 +261,45 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
     message_text = (
         message_obj.get("conversation")
         or message_obj.get("extendedTextMessage", {}).get("text")
+        or message_obj.get("imageMessage", {}).get("caption")
+        or message_obj.get("videoMessage", {}).get("caption")
         or ""
     )
     push_name = data.get("pushName", "")
+
+    # ── Extrair mensagem citada (quoted) ──
+    quoted_content: str | None = None
+    quoted_whatsapp_id: str | None = None
+
+    # Tenta extendedTextMessage -> contextInfo -> quotedMessage
+    ext_ctx = message_obj.get("extendedTextMessage", {}).get("contextInfo", {})
+    if not ext_ctx:
+        # Tenta em imageMessage, videoMessage, audioMessage, documentMessage
+        for mtype in ["imageMessage", "videoMessage", "audioMessage", "documentMessage"]:
+            ext_ctx = message_obj.get(mtype, {}).get("contextInfo", {})
+            if ext_ctx:
+                break
+
+    if ext_ctx:
+        quoted_whatsapp_id = ext_ctx.get("stanzaId")  # ID da mensagem original no WhatsApp
+        quoted_msg_obj = ext_ctx.get("quotedMessage") or {}
+        if quoted_msg_obj:
+            quoted_content = (
+                quoted_msg_obj.get("conversation")
+                or quoted_msg_obj.get("extendedTextMessage", {}).get("text")
+                or quoted_msg_obj.get("imageMessage", {}).get("caption")
+                or quoted_msg_obj.get("videoMessage", {}).get("caption")
+            )
+            # Fallback para mídia sem legenda
+            if not quoted_content:
+                if "audioMessage" in quoted_msg_obj: quoted_content = "[\U0001f3a4 Áudio]"
+                elif "imageMessage" in quoted_msg_obj: quoted_content = "[\U0001f5bc\ufe0f Imagem]"
+                elif "videoMessage" in quoted_msg_obj: quoted_content = "[\U0001f4f9 Vídeo]"
+                elif "documentMessage" in quoted_msg_obj:
+                    doc_name = quoted_msg_obj["documentMessage"].get("fileName", "Documento")
+                    quoted_content = f"[\U0001f4c4 {doc_name}]"
+                elif "stickerMessage" in quoted_msg_obj: quoted_content = "[Figurinha]"
+
 
     logger.info(f"[{instance_name}] {'→ enviada' if is_from_me else '← recebida'} {phone}: {message_text[:80]}")
 
@@ -398,14 +434,34 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
             evolution_client=evo_client
         )
 
+    # Resolver quoted_message_id a partir do whatsapp_id citado
+    quoted_message_id: str | None = None
+    if quoted_whatsapp_id:
+        q_res = (
+            db.table("messages")
+            .select("id")
+            .eq("company_id", company_id)
+            .eq("whatsapp_id", quoted_whatsapp_id)
+            .limit(1)
+            .execute()
+        )
+        if q_res.data:
+            quoted_message_id = q_res.data[0]["id"]
+
     # ── 4. Salvar mensagem recebida ──
-    msg_res = db.table("messages").insert({
+    insert_payload: dict = {
         "company_id": company_id,
         "contact_id": contact_id,
         "direction": "in",
         "content": message_text or None,
         "whatsapp_id": key.get("id")
-    }).execute()
+    }
+    if quoted_content:
+        insert_payload["quoted_content"] = quoted_content
+    if quoted_message_id:
+        insert_payload["quoted_message_id"] = quoted_message_id
+
+    msg_res = db.table("messages").insert(insert_payload).execute()
     
     if msg_res.data:
         message_id = msg_res.data[0]["id"]

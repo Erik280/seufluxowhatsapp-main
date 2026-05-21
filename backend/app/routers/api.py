@@ -955,6 +955,14 @@ async def update_contact_stage(contact_id: str, body: ContactStageUpdate, backgr
                     else:
                         logger.warning(f"[Kanban] Empresa {contact['company_id']} não encontrada.")
 
+        tags_res = (
+            db.table("contact_tags")
+            .select("tag_id, tags(id, name, color)")
+            .eq("contact_id", contact_id)
+            .execute()
+        )
+        contact["contact_tags"] = tags_res.data or []
+
         return contact
     except HTTPException:
         raise

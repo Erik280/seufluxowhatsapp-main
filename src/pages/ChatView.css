@@ -337,6 +337,64 @@
   overflow: visible;
 }
 
+/* ── Mensagem Citada (Quoted) ──────────────────────────────────────── */
+
+.quoted-message-block {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  overflow: hidden;
+}
+
+.quoted-message-block:hover {
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.quoted-bar {
+  width: 3px;
+  border-radius: 2px;
+  background: var(--color-neon-cyan);
+  flex-shrink: 0;
+}
+
+.message.in .quoted-bar {
+  background: var(--color-neon-cyan);
+}
+
+.message.out .quoted-bar {
+  background: var(--color-neon-green);
+}
+
+.quoted-text {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  line-height: 1.35;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Highlight de destaque ao navegar para a mensagem citada */
+@keyframes msg-highlight-pulse {
+  0%   { box-shadow: 0 0 0 3px rgba(0, 229, 204, 0); background: rgba(0, 229, 204, 0.18); }
+  40%  { box-shadow: 0 0 0 6px rgba(0, 229, 204, 0.2); background: rgba(0, 229, 204, 0.22); }
+  100% { box-shadow: 0 0 0 3px rgba(0, 229, 204, 0); background: transparent; }
+}
+
+.msg-highlight .bubble {
+  animation: msg-highlight-pulse 1.5s ease forwards;
+  border-radius: 16px;
+}
+
 .message.in .bubble {
   background: rgba(255, 255, 255, 0.05);
   color: var(--color-text-primary);

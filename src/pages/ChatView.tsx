@@ -27,6 +27,8 @@ interface Message {
   created_at: string;
   reaction?: string | null;
   whatsapp_id?: string | null;
+  quoted_content?: string | null;
+  quoted_message_id?: string | null;
   // Feedback de upload
   status?: 'pending' | 'success' | 'error';
   temp_id?: string;
@@ -1165,8 +1167,27 @@ export default function ChatView() {
                 </div>
               )}
               {messages.map((msg, idx) => (
-                <div key={msg.id || idx} className={`message ${msg.direction}`}>
+                <div id={`msg-${msg.id}`} key={msg.id || idx} className={`message ${msg.direction}`}>
                   <div className={`bubble ${msg.status === 'pending' ? 'pending' : ''}`}>
+                    {/* Bloco de mensagem citada (quoted) */}
+                    {msg.quoted_content && (
+                      <div
+                        className="quoted-message-block"
+                        onClick={() => {
+                          if (msg.quoted_message_id) {
+                            const el = document.getElementById(`msg-${msg.quoted_message_id}`);
+                            if (el) {
+                              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                              el.classList.add('msg-highlight');
+                              setTimeout(() => el.classList.remove('msg-highlight'), 1500);
+                            }
+                          }
+                        }}
+                      >
+                        <div className="quoted-bar" />
+                        <div className="quoted-text">{msg.quoted_content}</div>
+                      </div>
+                    )}
                     {msg.media_type === 'image' && (
                       <img 
                         src={msg.media_url!} 

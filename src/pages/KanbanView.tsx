@@ -630,6 +630,9 @@ export default function KanbanView() {
         body: JSON.stringify({ stage_id: stageId }),
       });
       if (!res.ok) throw new Error();
+      
+      const updatedContact = await res.json();
+      setContacts(prev => prev.map(c => c.id === contactId ? { ...c, ...updatedContact } : c));
     } catch {
       // Revert on error
       setContacts(prev => prev.map(c => c.id === contactId ? { ...c, stage_id: prevStageId } : c));
