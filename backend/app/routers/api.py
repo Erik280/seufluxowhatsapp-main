@@ -874,90 +874,93 @@ async def update_contact_stage(contact_id: str, body: ContactStageUpdate, backgr
     para 'bot' e dispara o fluxo de automação automaticamente.
     Se o novo estágio tiver tag_ids_to_add, adiciona as tags ao lead automaticamente.
     """
-    db = get_supabase()
+    try:
+        db = get_supabase()
 
-    # 1. Atualiza o stage_id do contato
-    update_res = db.table("contacts").update({"stage_id": body.stage_id}).eq("id", contact_id).execute()
-    if not update_res.data:
-        raise HTTPException(status_code=404, detail="Contact not found")
+        # 1. Atualiza o stage_id do contato
+        update_res = db.table("contacts").update({"stage_id": body.stage_id}).eq("id", contact_id).execute()
+        if not update_res.data:
+            raise HTTPException(status_code=404, detail="Contact not found")
 
-    contact = update_res.data[0]
+        contact = update_res.data[0]
 
-    # 2. Verifica se o novo estágio tem automações configuradas
-    if body.stage_id:
-        stage_res = (
-            db.table("kanban_stages")
-            .select("trigger_flow_id, is_trigger_enabled, tag_ids_to_add")
-            .eq("id", body.stage_id)
-            .execute()
-        )
+        # 2. Verifica se o novo estágio tem automações configuradas
+        if body.stage_id:
+            stage_res = (
+                db.table("kanban_stages")
+                .select("trigger_flow_id, is_trigger_enabled, tag_ids_to_add")
+                .eq("id", body.stage_id)
+                .execute()
+            )
 
-        if stage_res.data:
-            stage = stage_res.data[0]
+            if stage_res.data:
+                stage = stage_res.data[0]
 
-            # 2a. Aplicar tags automáticas ao lead (se configuradas)
-            tag_ids_to_add = stage.get("tag_ids_to_add") or []
-            if tag_ids_to_add:
-                logger.info(f"[Kanban] Aplicando tags automáticas ao contato {contact_id}: {tag_ids_to_add}")
-                for tag_id in tag_ids_to_add:
-                    # Upsert: insere apenas se ainda não existe para esse contato
-                    existing = (
-                        db.table("contact_tags")
-                        .select("id")
-                        .eq("contact_id", contact_id)
-                        .eq("tag_id", tag_id)
+                # 2a. Aplicar tags automáticas ao lead (se configuradas)
+                tag_ids_to_add = stage.get("tag_ids_to_add") or []
+                if tag_ids_to_add:
+                    logger.info(f"[Kanban] Aplicando tags automáticas ao contato {contact_id}: {tag_ids_to_add}")
+                    for tag_id in tag_ids_to_add:
+                        existing = (
+                            db.table("contact_tags")
+                            .select("id")
+                            .eq("contact_id", contact_id)
+                            .eq("tag_id", tag_id)
+                            .execute()
+                        )
+                        if not existing.data:
+                            db.table("contact_tags").insert({
+                                "contact_id": contact_id,
+                                "tag_id": tag_id
+                            }).execute()
+
+                # 2b. Disparar fluxo de automação (se configurado)
+                if stage.get("is_trigger_enabled") and stage.get("trigger_flow_id"):
+                    flow_id = stage["trigger_flow_id"]
+                    logger.info(
+                        f"[Kanban] Fluxo trigger ativado: contato {contact_id} → estágio {body.stage_id} → fluxo {flow_id}"
+                    )
+
+                    db.table("contacts").update({"chat_status": "bot"}).eq("id", contact_id).execute()
+                    contact["chat_status"] = "bot"
+
+                    company_res = (
+                        db.table("companies")
+                        .select("evolution_instance, evolution_apikey")
+                        .eq("id", contact["company_id"])
                         .execute()
                     )
-                    if not existing.data:
-                        db.table("contact_tags").insert({
-                            "contact_id": contact_id,
-                            "tag_id": tag_id
-                        }).execute()
+                    if company_res.data:
+                        company = company_res.data[0]
+                        instance = company.get("evolution_instance")
+                        apikey = company.get("evolution_apikey")
 
-            # 2b. Disparar fluxo de automação (se configurado)
-            if stage.get("is_trigger_enabled") and stage.get("trigger_flow_id"):
-                flow_id = stage["trigger_flow_id"]
-                logger.info(
-                    f"[Kanban] Fluxo trigger ativado: contato {contact_id} → estágio {body.stage_id} → fluxo {flow_id}"
-                )
+                        if instance and apikey:
+                            from app.services.evolution import EvolutionAPI
+                            from app.services.bot_engine import execute_flow
 
-                # Muda chat_status para 'bot' para que a automação tenha prioridade
-                db.table("contacts").update({"chat_status": "bot"}).eq("id", contact_id).execute()
-                contact["chat_status"] = "bot"
-
-                # Busca dados da empresa para executar o fluxo
-                company_res = (
-                    db.table("companies")
-                    .select("evolution_instance, evolution_apikey")
-                    .eq("id", contact["company_id"])
-                    .execute()
-                )
-                if company_res.data:
-                    company = company_res.data[0]
-                    instance = company.get("evolution_instance")
-                    apikey = company.get("evolution_apikey")
-
-                    if instance and apikey:
-                        from app.services.evolution import EvolutionAPI
-                        from app.services.bot_engine import execute_flow
-
-                        evolution = EvolutionAPI(instance, apikey)
-                        background_tasks.add_task(
-                            execute_flow,
-                            company_id=contact["company_id"],
-                            contact_id=contact_id,
-                            contact_phone=contact["phone"],
-                            flow_id=flow_id,
-                            evolution=evolution,
-                            contact=contact,
-                        )
-                        logger.info(f"[Kanban] execute_flow agendado para contato {contact_id}")
+                            evolution = EvolutionAPI(instance, apikey)
+                            background_tasks.add_task(
+                                execute_flow,
+                                company_id=contact["company_id"],
+                                contact_id=contact_id,
+                                contact_phone=contact["phone"],
+                                flow_id=flow_id,
+                                evolution=evolution,
+                                contact=contact,
+                            )
+                            logger.info(f"[Kanban] execute_flow agendado para contato {contact_id}")
+                        else:
+                            logger.warning(f"[Kanban] Empresa {contact['company_id']} sem Evolution API configurada.")
                     else:
-                        logger.warning(f"[Kanban] Empresa {contact['company_id']} sem Evolution API configurada.")
-                else:
-                    logger.warning(f"[Kanban] Empresa {contact['company_id']} não encontrada.")
+                        logger.warning(f"[Kanban] Empresa {contact['company_id']} não encontrada.")
 
-    return contact
+        return contact
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro CRITICO no update_contact_stage: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 
