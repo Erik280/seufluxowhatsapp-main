@@ -476,6 +476,11 @@
   outline: none;
 }
 
+.crm-select option {
+  background-color: #050810;
+  color: var(--color-text-primary);
+}
+
 .tags-container {
   display: flex;
   flex-wrap: wrap;
@@ -834,6 +839,11 @@
 .schedule-input:focus {
   outline: none;
   border-color: #00E5CC;
+}
+
+.schedule-input option {
+  background-color: #050810;
+  color: #e6f1ff;
 }
 
 .mini-flow-builder {
