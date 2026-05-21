@@ -591,31 +591,36 @@ export default function KanbanView() {
 
     const contactId = e.dataTransfer.getData('contact-id');
     const contact = contacts.find(c => c.id === contactId);
-    if (!contact || contact.stage_id === stageId) return;
+    if (!contact) return;
+    
+    const targetId = stageId === 'unassigned' ? null : stageId;
+    if (contact.stage_id === targetId) return;
 
-    const targetStage = stages.find(s => s.id === stageId);
-    if (!targetStage) return;
+    if (targetId !== null) {
+      const targetStage = stages.find(s => s.id === targetId);
+      if (!targetStage) return;
 
-    // ── Check if target stage has automation ──────────────────────────────
-    if (targetStage.is_trigger_enabled && targetStage.trigger_flow_id) {
-      const flow = flows.find(f => f.id === targetStage.trigger_flow_id);
-      // Show confirmation before doing anything
-      setConfirmPending({
-        contactId,
-        stageId,
-        prevStageId: contact.stage_id,
-        contactName: contact.name || contact.phone,
-        stageName: targetStage.name,
-        flowName: flow?.name ?? 'fluxo desconhecido',
-      });
-      return; // Wait for user confirmation
+      // ── Check if target stage has automation ──────────────────────────────
+      if (targetStage.is_trigger_enabled && targetStage.trigger_flow_id) {
+        const flow = flows.find(f => f.id === targetStage.trigger_flow_id);
+        // Show confirmation before doing anything
+        setConfirmPending({
+          contactId,
+          stageId: targetId,
+          prevStageId: contact.stage_id,
+          contactName: contact.name || contact.phone,
+          stageName: targetStage.name,
+          flowName: flow?.name ?? 'fluxo desconhecido',
+        });
+        return; // Wait for user confirmation
+      }
     }
 
     // No automation — move directly
-    await performCardMove(contactId, stageId, contact.stage_id);
+    await performCardMove(contactId, targetId, contact.stage_id);
   };
 
-  const performCardMove = async (contactId: string, stageId: string, prevStageId: string | null) => {
+  const performCardMove = async (contactId: string, stageId: string | null, prevStageId: string | null) => {
     // Optimistic update
     setContacts(prev => prev.map(c => c.id === contactId ? { ...c, stage_id: stageId } : c));
     try {
@@ -775,6 +780,130 @@ export default function KanbanView() {
 
       <div className={`kanban-board-container ${isQuickChatOpen ? 'quick-chat-open' : ''}`}>
         <div className="kanban-board">
+          
+          {/* SEM ESTÁGIO COLUMN (FIXED) */}
+          {(() => {
+            const unassignedContacts = contacts
+              .filter(c => !c.stage_id)
+              .filter(c => {
+                if (selectedTagFilterId) {
+                  return c.contact_tags?.some(ct => ct.tag_id === selectedTagFilterId);
+                }
+                return true;
+              })
+              .filter(c => {
+                if (!searchTerm.trim()) return true;
+                const search = searchTerm.toLowerCase();
+                return (
+                  c.name?.toLowerCase().includes(search) || 
+                  c.phone?.toLowerCase().includes(search)
+                );
+              })
+              .sort((a, b) => new Date(b.last_message || 0).getTime() - new Date(a.last_message || 0).getTime());
+
+            const isCardTarget = dragOverStageId === 'unassigned' && draggedCardId !== null;
+
+            // Only show this column if there are unassigned contacts OR if they are searching/filtering
+            if (unassignedContacts.length === 0 && !searchTerm && !selectedTagFilterId) {
+                // We always render the column so users have a place to drag "out" of stages if they want,
+                // but let's make it visible at all times so they can always find lost contacts.
+            }
+
+            return (
+              <div
+                key="unassigned"
+                className={`kanban-column ${isCardTarget ? 'drop-target' : ''}`}
+                onDragOver={e => {
+                  if (draggedColIdx === null) handleStageDragOver(e, 'unassigned');
+                }}
+                onDragLeave={() => { setDragOverStageId(null); }}
+                onDrop={e => {
+                  if (draggedColIdx === null) handleStageDrop(e, 'unassigned');
+                }}
+              >
+                <div className="column-header" style={{ borderTopColor: '#64748B' }}>
+                  <div className="column-header-top">
+                    <div className="column-title-row" style={{ paddingLeft: '8px' }}>
+                      <h3>Sem Estágio</h3>
+                    </div>
+                  </div>
+                  <div className="column-header-bottom">
+                    <div className="column-header-bottom-left"></div>
+                    <div className="column-header-bottom-right">
+                      <span className="task-count">{unassignedContacts.length} LEADS</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="task-list">
+                  {unassignedContacts.map(contact => {
+                    return (
+                      <div
+                        id={`card-${contact.id}`}
+                        key={contact.id}
+                        draggable
+                        onDragStart={e => handleCardDragStart(e, contact.id)}
+                        onDragEnd={e => handleCardDragEnd(e, contact.id)}
+                        onClick={() => { setSelectedContact(contact); setIsQuickChatOpen(true); }}
+                        className={`task-card ${selectedContact?.id === contact.id ? 'selected' : ''}`}
+                      >
+                        <div className="task-name">
+                          <span className="task-name-text">{contact.name || contact.phone}</span>
+                          {(contact.unread_count || 0) > 0 && (
+                            <span className="task-unread-badge">{contact.unread_count}</span>
+                          )}
+                        </div>
+
+                        {contact.name && (
+                          <div className="task-phone">{contact.phone}</div>
+                        )}
+                        
+                        {contact.last_message_content && (
+                          <div className="task-preview">
+                            {contact.last_message_content}
+                          </div>
+                        )}
+
+                        {contact.contact_tags && contact.contact_tags.length > 0 && (
+                          <div className="kanban-card-tags" style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '6px' }}>
+                            {contact.contact_tags.map(ct => ct.tags).filter(Boolean).map(tag => (
+                              <span key={tag.id} className="kanban-tag-pill" style={{
+                                background: 'rgba(255, 255, 255, 0.08)',
+                                border: '1px solid rgba(255, 255, 255, 0.15)',
+                                padding: '2px 6px',
+                                borderRadius: '3px',
+                                fontSize: '0.7rem',
+                                color: '#ccd6f6'
+                              }}>
+                                {tag.name}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="task-footer">
+                          <span className="task-time">
+                            {(() => {
+                              if (!contact.last_message) return 'Novo';
+                              const d = new Date(contact.last_message);
+                              const now = new Date();
+                              const isToday = d.getDate() === now.getDate() && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+                              if (isToday) return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                              return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                            })()}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {unassignedContacts.length === 0 && (
+                    <div className="kb-empty-col">Nenhum lead avulso</div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
           {stages.map((stage, colIdx) => {
             const stageContacts = contacts
               .filter(c => c.stage_id === stage.id)
