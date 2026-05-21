@@ -1350,3 +1350,133 @@ async def delete_quick_reply(reply_id: str):
     if not res.data:
         raise HTTPException(status_code=404, detail="Resposta rápida não encontrada")
     return None
+
+# ========================
+# KNOWLEDGE BASE (RAG)
+# ========================
+
+class KnowledgeTextCreate(BaseModel):
+    company_id: str
+    title: str
+    content: str
+
+class KnowledgeResponse(BaseModel):
+    id: str
+    company_id: str
+    title: str
+    content: str
+    created_at: str
+
+@router.get("/knowledge/{company_id}", response_model=list[KnowledgeResponse])
+async def list_knowledge(company_id: str):
+    db = get_supabase()
+    res = db.table("company_knowledge").select("id, company_id, title, content, created_at").eq("company_id", company_id).order("created_at", desc=True).execute()
+    return res.data or []
+
+@router.post("/knowledge/text", response_model=KnowledgeResponse, status_code=201)
+async def create_knowledge_text(body: KnowledgeTextCreate):
+    import os
+    if not os.getenv("OPENAI_API_KEY"):
+        raise HTTPException(status_code=400, detail="OPENAI_API_KEY não configurada no servidor. É necessária para gerar o vetor de conhecimento.")
+        
+    from langchain_openai import OpenAIEmbeddings
+    try:
+        embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+        vector = embeddings.embed_query(body.content)
+    except Exception as e:
+        logger.error(f"Erro ao gerar embedding: {e}")
+        raise HTTPException(status_code=500, detail="Erro ao gerar vetor de IA. Verifique sua chave da OpenAI.")
+
+    db = get_supabase()
+    res = db.table("company_knowledge").insert({
+        "company_id": body.company_id,
+        "title": body.title,
+        "content": body.content,
+        "embedding": vector
+    }).execute()
+    
+    if not res.data:
+        raise HTTPException(status_code=500, detail="Erro ao salvar na base de dados.")
+        
+    # Remover o embedding da resposta para não travar o frontend com array gigante
+    data = res.data[0]
+    data.pop("embedding", None)
+    return data
+
+@router.post("/knowledge/pdf", status_code=201)
+async def create_knowledge_pdf(
+    company_id: str = Form(...),
+    file: UploadFile = File(...)
+):
+    import os
+    if not os.getenv("OPENAI_API_KEY"):
+        raise HTTPException(status_code=400, detail="OPENAI_API_KEY não configurada no servidor.")
+        
+    if not file.filename.lower().endswith('.pdf'):
+        raise HTTPException(status_code=400, detail="O arquivo deve ser um PDF.")
+        
+    content_bytes = await file.read()
+    import io
+    import pypdf
+    from langchain_openai import OpenAIEmbeddings
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
+    
+    # 1. Extrair texto do PDF
+    try:
+        pdf_reader = pypdf.PdfReader(io.BytesIO(content_bytes))
+        full_text = ""
+        for page in pdf_reader.pages:
+            text = page.extract_text()
+            if text:
+                full_text += text + "\n"
+    except Exception as e:
+        logger.error(f"Erro ao ler PDF: {e}")
+        raise HTTPException(status_code=400, detail="Não foi possível ler o texto deste PDF.")
+        
+    if not full_text.strip():
+        raise HTTPException(status_code=400, detail="Nenhum texto extraído do PDF.")
+        
+    # 2. Dividir em pedaços (Chunks) se for muito grande
+    splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=150)
+    chunks = splitter.split_text(full_text)
+    
+    if not chunks:
+        raise HTTPException(status_code=400, detail="Falha ao processar texto do PDF.")
+        
+    # 3. Gerar embeddings em lote
+    try:
+        embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+        vectors = embeddings.embed_documents(chunks)
+    except Exception as e:
+        logger.error(f"Erro ao gerar embeddings do PDF: {e}")
+        raise HTTPException(status_code=500, detail="Erro ao processar IA do documento.")
+        
+    # 4. Salvar no banco
+    db = get_supabase()
+    rows = []
+    base_title = file.filename
+    
+    for i, (chunk, vector) in enumerate(zip(chunks, vectors)):
+        title = base_title if len(chunks) == 1 else f"{base_title} (Parte {i+1})"
+        rows.append({
+            "company_id": company_id,
+            "title": title,
+            "content": chunk,
+            "embedding": vector
+        })
+        
+    # Inserir em lotes ou de uma vez (Supabase aceita lista de dicts)
+    res = db.table("company_knowledge").insert(rows).execute()
+    
+    if not res.data:
+        raise HTTPException(status_code=500, detail="Erro ao salvar conhecimentos no banco.")
+        
+    return {"message": f"PDF processado com sucesso. {len(chunks)} trechos extraídos."}
+
+@router.delete("/knowledge/{knowledge_id}", status_code=204)
+async def delete_knowledge(knowledge_id: str):
+    db = get_supabase()
+    res = db.table("company_knowledge").delete().eq("id", knowledge_id).execute()
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Item não encontrado")
+    return None

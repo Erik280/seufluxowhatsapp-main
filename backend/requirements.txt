@@ -15,3 +15,5 @@ langchain-groq
 langchain-openai
 langchain-core
 langgraph
+pypdf
+langchain-text-splitters
