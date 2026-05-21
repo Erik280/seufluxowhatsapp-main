@@ -33,6 +33,15 @@ class Settings(BaseSettings):
     app_env: str = "production"
     log_level: str = "info"
 
+    # --- AI Agent ---
+    # Provedor ativo: "groq" | "openai" | "deepseek"
+    ai_provider: str = "groq"
+    groq_api_key: str = ""
+    openai_api_key: str = ""
+    deepseek_api_key: str = ""
+    # Modelo customizado (deixe vazio para usar o padrão do provedor)
+    ai_model: str = ""
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

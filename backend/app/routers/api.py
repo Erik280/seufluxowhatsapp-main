@@ -764,6 +764,14 @@ async def react_message(message_id: str, body: ReactMessageRequest):
     return {"status": "ok", "reaction": body.reaction}
 
 
+@router.delete("/messages/{message_id}", status_code=204)
+async def delete_message(message_id: str):
+    """Apaga uma mensagem do banco de dados."""
+    db = get_supabase()
+    db.table("messages").delete().eq("id", message_id).execute()
+    return None
+
+
 # ========================
 # KANBAN STAGES & TAGS
 # ========================
@@ -864,6 +872,7 @@ async def update_contact_stage(contact_id: str, body: ContactStageUpdate, backgr
     Atualiza o estágio do Kanban de um contato.
     Se o novo estágio tiver is_trigger_enabled=true, muda o chat_status
     para 'bot' e dispara o fluxo de automação automaticamente.
+    Se o novo estágio tiver tag_ids_to_add, adiciona as tags ao lead automaticamente.
     """
     db = get_supabase()
 
@@ -874,28 +883,49 @@ async def update_contact_stage(contact_id: str, body: ContactStageUpdate, backgr
 
     contact = update_res.data[0]
 
-    # 2. Verifica se o novo estágio tem automação ativada
+    # 2. Verifica se o novo estágio tem automações configuradas
     if body.stage_id:
         stage_res = (
             db.table("kanban_stages")
-            .select("trigger_flow_id, is_trigger_enabled")
+            .select("trigger_flow_id, is_trigger_enabled, tag_ids_to_add")
             .eq("id", body.stage_id)
             .execute()
         )
 
         if stage_res.data:
             stage = stage_res.data[0]
+
+            # 2a. Aplicar tags automáticas ao lead (se configuradas)
+            tag_ids_to_add = stage.get("tag_ids_to_add") or []
+            if tag_ids_to_add:
+                logger.info(f"[Kanban] Aplicando tags automáticas ao contato {contact_id}: {tag_ids_to_add}")
+                for tag_id in tag_ids_to_add:
+                    # Upsert: insere apenas se ainda não existe para esse contato
+                    existing = (
+                        db.table("contact_tags")
+                        .select("id")
+                        .eq("contact_id", contact_id)
+                        .eq("tag_id", tag_id)
+                        .execute()
+                    )
+                    if not existing.data:
+                        db.table("contact_tags").insert({
+                            "contact_id": contact_id,
+                            "tag_id": tag_id
+                        }).execute()
+
+            # 2b. Disparar fluxo de automação (se configurado)
             if stage.get("is_trigger_enabled") and stage.get("trigger_flow_id"):
                 flow_id = stage["trigger_flow_id"]
                 logger.info(
-                    f"[Kanban] Trigger ativado: contato {contact_id} → estágio {body.stage_id} → fluxo {flow_id}"
+                    f"[Kanban] Fluxo trigger ativado: contato {contact_id} → estágio {body.stage_id} → fluxo {flow_id}"
                 )
 
-                # 3. Muda chat_status para 'bot' para que a automação tenha prioridade
+                # Muda chat_status para 'bot' para que a automação tenha prioridade
                 db.table("contacts").update({"chat_status": "bot"}).eq("id", contact_id).execute()
                 contact["chat_status"] = "bot"
 
-                # 4. Busca dados da empresa para executar o fluxo
+                # Busca dados da empresa para executar o fluxo
                 company_res = (
                     db.table("companies")
                     .select("evolution_instance, evolution_apikey")

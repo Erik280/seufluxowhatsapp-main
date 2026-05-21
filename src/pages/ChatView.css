@@ -1517,7 +1517,7 @@
   pointer-events: auto;
 }
 
-.react-msg-btn, .save-qr-btn {
+.react-msg-btn, .save-qr-btn, .forward-msg-btn, .delete-msg-btn {
   background: transparent;
   border: none;
   color: var(--color-text-muted);
@@ -1539,6 +1539,18 @@
 .save-qr-btn:hover {
   color: var(--color-neon-green);
   background: rgba(0, 255, 136, 0.1);
+  transform: scale(1.15);
+}
+
+.forward-msg-btn:hover {
+  color: #a8b2d1;
+  background: rgba(168, 178, 209, 0.1);
+  transform: scale(1.15);
+}
+
+.delete-msg-btn:hover {
+  color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.1);
   transform: scale(1.15);
 }
 

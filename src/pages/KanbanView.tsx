@@ -15,6 +15,7 @@ interface KanbanStage {
   is_trigger_enabled: boolean;
   trigger_flow_id: string | null;
   entry_keywords: string[];
+  tag_ids_to_add: string[];
 }
 
 interface Contact {
@@ -78,12 +79,13 @@ interface StageModalProps {
   stage: KanbanStage | null;
   flows: Flow[];
   companyId: string;
+  companyTags: { id: string; name: string; color: string }[];
   onClose: () => void;
   onSaved: (stage: KanbanStage) => void;
   onDeleted?: (stageId: string) => void;
 }
 
-function StageModal({ stage, flows, companyId, onClose, onSaved, onDeleted }: StageModalProps) {
+function StageModal({ stage, flows, companyId, companyTags, onClose, onSaved, onDeleted }: StageModalProps) {
   const isNew = !stage;
   const isProtected = stage?.is_protected ?? false;
   const [name, setName] = useState(stage?.name ?? '');
@@ -92,6 +94,9 @@ function StageModal({ stage, flows, companyId, onClose, onSaved, onDeleted }: St
   const [triggerFlowId, setTriggerFlowId] = useState<string>(stage?.trigger_flow_id ?? '');
   const [keywords, setKeywords] = useState<string[]>(stage?.entry_keywords ?? []);
   const [kwInput, setKwInput] = useState('');
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>(stage?.tag_ids_to_add ?? []);
+  const [isAiManaged, setIsAiManaged] = useState(stage?.is_ai_managed ?? false);
+  const [aiInstructions, setAiInstructions] = useState(stage?.ai_instructions ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -116,6 +121,9 @@ function StageModal({ stage, flows, companyId, onClose, onSaved, onDeleted }: St
       is_trigger_enabled: isTriggerEnabled,
       trigger_flow_id: isTriggerEnabled && triggerFlowId ? triggerFlowId : null,
       entry_keywords: keywords,
+      tag_ids_to_add: selectedTagIds,
+      is_ai_managed: isAiManaged,
+      ai_instructions: isAiManaged ? aiInstructions : null,
     };
 
     try {
@@ -231,6 +239,54 @@ function StageModal({ stage, flows, companyId, onClose, onSaved, onDeleted }: St
             </div>
           )}
 
+          {/* Tags automáticas */}
+          {companyTags.length > 0 && (
+            <div className="kb-field">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                <label style={{ margin: 0 }}>🏷️ Tags automáticas ao entrar nesta coluna</label>
+              </div>
+              <p className="kb-label-sub" style={{ marginTop: -2 }}>
+                Ao mover um lead para esta coluna, as tags marcadas serão adicionadas automaticamente.
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
+                {companyTags.map(tag => {
+                  const isSelected = selectedTagIds.includes(tag.id);
+                  return (
+                    <button
+                      key={tag.id}
+                      type="button"
+                      onClick={() => setSelectedTagIds(prev =>
+                        prev.includes(tag.id) ? prev.filter(id => id !== tag.id) : [...prev, tag.id]
+                      )}
+                      style={{
+                        padding: '4px 12px',
+                        borderRadius: '20px',
+                        border: `2px solid ${isSelected ? '#00E5CC' : 'rgba(255,255,255,0.15)'}`,
+                        background: isSelected ? 'rgba(0,229,204,0.15)' : 'rgba(255,255,255,0.04)',
+                        color: isSelected ? '#00E5CC' : '#8892b0',
+                        cursor: 'pointer',
+                        fontSize: '0.8rem',
+                        fontWeight: isSelected ? 600 : 400,
+                        transition: 'all 0.15s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                      }}
+                    >
+                      {isSelected && <span style={{ fontSize: '0.7rem' }}>✓</span>}
+                      {tag.name}
+                    </button>
+                  );
+                })}
+              </div>
+              {selectedTagIds.length > 0 && (
+                <p style={{ fontSize: '0.75rem', color: '#00E5CC', marginTop: '8px' }}>
+                  {selectedTagIds.length} tag(s) serão adicionadas automaticamente.
+                </p>
+              )}
+            </div>
+          )}
+
           {isTriggerEnabled && (
             <div className="kb-field kb-flow-selector">
               <label>Fluxo de resposta automática</label>
@@ -249,6 +305,54 @@ function StageModal({ stage, flows, companyId, onClose, onSaved, onDeleted }: St
               )}
             </div>
           )}
+
+          {/* Agente IA Autônomo */}
+          <div className="kb-field" style={{
+            border: isAiManaged ? '1px solid rgba(168, 85, 247, 0.4)' : '1px solid rgba(255,255,255,0.06)',
+            borderRadius: '10px',
+            padding: '14px',
+            background: isAiManaged ? 'rgba(168, 85, 247, 0.06)' : 'transparent',
+            transition: 'all 0.2s'
+          }}>
+            <div className="kb-trigger-toggle-row">
+              <div>
+                <label className="kb-label-main">
+                  🤖 <span style={{ color: '#A855F7' }}>Agente IA Autônomo</span>
+                </label>
+                <p className="kb-label-sub">Quando ativado, a IA responderá autonomamente todos os leads nesta coluna usando o LLM configurado.</p>
+              </div>
+              <button className={`kb-toggle-btn ${isAiManaged ? 'active' : ''}`}
+                style={isAiManaged ? { background: 'rgba(168,85,247,0.2)', borderColor: '#A855F7', color: '#A855F7' } : {}}
+                onClick={() => setIsAiManaged(p => !p)}>
+                {isAiManaged ? <><ToggleRight size={20} /> Ativo</> : <><ToggleLeft size={20} /> Desativado</>}
+              </button>
+            </div>
+            {isAiManaged && (
+              <div style={{ marginTop: '12px' }}>
+                <label style={{ fontSize: '0.8rem', color: '#a78bfa', display: 'block', marginBottom: '6px' }}>
+                  Instruções para a IA nesta etapa (contexto e objetivo)
+                </label>
+                <textarea
+                  value={aiInstructions}
+                  onChange={e => setAiInstructions(e.target.value)}
+                  placeholder={`Ex: Nesta etapa, o objetivo é qualificar o lead. Pergunte: qual o tamanho da empresa? qual o orçamento disponível? qual a urgência? Seja direto e profissional. Se o lead demonstrar interesse concreto, mova para o estágio 'Proposta'.`}
+                  rows={5}
+                  style={{
+                    width: '100%',
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(168,85,247,0.3)',
+                    borderRadius: '8px',
+                    padding: '10px 12px',
+                    color: '#e6f1ff',
+                    fontSize: '0.85rem',
+                    resize: 'vertical',
+                    outline: 'none',
+                    fontFamily: 'inherit',
+                  }}
+                />
+              </div>
+            )}
+          </div>
 
           {error && <p className="kb-error">{error}</p>}
         </div>
@@ -890,6 +994,7 @@ export default function KanbanView() {
           stage={modalStage}
           flows={flows}
           companyId={companyId}
+          companyTags={companyTags}
           onClose={() => setModalOpen(false)}
           onSaved={handleModalSaved}
           onDeleted={handleModalDeleted}

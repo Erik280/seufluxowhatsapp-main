@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { FolderOpen, Plus, Mic, Trash2, Send, FileText, Zap, Filter, ArrowLeft, Smile } from 'lucide-react';
+import { FolderOpen, Plus, Mic, Trash2, Send, FileText, Zap, Filter, ArrowLeft, Smile, Forward, Search, Check } from 'lucide-react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
 import ContactCrmModal from '../components/ContactCrmModal';
 import './ChatView.css';
@@ -111,6 +111,13 @@ export default function ChatView() {
 
   const [activeReactionMenuMsgId, setActiveReactionMenuMsgId] = useState<string | null>(null);
 
+  // Forward Message state
+  const [forwardMsg, setForwardMsg] = useState<Message | null>(null);
+  const [forwardSearch, setForwardSearch] = useState('');
+  const [forwardSelected, setForwardSelected] = useState<string[]>([]);
+  const [forwardNote, setForwardNote] = useState('');
+  const [isForwarding, setIsForwarding] = useState(false);
+
   const handleReactMessage = async (messageId: string, emoji: string) => {
     if (!companyId) return;
 
@@ -128,7 +135,6 @@ export default function ChatView() {
 
       if (!response.ok) {
         showToast('Erro ao atualizar reação.', 'error');
-        // Recarregar mensagens para sincronizar
         const { data } = await supabase
           .from('messages')
           .select('*')
@@ -140,6 +146,57 @@ export default function ChatView() {
       console.error("Failed to react to message", error);
       showToast('Falha na conexão ao reagir.', 'error');
     }
+  };
+
+  const handleForward = async () => {
+    if (!forwardMsg || forwardSelected.length === 0 || !companyId) return;
+    setIsForwarding(true);
+    let successCount = 0;
+
+    for (const contactId of forwardSelected) {
+      try {
+        if (forwardMsg.media_url && forwardMsg.media_type) {
+          const res = await fetch(`${API_BASE_URL}/api/messages/send/media_url`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contact_id: contactId,
+              company_id: companyId,
+              media_url: forwardMsg.media_url,
+              media_type: forwardMsg.media_type,
+              media_name: 'Encaminhado'
+            })
+          });
+          if (res.ok) successCount++;
+          // Send optional note separately for media
+          if (forwardNote.trim()) {
+            await fetch(`${API_BASE_URL}/api/messages/send`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ contact_id: contactId, company_id: companyId, text: forwardNote.trim() })
+            });
+          }
+        } else {
+          let text = forwardMsg.content || '';
+          if (forwardNote.trim()) text = `${text}\n\n${forwardNote.trim()}`;
+          const res = await fetch(`${API_BASE_URL}/api/messages/send`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contact_id: contactId, company_id: companyId, text })
+          });
+          if (res.ok) successCount++;
+        }
+      } catch (err) {
+        console.error('Error forwarding message', err);
+      }
+    }
+
+    setIsForwarding(false);
+    setForwardMsg(null);
+    setForwardSearch('');
+    setForwardSelected([]);
+    setForwardNote('');
+    showToast(`Mensagem encaminhada para ${successCount} conversa(s)!`);
   };
 
   const fetchTags = async (cId: string) => {
@@ -755,6 +812,47 @@ export default function ChatView() {
     }
   };
 
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!window.confirm("Tem certeza que deseja apagar essa mensagem? Ela será excluída da conversa e do banco de dados.")) {
+      return;
+    }
+    
+    // Optimistic delete
+    setMessages(prev => prev.filter(m => m.id !== messageId));
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/messages/${messageId}`, {
+        method: 'DELETE'
+      });
+      if (!res.ok) {
+        showToast('Erro ao apagar mensagem.', 'error');
+        // Rollback optimistic update
+        if (selectedContact) {
+          const { data } = await supabase
+            .from('messages')
+            .select('*')
+            .eq('contact_id', selectedContact.id)
+            .order('created_at', { ascending: true });
+          if (data) setMessages(data);
+        }
+      } else {
+        showToast('Mensagem apagada com sucesso!');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Erro ao apagar mensagem.', 'error');
+      // Rollback optimistic update
+      if (selectedContact) {
+        const { data } = await supabase
+          .from('messages')
+          .select('*')
+          .eq('contact_id', selectedContact.id)
+          .order('created_at', { ascending: true });
+        if (data) setMessages(data);
+      }
+    }
+  };
+
   const handleCreateChat = async () => {
     if (!newChatName.trim() || !newChatPhone.trim() || !companyId) {
       showToast('Por favor, preencha nome e telefone.', 'error');
@@ -888,6 +986,7 @@ export default function ChatView() {
               style={{ flex: 1 }}
             >
               <option value="">Todas as Etapas (Kanban)</option>
+              <option value="none">Sem Etapa (Fora do Kanban)</option>
               {stages.map(stage => (
                 <option key={stage.id} value={stage.id}>
                   {stage.name}
@@ -918,7 +1017,9 @@ export default function ChatView() {
               filtered = filtered.filter(c => c.unread_count && c.unread_count > 0);
             }
 
-            if (selectedStageId) {
+            if (selectedStageId === 'none') {
+              filtered = filtered.filter(c => !c.stage_id);
+            } else if (selectedStageId) {
               filtered = filtered.filter(c => c.stage_id === selectedStageId);
             }
 
@@ -1075,7 +1176,7 @@ export default function ChatView() {
                       />
                     )}
                     {msg.media_type === 'video' && (
-                      <video src={msg.media_url!} controls style={{maxWidth: '100%', borderRadius: '8px'}} />
+                      <video src={msg.media_url!} controls style={{maxWidth: '100%', maxHeight: '250px', borderRadius: '8px', objectFit: 'contain', backgroundColor: '#000'}} />
                     )}
                     {msg.media_type === 'audio' && (
                       <audio src={msg.media_url!} controls style={{maxWidth: '200px'}} />
@@ -1125,6 +1226,25 @@ export default function ChatView() {
                         title="Salvar como Resposta Rápida"
                       >
                         <Zap size={14} />
+                      </button>
+                      <button
+                        className="forward-msg-btn"
+                        onClick={() => {
+                          setForwardMsg(msg);
+                          setForwardSearch('');
+                          setForwardSelected([]);
+                          setForwardNote('');
+                        }}
+                        title="Encaminhar Mensagem"
+                      >
+                        <Forward size={14} />
+                      </button>
+                      <button
+                        className="delete-msg-btn"
+                        onClick={() => handleDeleteMessage(msg.id)}
+                        title="Excluir Mensagem"
+                      >
+                        <Trash2 size={14} />
                       </button>
 
                       {activeReactionMenuMsgId === msg.id && (
@@ -1430,6 +1550,133 @@ export default function ChatView() {
               <button className="cancel-btn" onClick={() => setSaveQRModal({show: false, content: ''})}>Cancelar</button>
               <button className="confirm-btn" onClick={handleSaveQuickReply} disabled={isSavingQR}>
                 {isSavingQR ? 'Salvando...' : 'Salvar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Forward Message Modal ── */}
+      {forwardMsg && (
+        <div className="schedule-modal-overlay" style={{ zIndex: 10000 }}>
+          <div className="schedule-modal-content" style={{ maxWidth: '480px' }}>
+            <div className="schedule-modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Forward size={18} style={{ color: '#00E5CC' }} />
+                <h2>Encaminhar mensagem para</h2>
+              </div>
+              <button className="close-btn" onClick={() => setForwardMsg(null)}>✕</button>
+            </div>
+
+            {/* Preview da mensagem a encaminhar */}
+            <div style={{ margin: '0 20px 0', padding: '10px 14px', background: 'rgba(0,229,204,0.05)', border: '1px solid rgba(0,229,204,0.15)', borderRadius: '8px', fontSize: '0.82rem', color: '#8892b0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Forward size={12} style={{ color: '#00E5CC', flexShrink: 0 }} />
+              <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#ccd6f6' }}>
+                {forwardMsg.media_type ? `[${forwardMsg.media_type.toUpperCase()}]` : ''} {forwardMsg.content || 'Mídia'}
+              </span>
+            </div>
+
+            <div className="schedule-modal-body" style={{ padding: '12px 20px' }}>
+              {/* Search */}
+              <div style={{ position: 'relative', marginBottom: '12px' }}>
+                <Search size={15} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#8892b0', pointerEvents: 'none' }} />
+                <input
+                  type="text"
+                  placeholder="Pesquisar nome ou número..."
+                  value={forwardSearch}
+                  onChange={e => setForwardSearch(e.target.value)}
+                  className="crm-input"
+                  style={{ paddingLeft: '36px' }}
+                  autoFocus
+                />
+              </div>
+
+              {/* Selected count badge */}
+              {forwardSelected.length > 0 && (
+                <div style={{ marginBottom: '8px', fontSize: '0.78rem', color: '#00E5CC', fontWeight: 500 }}>
+                  {forwardSelected.length} conversa(s) selecionada(s)
+                </div>
+              )}
+
+              {/* Contact list */}
+              <div style={{ maxHeight: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                {contacts
+                  .filter(c => {
+                    const q = forwardSearch.toLowerCase();
+                    return !q || (c.name || '').toLowerCase().includes(q) || c.phone.includes(q);
+                  })
+                  .map(c => {
+                    const isSelected = forwardSelected.includes(c.id);
+                    return (
+                      <div
+                        key={c.id}
+                        onClick={() => setForwardSelected(prev =>
+                          prev.includes(c.id) ? prev.filter(id => id !== c.id) : [...prev, c.id]
+                        )}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '12px',
+                          padding: '9px 10px', borderRadius: '8px', cursor: 'pointer',
+                          background: isSelected ? 'rgba(0,229,204,0.08)' : 'transparent',
+                          border: `1px solid ${isSelected ? 'rgba(0,229,204,0.25)' : 'transparent'}`,
+                          transition: 'all 0.15s'
+                        }}
+                      >
+                        {/* Checkbox */}
+                        <div style={{
+                          width: '20px', height: '20px', borderRadius: '50%', flexShrink: 0,
+                          border: `2px solid ${isSelected ? '#00E5CC' : '#8892b0'}`,
+                          background: isSelected ? '#00E5CC' : 'transparent',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          transition: 'all 0.15s'
+                        }}>
+                          {isSelected && <Check size={11} color="#0a192f" strokeWidth={3} />}
+                        </div>
+                        {/* Avatar */}
+                        <div style={{
+                          width: '38px', height: '38px', borderRadius: '50%', flexShrink: 0, overflow: 'hidden',
+                          background: 'linear-gradient(135deg, rgba(0,255,136,0.2), rgba(0,229,204,0.2))',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: '#00FF88', fontWeight: 600, fontSize: '0.85rem'
+                        }}>
+                          {c.avatar_url
+                            ? <img src={c.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                            : (c.name ? c.name.substring(0, 2).toUpperCase() : '👤')}
+                        </div>
+                        {/* Info */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ color: '#e6f1ff', fontSize: '0.9rem', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {c.name || c.phone}
+                          </div>
+                          {c.name && <div style={{ color: '#8892b0', fontSize: '0.72rem' }}>{c.phone}</div>}
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+
+              {/* Optional note */}
+              <div style={{ marginTop: '12px' }}>
+                <input
+                  type="text"
+                  placeholder="Adicione uma mensagem... (opcional)"
+                  value={forwardNote}
+                  onChange={e => setForwardNote(e.target.value)}
+                  className="crm-input"
+                  style={{ fontSize: '0.88rem' }}
+                />
+              </div>
+            </div>
+
+            <div className="schedule-modal-footer">
+              <button className="cancel-btn" onClick={() => setForwardMsg(null)}>Cancelar</button>
+              <button
+                className="confirm-btn"
+                onClick={handleForward}
+                disabled={isForwarding || forwardSelected.length === 0}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Forward size={14} />
+                {isForwarding ? 'Encaminhando...' : `Encaminhar${forwardSelected.length > 0 ? ` (${forwardSelected.length})` : ''}`}
               </button>
             </div>
           </div>

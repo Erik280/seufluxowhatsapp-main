@@ -531,7 +531,35 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
                 logger.info(f"[{phone}] Modo BOT — fluxo '{flow['name']}' ignorado (trigger_once).")
             return {"status": "ok", "mode": "bot", "flow": flow["name"]}
 
-    # ── 7. Rotear conforme chat_status ──
+    # ── 7. Verificar se o estágio atual tem Agente IA ──
+    current_stage_id = contact.get("stage_id")
+    if current_stage_id and message_text:
+        stage_res = (
+            db.table("kanban_stages")
+            .select("id, name, is_ai_managed, ai_instructions")
+            .eq("id", current_stage_id)
+            .limit(1)
+            .execute()
+        )
+        if stage_res.data:
+            stage = stage_res.data[0]
+            if stage.get("is_ai_managed"):
+                logger.info(f"[{phone}] Modo AI AGENT — estágio '{stage['name']}' gerenciado por IA.")
+                from app.services.ai_agent import run_ai_agent
+                background_tasks.add_task(
+                    run_ai_agent,
+                    contact_id=contact_id,
+                    company_id=company_id,
+                    phone=phone,
+                    instance_name=instance_name,
+                    evolution_apikey=evolution_apikey,
+                    contact=contact,
+                    stage=stage,
+                    incoming_message=message_text,
+                )
+                return {"status": "ok", "mode": "ai_agent", "stage": stage["name"]}
+
+    # ── 8. Rotear conforme chat_status ──
 
     if chat_status == "human":
         logger.info(f"[{phone}] Modo HUMANO — mensagem salva para atendente.")
