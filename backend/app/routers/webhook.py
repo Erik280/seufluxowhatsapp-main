@@ -267,6 +267,11 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
     )
     push_name = data.get("pushName", "")
 
+    # LOG TEMPORÁRIO: mostra as chaves do message_obj para depurar quoted messages
+    logger.info(f"DEBUG message_obj keys: {list(message_obj.keys())}")
+    if "extendedTextMessage" in message_obj:
+        logger.info(f"DEBUG extendedTextMessage full: {message_obj['extendedTextMessage']}")
+
     # ── Extrair mensagem citada (quoted) ──
     quoted_content: str | None = None
     quoted_whatsapp_id: str | None = None
