@@ -247,6 +247,7 @@ async def _handle_messages_update(payload: dict, instance_name: str | None) -> d
     }
     """
     data_list = payload.get("data", [])
+    logger.info(f"DEBUG [messages.update] payload recebido: {payload}")
     if not isinstance(data_list, list):
         data_list = [data_list]
 
@@ -358,6 +359,9 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
     # ── Validar evento ──
     event = payload.get("event")
     instance_name = payload.get("instance")
+
+    # ── LOG DE DIAGNÓSTICO — mostra TODOS os eventos recebidos ──
+    logger.info(f"WEBHOOK_EVENT | instance={instance_name} | event={event}")
 
     # ── Handler: messages.update (edição de mensagem pelo lead) ──
     if event == "messages.update":
