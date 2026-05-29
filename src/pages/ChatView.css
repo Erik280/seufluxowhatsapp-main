@@ -1708,3 +1708,32 @@
 .message-reaction-pill.out {
   left: 12px;
 }
+
+/* ── Mensagem Editada ── */
+.msg-edited-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.72rem;
+  color: rgba(168, 178, 209, 0.65);
+  margin-left: 6px;
+  cursor: default;
+  vertical-align: middle;
+  transition: color 0.2s;
+}
+
+.msg-edited-badge:hover {
+  color: rgba(168, 178, 209, 0.9);
+}
+
+.msg-edited-badge em {
+  font-style: italic;
+  font-size: 0.70rem;
+}
+
+.msg-edited-time {
+  font-size: 0.68rem;
+  color: rgba(168, 178, 209, 0.5);
+  font-style: italic;
+  margin-right: 2px;
+}

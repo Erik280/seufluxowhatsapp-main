@@ -215,8 +215,124 @@ def _find_keyword_stage(db, company_id: str, message_text: str) -> dict | None:
                     f"[keyword-routing] Keyword '{kw}' encontrada → stage '{stage['name']}'"
                 )
                 return stage
-
     return None
+
+
+async def _handle_messages_update(payload: dict, instance_name: str | None) -> dict:
+    """
+    Processa o evento 'messages.update' da Evolution API.
+    
+    Esse evento é disparado quando:
+    - O lead EDITA uma mensagem já enviada (editedMessage)
+    - Status de leitura muda (ACK — não tratamos aqui)
+    
+    Estrutura do payload:
+    {
+      "event": "messages.update",
+      "instance": "...",
+      "data": [
+        {
+          "key": { "id": "WHATSAPP_MSG_ID", "remoteJid": "...", "fromMe": false },
+          "update": {
+            "editedMessage": {
+              "message": {
+                "protocolMessage": {
+                  "editedMessage": { "conversation": "novo texto" }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+    """
+    data_list = payload.get("data", [])
+    if not isinstance(data_list, list):
+        data_list = [data_list]
+
+    db = get_supabase()
+    processed = 0
+
+    # Identificar empresa pela instância
+    company_id: str | None = None
+    if instance_name:
+        company_result = (
+            db.table("companies")
+            .select("id")
+            .eq("evolution_instance", instance_name)
+            .limit(1)
+            .execute()
+        )
+        if company_result.data:
+            company_id = company_result.data[0]["id"]
+
+    if not company_id:
+        logger.warning(f"[messages.update] Instância '{instance_name}' não encontrada.")
+        return {"status": "ignored", "reason": "unknown_instance"}
+
+    for item in data_list:
+        key = item.get("key", {})
+        whatsapp_id = key.get("id")
+        if not whatsapp_id:
+            continue
+
+        update = item.get("update", {})
+
+        # ── Detectar edição de mensagem ──
+        # A Evolution API encapsula a edição dentro de editedMessage.message.protocolMessage
+        edited_msg = update.get("editedMessage") or {}
+        inner_msg = edited_msg.get("message") or {}
+        protocol = inner_msg.get("protocolMessage") or {}
+        edited_content_obj = protocol.get("editedMessage") or {}
+
+        new_text = (
+            edited_content_obj.get("conversation")
+            or edited_content_obj.get("extendedTextMessage", {}).get("text")
+        )
+
+        if not new_text:
+            # Pode ser ACK ou outro tipo de update — ignorar silenciosamente
+            logger.debug(f"[messages.update] Sem editedMessage para {whatsapp_id}, ignorando.")
+            continue
+
+        # Buscar a mensagem original no banco pelo whatsapp_id
+        msg_res = (
+            db.table("messages")
+            .select("id, content, is_edited, original_content")
+            .eq("company_id", company_id)
+            .eq("whatsapp_id", whatsapp_id)
+            .limit(1)
+            .execute()
+        )
+
+        if not msg_res.data:
+            logger.warning(f"[messages.update] Mensagem {whatsapp_id} não encontrada no banco.")
+            continue
+
+        msg = msg_res.data[0]
+
+        # Preservar o conteúdo original apenas na primeira edição
+        original = msg.get("original_content") or (
+            msg["content"] if not msg.get("is_edited") else None
+        )
+
+        update_payload: dict = {
+            "content": new_text,
+            "is_edited": True,
+            "edited_at": "now()",
+        }
+        if original:
+            update_payload["original_content"] = original
+
+        db.table("messages").update(update_payload).eq("id", msg["id"]).execute()
+
+        logger.info(
+            f"[messages.update] ✅ Mensagem editada: waid={whatsapp_id} | "
+            f"'{(msg['content'] or '')[:40]}' → '{new_text[:40]}'"
+        )
+        processed += 1
+
+    return {"status": "ok", "event": "messages.update", "processed": processed}
 
 
 @router.post("/evolution")
@@ -241,11 +357,16 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
 
     # ── Validar evento ──
     event = payload.get("event")
+    instance_name = payload.get("instance")
+
+    # ── Handler: messages.update (edição de mensagem pelo lead) ──
+    if event == "messages.update":
+        return await _handle_messages_update(payload, instance_name)
+
     if event != "messages.upsert":
         return {"status": "ignored", "event": event}
 
     data = payload.get("data", {})
-    instance_name = payload.get("instance")
 
     # ── Extrair dados da mensagem ──
     key = data.get("key", {})

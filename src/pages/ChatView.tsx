@@ -29,6 +29,9 @@ interface Message {
   whatsapp_id?: string | null;
   quoted_content?: string | null;
   quoted_message_id?: string | null;
+  is_edited?: boolean;
+  edited_at?: string | null;
+  original_content?: string | null;
   // Feedback de upload
   status?: 'pending' | 'success' | 'error';
   temp_id?: string;
@@ -1217,7 +1220,11 @@ export default function ChatView() {
                       </a>
                     )}
                     {msg.media_type !== 'document' && msg.content}
-                    
+                    {msg.is_edited && (
+                      <span className="msg-edited-badge" title={msg.original_content ? `Original: ${msg.original_content}` : 'Mensagem editada'}>
+                        ✏️ <em>editado</em>
+                      </span>
+                    )}
                     {msg.reaction && (
                       <div 
                         className={`message-reaction-pill ${msg.direction}`} 
@@ -1287,6 +1294,11 @@ export default function ChatView() {
                     </div>
                   </div>
                   <div className="message-status">
+                    {msg.is_edited && (
+                      <span className="msg-edited-time" title="Editado">
+                        editado
+                      </span>
+                    )}
                     <span className="time">{new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                     {msg.direction === 'out' && (
                       <div className={`status-icon ${msg.status || 'success'}`}>
