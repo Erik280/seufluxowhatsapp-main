@@ -272,19 +272,22 @@ async def _handle_messages_update(payload: dict, instance_name: str | None) -> d
         return {"status": "ignored", "reason": "unknown_instance"}
 
     for item in data_list:
-        key = item.get("key", {})
-        whatsapp_id = key.get("id")
+        whatsapp_id = item.get("keyId") or item.get("key", {}).get("id")
         if not whatsapp_id:
             continue
 
-        update = item.get("update", {})
-
         # ── Detectar edição de mensagem ──
-        # A Evolution API encapsula a edição dentro de editedMessage.message.protocolMessage
-        edited_msg = update.get("editedMessage") or {}
+        # A Evolution API pode enviar em duas estruturas diferentes:
+        # Estrutura 1: data -> update -> editedMessage -> message -> protocolMessage -> editedMessage
+        # Estrutura 2: data -> message -> editedMessage -> message
+        
+        update_obj = item.get("update") or item.get("message") or {}
+        edited_msg = update_obj.get("editedMessage") or {}
         inner_msg = edited_msg.get("message") or {}
+        
+        # Pode estar solto ou dentro de protocolMessage
         protocol = inner_msg.get("protocolMessage") or {}
-        edited_content_obj = protocol.get("editedMessage") or {}
+        edited_content_obj = protocol.get("editedMessage") or inner_msg
 
         new_text = (
             edited_content_obj.get("conversation")
