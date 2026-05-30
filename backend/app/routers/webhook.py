@@ -396,6 +396,12 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
     logger.info(f"DEBUG message_obj keys: {list(message_obj.keys())}")
     if "extendedTextMessage" in message_obj:
         logger.info(f"DEBUG extendedTextMessage full: {message_obj['extendedTextMessage']}")
+    if "messageContextInfo" in message_obj:
+        logger.info(f"DEBUG messageContextInfo full: {message_obj['messageContextInfo']}")
+    if "contextInfo" in message_obj:
+        logger.info(f"DEBUG contextInfo (root): {message_obj['contextInfo']}")
+    if "protocolMessage" in message_obj:
+        logger.info(f"DEBUG protocolMessage full: {message_obj['protocolMessage']}")
 
     # ── Extrair mensagem citada (quoted) ──
     quoted_content: str | None = None
@@ -403,6 +409,9 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
 
     # Tenta extendedTextMessage -> contextInfo -> quotedMessage
     ext_ctx = message_obj.get("extendedTextMessage", {}).get("contextInfo", {})
+    if not ext_ctx:
+        # Tenta contextInfo no nível raiz (mensagens tipo 'conversation' com quote)
+        ext_ctx = message_obj.get("contextInfo", {})
     if not ext_ctx:
         # Tenta em imageMessage, videoMessage, audioMessage, documentMessage
         for mtype in ["imageMessage", "videoMessage", "audioMessage", "documentMessage"]:
@@ -466,6 +475,45 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
             
             logger.info(f"[{instance_name}] Reação atualizada pelo webhook: msg={target_whatsapp_id}, reaction={reaction_text}")
             return {"status": "ok", "mode": "reaction_updated"}
+
+    # ── Interceptar Edições via protocolMessage (messages.upsert) ──
+    # Quando um lead edita uma mensagem, o WhatsApp envia um messages.upsert
+    # com protocolMessage.editedMessage contendo o novo texto
+    protocol_msg = message_obj.get("protocolMessage") or {}
+    if protocol_msg.get("type") == "MESSAGE_EDIT" or "editedMessage" in protocol_msg:
+        edited_content_obj = protocol_msg.get("editedMessage") or {}
+        new_text = (
+            edited_content_obj.get("conversation")
+            or edited_content_obj.get("extendedTextMessage", {}).get("text")
+        )
+        edited_waid = (protocol_msg.get("key") or {}).get("id") or key.get("id")
+
+        logger.info(f"[{instance_name}] Edição via protocolMessage: waid={edited_waid} → '{new_text}''")
+
+        if new_text and edited_waid:
+            msg_res = (
+                db.table("messages")
+                .select("id, content, is_edited, original_content")
+                .eq("company_id", company_id)
+                .eq("whatsapp_id", edited_waid)
+                .limit(1)
+                .execute()
+            )
+            if msg_res.data:
+                msg = msg_res.data[0]
+                original = msg.get("original_content") or (
+                    msg["content"] if not msg.get("is_edited") else None
+                )
+                update_payload: dict = {
+                    "content": new_text,
+                    "is_edited": True,
+                    "edited_at": "now()",
+                }
+                if original:
+                    update_payload["original_content"] = original
+                db.table("messages").update(update_payload).eq("id", msg["id"]).execute()
+                logger.info(f"[{instance_name}] ✅ Mensagem editada (upsert): '{(msg['content'] or '')[:40]}' → '{new_text[:40]}'")
+                return {"status": "ok", "mode": "message_edited"}
 
     # ── 2. Mensagens enviadas por mim (WhatsApp Web / App) ──
     if is_from_me:
