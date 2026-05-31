@@ -61,6 +61,7 @@ async def execute_flow(
     - audio      → envia presença recording + áudio PTT (URL ou biblioteca)
     - image      → envia presença composing + imagem
     - video      → envia presença composing + vídeo
+    - document   → envia presença composing + documento (PDF, DOCX, etc.)
     - delay      → pausa silenciosa (sem enviar nada)
     - composing  → envia apenas o evento "digitando..." por N segundos
     - recording  → envia apenas o evento "gravando áudio..." por N segundos
@@ -226,6 +227,11 @@ async def execute_flow(
             elif step_type == "video":
                 logger.info(f"  [video] → {content[:60]}")
                 await evolution.send_video(contact_phone, content)
+
+            elif step_type == "document":
+                filename = content.split("/")[-1].split("?")[0]  # limpa query string da URL
+                logger.info(f"  [document] → {filename} ({content[:60]})")
+                await evolution.send_document(contact_phone, content, filename=filename)
 
         except Exception as e:
             logger.error(f"Erro ao enviar step [{step_type}]: {e}")

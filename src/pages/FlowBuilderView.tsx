@@ -3,13 +3,13 @@ import { supabase, API_BASE_URL } from '../supabaseClient';
 import {
   Plus, Trash2, GripVertical, ChevronDown, ChevronUp, Copy,
   MessageSquare, Mic, Image, Video, Clock, Keyboard, Radio,
-  Play, Save, ToggleLeft, ToggleRight, X, Tag, Upload, Smile
+  Play, Save, ToggleLeft, ToggleRight, X, Tag, Upload, Smile, FileText
 } from 'lucide-react';
 import './FlowBuilderView.css';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type StepType = 'text' | 'audio' | 'image' | 'video' | 'delay' | 'composing' | 'recording' | 'react';
+type StepType = 'text' | 'audio' | 'image' | 'video' | 'delay' | 'composing' | 'recording' | 'react' | 'document';
 
 interface FlowStep {
   id: string;
@@ -41,14 +41,15 @@ interface MediaItem {
 // ─── Step type config ─────────────────────────────────────────────────────────
 
 const STEP_TYPES: { type: StepType; label: string; icon: any; color: string; hasContent: boolean; hasDelay: boolean }[] = [
-  { type: 'composing', label: 'Digitando...', icon: Keyboard, color: '#8892b0', hasContent: false, hasDelay: true },
+  { type: 'composing', label: 'Digitando...', icon: Keyboard,  color: '#8892b0', hasContent: false, hasDelay: true },
   { type: 'text',      label: 'Texto',        icon: MessageSquare, color: '#00e5cc', hasContent: true,  hasDelay: true },
-  { type: 'delay',     label: 'Pausa',        icon: Clock,   color: '#f39c12', hasContent: false, hasDelay: true },
-  { type: 'recording', label: 'Gravando...',  icon: Radio,   color: '#e74c3c', hasContent: false, hasDelay: true },
-  { type: 'audio',     label: 'Áudio PTT',    icon: Mic,     color: '#9b59b6', hasContent: true,  hasDelay: true },
-  { type: 'image',     label: 'Imagem',       icon: Image,   color: '#3498db', hasContent: true,  hasDelay: true },
-  { type: 'video',     label: 'Vídeo',        icon: Video,   color: '#e67e22', hasContent: true,  hasDelay: true },
-  { type: 'react',     label: 'Reagir',       icon: Smile,   color: '#00ff88', hasContent: true,  hasDelay: true },
+  { type: 'delay',     label: 'Pausa',        icon: Clock,     color: '#f39c12', hasContent: false, hasDelay: true },
+  { type: 'recording', label: 'Gravando...',  icon: Radio,     color: '#e74c3c', hasContent: false, hasDelay: true },
+  { type: 'audio',     label: 'Áudio PTT',    icon: Mic,       color: '#9b59b6', hasContent: true,  hasDelay: true },
+  { type: 'image',     label: 'Imagem',       icon: Image,     color: '#3498db', hasContent: true,  hasDelay: true },
+  { type: 'video',     label: 'Vídeo',        icon: Video,     color: '#e67e22', hasContent: true,  hasDelay: true },
+  { type: 'document',  label: 'Documento',    icon: FileText,  color: '#e91e8c', hasContent: true,  hasDelay: true },
+  { type: 'react',     label: 'Reagir',       icon: Smile,     color: '#00ff88', hasContent: true,  hasDelay: true },
 ];
 
 const getStepConfig = (type: StepType) => STEP_TYPES.find(t => t.type === type) || STEP_TYPES[1];
@@ -702,9 +703,17 @@ export default function FlowBuilderView() {
                             </div>
                           )}
 
-                          {(step.type === 'audio' || step.type === 'image' || step.type === 'video') && (
+                          {(step.type === 'audio' || step.type === 'image' || step.type === 'video' || step.type === 'document') && (
                             <div className="fb-field">
-                              <label>Mídia</label>
+                              <label>
+                                {step.type === 'document' ? 'Documento (PDF)' : 'Mídia'}
+                              </label>
+
+                              {step.type === 'document' && (
+                                <p style={{ fontSize: '0.75rem', color: '#8892b0', margin: '0 0 8px 0' }}>
+                                  📎 Será enviado como arquivo anexo no WhatsApp.
+                                </p>
+                              )}
 
                               {/* Selected file indicator */}
                               {step.media_library_id && (
@@ -748,9 +757,10 @@ export default function FlowBuilderView() {
                                   <option value="">Escolher da biblioteca...</option>
                                   {mediaItems
                                     .filter(m =>
-                                      step.type === 'audio' ? m.media_type === 'audio' :
-                                      step.type === 'image' ? m.media_type === 'image' :
-                                      step.type === 'video' ? m.media_type === 'video' : false
+                                      step.type === 'audio'    ? m.media_type === 'audio' :
+                                      step.type === 'image'    ? m.media_type === 'image' :
+                                      step.type === 'video'    ? m.media_type === 'video' :
+                                      step.type === 'document' ? m.media_type === 'document' : false
                                     )
                                     .map(m => (
                                       <option key={m.id} value={m.id}>{m.name}</option>
@@ -763,8 +773,10 @@ export default function FlowBuilderView() {
                                 type="file"
                                 style={{ display: 'none' }}
                                 accept={
-                                  step.type === 'audio' ? 'audio/*' :
-                                  step.type === 'image' ? 'image/*' : 'video/*'
+                                  step.type === 'audio'    ? 'audio/*' :
+                                  step.type === 'image'    ? 'image/*' :
+                                  step.type === 'video'    ? 'video/*' :
+                                  step.type === 'document' ? '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,application/pdf' : '*'
                                 }
                                 ref={el => { uploadInputRefs.current[step.id] = el; }}
                                 onChange={e => {
