@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
-import { X, Calendar, Trash2, Copy, Check } from 'lucide-react';
+import { X, Calendar, Trash2, Copy, Check, Zap } from 'lucide-react';
 import '../pages/ChatView.css';
 
 interface Contact {
@@ -58,6 +58,12 @@ export default function ContactCrmModal({ contactId, companyId, onClose }: Conta
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [newTagName, setNewTagName] = useState('');
   const [isSavingCrm, setIsSavingCrm] = useState(false);
+
+  // Send Flow Modal State
+  const [showSendFlowModal, setShowSendFlowModal] = useState(false);
+  const [selectedFlowId, setSelectedFlowId] = useState('');
+  const [isSendingFlow, setIsSendingFlow] = useState(false);
+  const [sendFlowSuccess, setSendFlowSuccess] = useState(false);
 
   // Schedule Modal State
   const [showScheduleModal, setShowScheduleModal] = useState(false);
@@ -190,6 +196,37 @@ export default function ContactCrmModal({ contactId, companyId, onClose }: Conta
     }
   };
 
+  const handleSendFlow = async () => {
+    if (!contact || !selectedFlowId) {
+      alert('Por favor, selecione um fluxo.');
+      return;
+    }
+    setIsSendingFlow(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/contacts/${contact.id}/trigger-flow`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ flow_id: selectedFlowId })
+      });
+      if (res.ok) {
+        setSendFlowSuccess(true);
+        setTimeout(() => {
+          setSendFlowSuccess(false);
+          setShowSendFlowModal(false);
+          setSelectedFlowId('');
+        }, 2000);
+      } else {
+        const err = await res.json();
+        alert(`Erro: ${err.detail || 'Não foi possível iniciar o fluxo.'}`);
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Erro de conexão ao disparar o fluxo.');
+    } finally {
+      setIsSendingFlow(false);
+    }
+  };
+
   const setScheduleOffset = (hours: number) => {
     const d = new Date();
     d.setHours(d.getHours() + hours);
@@ -303,6 +340,42 @@ export default function ContactCrmModal({ contactId, companyId, onClose }: Conta
               style={{ width: '100%', marginTop: '16px' }}
             >
               {contact.chat_status === 'bot' ? 'Pausar Fluxo' : 'Ativar Fluxo'}
+            </button>
+
+            {/* Botão Enviar Fluxo Manual */}
+            <button
+              onClick={() => { setShowSendFlowModal(true); setSelectedFlowId(''); setSendFlowSuccess(false); }}
+              style={{
+                width: '100%',
+                marginTop: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%)',
+                border: '1px solid rgba(99, 102, 241, 0.4)',
+                borderRadius: '8px',
+                padding: '10px 16px',
+                color: '#a78bfa',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.25s ease',
+                letterSpacing: '0.04em',
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(99, 102, 241, 0.28) 0%, rgba(139, 92, 246, 0.28) 100%)';
+                (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(167, 139, 250, 0.7)';
+                (e.currentTarget as HTMLButtonElement).style.color = '#c4b5fd';
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%)';
+                (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(99, 102, 241, 0.4)';
+                (e.currentTarget as HTMLButtonElement).style.color = '#a78bfa';
+              }}
+            >
+              <Zap size={15} />
+              Enviar Fluxo Agora
             </button>
 
             <div className="crm-section">
@@ -431,6 +504,108 @@ export default function ContactCrmModal({ contactId, companyId, onClose }: Conta
           </div>
         </div>
       </div>
+
+      {/* Modal de Envio de Fluxo Manual */}
+      {showSendFlowModal && (
+        <div
+          className="schedule-modal-overlay"
+          style={{ zIndex: 10002 }}
+          onClick={() => setShowSendFlowModal(false)}
+        >
+          <div
+            className="schedule-modal-content"
+            style={{ maxWidth: '440px' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="schedule-modal-header">
+              <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Zap size={18} style={{ color: '#a78bfa' }} />
+                Enviar Fluxo para Lead
+              </h2>
+              <button className="close-btn" onClick={() => setShowSendFlowModal(false)}>✕</button>
+            </div>
+
+            <div className="schedule-modal-body">
+              <p style={{ color: '#8892b0', fontSize: '0.82rem', marginBottom: '16px', lineHeight: 1.5 }}>
+                Selecione um fluxo ativo. As mensagens serão enviadas imediatamente em sequência para
+                <strong style={{ color: '#ccd6f6' }}> {contact.name || contact.phone}</strong>,
+                independente de gatilhos.
+              </p>
+
+              <div className="form-group">
+                <label>Selecione o Fluxo</label>
+                {chatFlows.length === 0 ? (
+                  <p style={{ color: '#8892b0', fontSize: '0.82rem', fontStyle: 'italic', padding: '10px 0' }}>
+                    Nenhum fluxo cadastrado. Crie um fluxo no Construtor de Fluxos primeiro.
+                  </p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+                    {chatFlows.map(flow => (
+                      <label
+                        key={flow.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '10px 14px',
+                          borderRadius: '8px',
+                          border: `1px solid ${selectedFlowId === flow.id ? 'rgba(167, 139, 250, 0.6)' : 'rgba(255,255,255,0.08)'}`,
+                          background: selectedFlowId === flow.id ? 'rgba(99, 102, 241, 0.12)' : 'rgba(255,255,255,0.03)',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        <input
+                          type="radio"
+                          name="flowSelect"
+                          value={flow.id}
+                          checked={selectedFlowId === flow.id}
+                          onChange={() => setSelectedFlowId(flow.id)}
+                          style={{ accentColor: '#a78bfa', width: '16px', height: '16px', cursor: 'pointer' }}
+                        />
+                        <span style={{
+                          color: selectedFlowId === flow.id ? '#c4b5fd' : '#ccd6f6',
+                          fontSize: '0.85rem',
+                          fontWeight: selectedFlowId === flow.id ? 600 : 400,
+                        }}>
+                          {flow.name}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="schedule-modal-footer">
+              <button className="cancel-btn" onClick={() => setShowSendFlowModal(false)}>Cancelar</button>
+              <button
+                className="confirm-btn"
+                onClick={handleSendFlow}
+                disabled={isSendingFlow || !selectedFlowId || sendFlowSuccess}
+                style={{
+                  background: sendFlowSuccess
+                    ? 'linear-gradient(135deg, #00c96b 0%, #00e5a0 100%)'
+                    : 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.3s ease',
+                }}
+              >
+                {sendFlowSuccess ? (
+                  <><Check size={15} /> Fluxo Iniciado!</>
+                ) : isSendingFlow ? (
+                  'Disparando...'
+                ) : (
+                  <><Zap size={15} /> Disparar Fluxo</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showScheduleModal && (
         <div className="schedule-modal-overlay" style={{ zIndex: 10002 }}>

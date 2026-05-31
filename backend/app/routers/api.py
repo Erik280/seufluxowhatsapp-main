@@ -1122,6 +1122,65 @@ async def schedule_contact_message(contact_id: str, body: ScheduleMessageRequest
     return {"message": "Agendado com sucesso", "flow_id": final_flow_id}
 
 
+# ========================
+# Disparo Manual de Fluxo (sem gatilho)
+# ========================
+
+class TriggerFlowRequest(BaseModel):
+    flow_id: str
+
+@router.post("/contacts/{contact_id}/trigger-flow")
+async def trigger_flow_for_contact(contact_id: str, body: TriggerFlowRequest, background_tasks: BackgroundTasks):
+    """
+    Dispara imediatamente um fluxo existente para um contato específico,
+    sem precisar de gatilho (keyword ou estágio). Acionado manualmente pelo usuário.
+    """
+    db = get_supabase()
+
+    # 1. Buscar dados do contato
+    contact_res = db.table("contacts").select("*").eq("id", contact_id).execute()
+    if not contact_res.data:
+        raise HTTPException(status_code=404, detail="Contato não encontrado")
+    contact = contact_res.data[0]
+    company_id = contact["company_id"]
+
+    # 2. Verificar se o fluxo existe e pertence à empresa
+    flow_res = db.table("chat_flows").select("id, name, is_active").eq("id", body.flow_id).eq("company_id", company_id).execute()
+    if not flow_res.data:
+        raise HTTPException(status_code=404, detail="Fluxo não encontrado ou não pertence a esta empresa")
+
+    # 3. Buscar configuração da Evolution API
+    company_res = db.table("companies").select("evolution_instance, evolution_apikey").eq("id", company_id).execute()
+    if not company_res.data:
+        raise HTTPException(status_code=404, detail="Empresa não encontrada")
+
+    company = company_res.data[0]
+    instance = company.get("evolution_instance")
+    apikey = company.get("evolution_apikey")
+
+    if not instance or not apikey:
+        raise HTTPException(status_code=400, detail="Evolution API não configurada para esta empresa")
+
+    # 4. Disparar o fluxo em background
+    from app.services.evolution import EvolutionAPI
+    from app.services.bot_engine import execute_flow
+
+    evolution = EvolutionAPI(instance, apikey)
+    background_tasks.add_task(
+        execute_flow,
+        company_id=company_id,
+        contact_id=contact_id,
+        contact_phone=contact["phone"],
+        flow_id=body.flow_id,
+        evolution=evolution,
+        contact=contact,
+    )
+
+    flow_name = flow_res.data[0]["name"]
+    logger.info(f"[Manual Trigger] Fluxo '{flow_name}' ({body.flow_id}) disparado manualmente para contato {contact_id}")
+
+    return {"message": f"Fluxo '{flow_name}' iniciado com sucesso para o contato.", "flow_id": body.flow_id}
+
 
 # ========================
 # TAGS
