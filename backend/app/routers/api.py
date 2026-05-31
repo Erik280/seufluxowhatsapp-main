@@ -772,6 +772,53 @@ async def delete_message(message_id: str):
     return None
 
 
+from app.models.schemas import EditMessageRequest
+from datetime import datetime, timezone
+
+@router.patch("/messages/{message_id}/edit")
+async def edit_message(message_id: str, body: EditMessageRequest):
+    """
+    Edita o conteúdo de uma mensagem de texto já enviada.
+    Salva o conteúdo original, marca como editada e registra o horário da edição.
+    Nota: A edição é apenas interna (painel); não altera a mensagem no WhatsApp do destinatário.
+    """
+    db = get_supabase()
+
+    new_content = body.new_content.strip()
+    if not new_content:
+        raise HTTPException(status_code=400, detail="O novo conteúdo não pode ser vazio.")
+
+    # 1. Buscar a mensagem atual
+    msg_res = db.table("messages").select("*").eq("id", message_id).execute()
+    if not msg_res.data:
+        raise HTTPException(status_code=404, detail="Message not found")
+
+    msg = msg_res.data[0]
+
+    # 2. Apenas mensagens de texto (sem mídia) podem ser editadas
+    if msg.get("media_type"):
+        raise HTTPException(status_code=400, detail="Apenas mensagens de texto podem ser editadas.")
+
+    # 3. Guardar conteúdo original (apenas na primeira edição)
+    original_content = msg.get("original_content") or msg.get("content")
+
+    # 4. Atualizar no banco
+    update_data = {
+        "content": new_content,
+        "is_edited": True,
+        "edited_at": datetime.now(timezone.utc).isoformat(),
+        "original_content": original_content,
+    }
+
+    result = db.table("messages").update(update_data).eq("id", message_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=500, detail="Erro ao editar mensagem.")
+
+    logger.info(f"Mensagem {message_id} editada. Original: '{original_content}' → Novo: '{new_content}'")
+    return result.data[0]
+
+
+
 # ========================
 # KANBAN STAGES & TAGS
 # ========================

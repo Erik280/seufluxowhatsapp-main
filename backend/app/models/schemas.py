@@ -160,6 +160,9 @@ class MessageResponse(MessageBase):
 class ReactMessageRequest(BaseModel):
     reaction: str
 
+class EditMessageRequest(BaseModel):
+    new_content: str
+
 
 
 # ========================

@@ -1585,7 +1585,7 @@
   pointer-events: auto;
 }
 
-.react-msg-btn, .save-qr-btn, .forward-msg-btn, .delete-msg-btn {
+.react-msg-btn, .save-qr-btn, .forward-msg-btn, .edit-msg-btn, .delete-msg-btn {
   background: transparent;
   border: none;
   color: var(--color-text-muted);
@@ -1619,6 +1619,12 @@
 .delete-msg-btn:hover {
   color: #ff6b6b;
   background: rgba(255, 107, 107, 0.1);
+  transform: scale(1.15);
+}
+
+.edit-msg-btn:hover {
+  color: #f4d03f;
+  background: rgba(244, 208, 63, 0.1);
   transform: scale(1.15);
 }
 
@@ -1736,4 +1742,89 @@
   color: rgba(168, 178, 209, 0.5);
   font-style: italic;
   margin-right: 2px;
+}
+
+/* ── Inline Message Edit ── */
+.msg-edit-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  animation: edit-fade-in 0.15s ease;
+}
+
+@keyframes edit-fade-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.msg-edit-textarea {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(0, 229, 204, 0.5);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: inherit;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  resize: none;
+  outline: none;
+  font-family: inherit;
+  box-shadow: 0 0 0 2px rgba(0, 229, 204, 0.15);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  min-width: 180px;
+}
+
+.msg-edit-textarea:focus {
+  border-color: var(--color-neon-cyan);
+  box-shadow: 0 0 0 3px rgba(0, 229, 204, 0.25);
+}
+
+.msg-edit-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.msg-edit-cancel {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(168, 178, 209, 0.7);
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.msg-edit-cancel:hover {
+  border-color: rgba(255, 107, 107, 0.5);
+  color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.08);
+}
+
+.msg-edit-confirm {
+  background: rgba(0, 229, 204, 0.12);
+  border: 1px solid rgba(0, 229, 204, 0.4);
+  color: var(--color-neon-cyan);
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s;
+}
+
+.msg-edit-confirm:hover:not(:disabled) {
+  background: rgba(0, 229, 204, 0.22);
+  box-shadow: 0 0 10px rgba(0, 229, 204, 0.25);
+  transform: translateY(-1px);
+}
+
+.msg-edit-confirm:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { FolderOpen, Plus, Mic, Trash2, Send, FileText, Zap, Filter, ArrowLeft, Smile, Forward, Search, Check } from 'lucide-react';
+import { FolderOpen, Plus, Mic, Trash2, Send, FileText, Zap, Filter, ArrowLeft, Smile, Forward, Search, Check, Pencil } from 'lucide-react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
 import ContactCrmModal from '../components/ContactCrmModal';
 import './ChatView.css';
@@ -122,6 +122,67 @@ export default function ChatView() {
   const [forwardSelected, setForwardSelected] = useState<string[]>([]);
   const [forwardNote, setForwardNote] = useState('');
   const [isForwarding, setIsForwarding] = useState(false);
+
+  // Edit Message state
+  const [editingMsgId, setEditingMsgId] = useState<string | null>(null);
+  const [editingContent, setEditingContent] = useState('');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const editInputRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleEditMessage = async (messageId: string) => {
+    const trimmed = editingContent.trim();
+    if (!trimmed) return;
+
+    // Optimistic update
+    setMessages(prev => prev.map(m => m.id === messageId
+      ? { ...m, content: trimmed, is_edited: true, edited_at: new Date().toISOString(), original_content: m.original_content || m.content }
+      : m
+    ));
+    setEditingMsgId(null);
+    setIsSavingEdit(true);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/messages/${messageId}/edit`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ new_content: trimmed })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setMessages(prev => prev.map(m => m.id === messageId ? { ...m, ...data } : m));
+        showToast('Mensagem editada com sucesso!');
+      } else {
+        const err = await response.json();
+        showToast(err.detail || 'Erro ao editar mensagem.', 'error');
+        // Rollback: refetch messages
+        if (selectedContact) {
+          const { data: fresh } = await supabase.from('messages').select('*').eq('contact_id', selectedContact.id).order('created_at', { ascending: true });
+          if (fresh) setMessages(fresh);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to edit message', err);
+      showToast('Falha ao editar mensagem.', 'error');
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  const startEditing = (msg: Message) => {
+    setEditingMsgId(msg.id);
+    setEditingContent(msg.content || '');
+    setActiveReactionMenuMsgId(null);
+    setTimeout(() => {
+      editInputRef.current?.focus();
+      editInputRef.current?.select();
+    }, 50);
+  };
+
+  const cancelEditing = () => {
+    setEditingMsgId(null);
+    setEditingContent('');
+  };
 
   const handleReactMessage = async (messageId: string, emoji: string) => {
     if (!companyId) return;
@@ -1219,11 +1280,46 @@ export default function ChatView() {
                         <span className="pdf-open">Abrir</span>
                       </a>
                     )}
-                    {msg.media_type !== 'document' && msg.content}
-                    {msg.is_edited && (
-                      <span className="msg-edited-badge" title={msg.original_content ? `Original: ${msg.original_content}` : 'Mensagem editada'}>
-                        ✏️ <em>editado</em>
-                      </span>
+
+                    {/* Inline Edit Mode */}
+                    {editingMsgId === msg.id ? (
+                      <div className="msg-edit-inline" onClick={e => e.stopPropagation()}>
+                        <textarea
+                          ref={editInputRef}
+                          className="msg-edit-textarea"
+                          value={editingContent}
+                          onChange={e => setEditingContent(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleEditMessage(msg.id);
+                            }
+                            if (e.key === 'Escape') cancelEditing();
+                          }}
+                          rows={Math.max(1, editingContent.split('\n').length)}
+                        />
+                        <div className="msg-edit-actions">
+                          <button className="msg-edit-cancel" onClick={cancelEditing} title="Cancelar (Esc)">Cancelar</button>
+                          <button
+                            className="msg-edit-confirm"
+                            onClick={() => handleEditMessage(msg.id)}
+                            disabled={!editingContent.trim() || isSavingEdit}
+                            title="Salvar (Enter)"
+                          >
+                            <Check size={13} />
+                            Salvar
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {msg.media_type !== 'document' && msg.content}
+                        {msg.is_edited && (
+                          <span className="msg-edited-badge" title={msg.original_content ? `Original: ${msg.original_content}` : 'Mensagem editada'}>
+                            ✏️ <em>editado</em>
+                          </span>
+                        )}
+                      </>
                     )}
                     {msg.reaction && (
                       <div 
@@ -1267,6 +1363,16 @@ export default function ChatView() {
                       >
                         <Forward size={14} />
                       </button>
+                      {/* Edit button — only for outgoing text messages (no media) */}
+                      {msg.direction === 'out' && !msg.media_type && msg.status !== 'pending' && (
+                        <button
+                          className="edit-msg-btn"
+                          onClick={() => startEditing(msg)}
+                          title="Editar Mensagem"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                      )}
                       <button
                         className="delete-msg-btn"
                         onClick={() => handleDeleteMessage(msg.id)}
