@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { FolderOpen, Plus, Mic, Trash2, Send, FileText, Zap, Filter, ArrowLeft, Smile, Forward, Search, Check, Pencil } from 'lucide-react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
 import ContactCrmModal from '../components/ContactCrmModal';
@@ -826,6 +826,49 @@ export default function ChatView() {
     return `${m}:${s}`;
   };
 
+  /** Retorna o rótulo de data para separadores de dia entre mensagens */
+  const getDateSeparatorLabel = (dateStr: string): string => {
+    const d = new Date(dateStr);
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+
+    const isSameDay = (a: Date, b: Date) =>
+      a.getFullYear() === b.getFullYear() &&
+      a.getMonth() === b.getMonth() &&
+      a.getDate() === b.getDate();
+
+    if (isSameDay(d, today)) return 'Hoje';
+    if (isSameDay(d, yesterday)) return 'Ontem';
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  };
+
+  /** Retorna a chave de dia (YYYY-MM-DD) para comparar mensagens de dias diferentes */
+  const getDayKey = (dateStr: string): string => {
+    const d = new Date(dateStr);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+  /** Formata o timestamp da mensagem com contexto de data */
+  const formatMsgTimestamp = (dateStr: string): string => {
+    const d = new Date(dateStr);
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+
+    const isSameDay = (a: Date, b: Date) =>
+      a.getFullYear() === b.getFullYear() &&
+      a.getMonth() === b.getMonth() &&
+      a.getDate() === b.getDate();
+
+    const timeStr = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+    if (isSameDay(d, today)) return `Hoje ${timeStr}`;
+    if (isSameDay(d, yesterday)) return `Ontem ${timeStr}`;
+    const dateLabel = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return `${dateLabel} às ${timeStr}`;
+  };
+
   const handleSendLibraryMedia = async (mediaId: string) => {
     if (!selectedContact || !companyId) return;
     try {
@@ -1230,7 +1273,18 @@ export default function ChatView() {
                   </div>
                 </div>
               )}
-              {messages.map((msg, idx) => (
+              {messages.map((msg, idx) => {
+                const currentDayKey = getDayKey(msg.created_at);
+                const prevDayKey = idx > 0 ? getDayKey(messages[idx - 1].created_at) : null;
+                const showDateSeparator = currentDayKey !== prevDayKey;
+
+                return (
+                <React.Fragment key={msg.id || idx}>
+                  {showDateSeparator && (
+                    <div className="date-separator" key={`sep-${currentDayKey}`}>
+                      <span>{getDateSeparatorLabel(msg.created_at)}</span>
+                    </div>
+                  )}
                 <div id={`msg-${msg.id}`} key={msg.id || idx} className={`message ${msg.direction}`}>
                   <div className={`bubble ${msg.status === 'pending' ? 'pending' : ''}`}>
                     {/* Bloco de mensagem citada (quoted) */}
@@ -1405,7 +1459,9 @@ export default function ChatView() {
                         editado
                       </span>
                     )}
-                    <span className="time">{new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    <span className="time" title={formatMsgTimestamp(msg.created_at)}>
+                      {new Date(msg.created_at).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}
+                    </span>
                     {msg.direction === 'out' && (
                       <div className={`status-icon ${msg.status || 'success'}`}>
                         {msg.status === 'pending' ? (
@@ -1423,7 +1479,9 @@ export default function ChatView() {
                     )}
                   </div>
                 </div>
-              ))}
+                </React.Fragment>
+                );
+              })}
               <div ref={messagesEndRef} />
             </div>
             <footer className="message-input-area">

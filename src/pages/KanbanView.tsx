@@ -413,6 +413,7 @@ export default function KanbanView() {
   const [isQuickChatOpen, setIsQuickChatOpen] = useState(false);
   const [showCrmModal, setShowCrmModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const [companyTags, setCompanyTags] = useState<any[]>([]);
   const [selectedTagFilterId, setSelectedTagFilterId] = useState<string>('');
 
@@ -776,9 +777,38 @@ export default function KanbanView() {
             </select>
           </div>
         </div>
-        <button className="kb-btn-new-col" onClick={openNewStageModal}>
-          <Plus size={16} /> Nova Coluna
-        </button>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <button
+            onClick={() => setShowUnreadOnly(v => !v)}
+            title={showUnreadOnly ? 'Exibindo apenas não lidas' : 'Filtrar não lidas'}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 16px',
+              borderRadius: '8px',
+              border: `1px solid ${showUnreadOnly ? '#00E5CC' : 'rgba(255,255,255,0.12)'}`,
+              background: showUnreadOnly ? 'rgba(0,229,204,0.15)' : 'rgba(255,255,255,0.04)',
+              color: showUnreadOnly ? '#00E5CC' : '#8892b0',
+              cursor: 'pointer',
+              fontSize: '0.85rem',
+              fontWeight: showUnreadOnly ? 600 : 400,
+              transition: 'all 0.2s',
+              boxShadow: showUnreadOnly ? '0 0 12px rgba(0,229,204,0.25)' : 'none',
+            }}
+          >
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: showUnreadOnly ? '#00E5CC' : '#8892b0', flexShrink: 0, boxShadow: showUnreadOnly ? '0 0 6px #00E5CC' : 'none' }} />
+            Não Lidas
+            {showUnreadOnly && (
+              <span style={{ background: '#00E5CC', color: '#000', fontSize: '0.7rem', fontWeight: 700, borderRadius: '10px', padding: '1px 6px' }}>
+                {contacts.filter(c => (c.unread_count || 0) > 0).length}
+              </span>
+            )}
+          </button>
+          <button className="kb-btn-new-col" onClick={openNewStageModal}>
+            <Plus size={16} /> Nova Coluna
+          </button>
+        </div>
       </header>
 
       <div className={`kanban-board-container ${isQuickChatOpen ? 'quick-chat-open' : ''}`}>
@@ -788,6 +818,7 @@ export default function KanbanView() {
           {(() => {
             const unassignedContacts = contacts
               .filter(c => !c.stage_id)
+              .filter(c => !showUnreadOnly || (c.unread_count || 0) > 0)
               .filter(c => {
                 if (selectedTagFilterId) {
                   return c.contact_tags?.some(ct => ct.tag_id === selectedTagFilterId);
@@ -847,7 +878,15 @@ export default function KanbanView() {
                         draggable
                         onDragStart={e => handleCardDragStart(e, contact.id)}
                         onDragEnd={e => handleCardDragEnd(e, contact.id)}
-                        onClick={() => { setSelectedContact(contact); setIsQuickChatOpen(true); }}
+                        onClick={async () => {
+                          // Marcar como lida ao abrir o chat
+                          if ((contact.unread_count || 0) > 0) {
+                            setContacts(prev => prev.map(c => c.id === contact.id ? { ...c, unread_count: 0 } : c));
+                            try { await fetch(`${API_BASE_URL}/api/contacts/${contact.id}/read`, { method: 'POST' }); } catch (e) { console.error('mark read failed', e); }
+                          }
+                          setSelectedContact(contact);
+                          setIsQuickChatOpen(true);
+                        }}
                         className={`task-card ${selectedContact?.id === contact.id ? 'selected' : ''}`}
                       >
                         <div className="task-name">
@@ -910,6 +949,7 @@ export default function KanbanView() {
           {stages.map((stage, colIdx) => {
             const stageContacts = contacts
               .filter(c => c.stage_id === stage.id)
+              .filter(c => !showUnreadOnly || (c.unread_count || 0) > 0)
               .filter(c => {
                 if (selectedTagFilterId) {
                   return c.contact_tags?.some(ct => ct.tag_id === selectedTagFilterId);
@@ -997,7 +1037,15 @@ export default function KanbanView() {
                       draggable
                       onDragStart={e => handleCardDragStart(e, contact.id)}
                       onDragEnd={e => handleCardDragEnd(e, contact.id)}
-                      onClick={() => { setSelectedContact(contact); setIsQuickChatOpen(true); }}
+                      onClick={async () => {
+                        // Marcar como lida ao abrir o chat
+                        if ((contact.unread_count || 0) > 0) {
+                          setContacts(prev => prev.map(c => c.id === contact.id ? { ...c, unread_count: 0 } : c));
+                          try { await fetch(`${API_BASE_URL}/api/contacts/${contact.id}/read`, { method: 'POST' }); } catch (e) { console.error('mark read failed', e); }
+                        }
+                        setSelectedContact(contact);
+                        setIsQuickChatOpen(true);
+                      }}
                       className={`task-card ${isRunning ? 'flow-active' : ''} ${selectedContact?.id === contact.id ? 'selected' : ''}`}
                     >
                       <div className="task-name">
