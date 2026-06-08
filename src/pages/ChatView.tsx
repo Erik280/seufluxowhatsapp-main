@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { FolderOpen, Plus, Mic, Trash2, Send, FileText, Zap, Filter, ArrowLeft, Smile, Forward, Search, Check, Pencil } from 'lucide-react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
 import ContactCrmModal from '../components/ContactCrmModal';
+import { useAuth } from '../context/AuthContext';
 import './ChatView.css';
 
 interface Contact {
@@ -47,6 +48,7 @@ interface QuickReply {
 }
 
 export default function ChatView() {
+  const { user } = useAuth();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [stages, setStages] = useState<any[]>([]);
@@ -433,7 +435,8 @@ export default function ChatView() {
         body: JSON.stringify({
           contact_id: selectedContact.id,
           company_id: companyId,
-          text: text
+          text: text,
+          user_id: user?.id || null  // Para concatenar assinatura do atendente
         })
       });
 

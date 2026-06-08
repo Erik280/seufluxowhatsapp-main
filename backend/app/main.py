@@ -10,6 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.routers import webhook, api, evolution_router
+from app.routers.admin_router import router as admin_router
 from app.services.scheduler import start_scheduler, stop_scheduler
 
 
@@ -67,6 +68,7 @@ app.add_middleware(
 app.include_router(webhook.router)
 app.include_router(api.router)
 app.include_router(evolution_router.router)
+app.include_router(admin_router)
 
 
 # ── Health Check ──

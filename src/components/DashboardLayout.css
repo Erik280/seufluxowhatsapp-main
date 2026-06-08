@@ -142,6 +142,38 @@
   background: rgba(255, 107, 107, 0.08);
 }
 
+/* ---- User Role Badge ---- */
+.user-role-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.role-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: block;
+}
+
+.role-dot.role-admin,
+.role-dot.role-superadmin {
+  background: #00FF88;
+  box-shadow: 0 0 6px rgba(0, 255, 136, 0.6);
+}
+
+.role-dot.role-manager {
+  background: #00E5CC;
+  box-shadow: 0 0 6px rgba(0, 229, 204, 0.6);
+}
+
+.role-dot.role-agent {
+  background: #8892b0;
+  box-shadow: 0 0 4px rgba(136, 146, 176, 0.4);
+}
+
+
 /* ---- Content Area ---- */
 .dashboard-content {
   flex: 1;

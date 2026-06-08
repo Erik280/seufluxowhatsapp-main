@@ -21,6 +21,7 @@ class ChatStatus(str, Enum):
 class UserRole(str, Enum):
     superadmin = "superadmin"
     admin = "admin"
+    manager = "manager"
     agent = "agent"
 
 class MessageDirection(str, Enum):
@@ -57,6 +58,22 @@ class CompanyResponse(CompanyBase):
 
 
 # ========================
+# Department
+# ========================
+
+class DepartmentBase(BaseModel):
+    name: str
+
+class DepartmentCreate(DepartmentBase):
+    company_id: str
+
+class DepartmentResponse(DepartmentBase):
+    id: str
+    company_id: str
+    created_at: datetime
+
+
+# ========================
 # User
 # ========================
 
@@ -64,15 +81,27 @@ class UserBase(BaseModel):
     email: str
     name: Optional[str] = None
     role: UserRole = UserRole.agent
+    department_id: Optional[str] = None
 
 class UserCreate(UserBase):
     company_id: str
+
+# Schema para criação de usuário pelo Admin via Supabase Admin API
+class AdminUserCreate(BaseModel):
+    email: str
+    password: str
+    name: Optional[str] = None
+    role: UserRole = UserRole.agent
+    department_id: Optional[str] = None
+    company_id: str  # Será validado no backend contra o company_id do admin
 
 class UserResponse(UserBase):
     id: str
     company_id: str
     is_active: bool
     created_at: datetime
+    signature: Optional[str] = None
+    department_id: Optional[str] = None
 
 
 # ========================

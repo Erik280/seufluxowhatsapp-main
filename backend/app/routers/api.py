@@ -283,6 +283,7 @@ class SendMessageRequest(BaseModel):
     contact_id: str
     company_id: str
     text: str
+    user_id: Optional[str] = None  # ID do usuário que está enviando (para assinatura)
 
 @router.post("/messages/send")
 async def send_manual_message(body: SendMessageRequest):
@@ -308,7 +309,14 @@ async def send_manual_message(body: SendMessageRequest):
         
     phone = contact_res.data[0]["phone"]
     
-    # 3. Enviar a mensagem pela Evolution API
+    # 3. Verificar assinatura do usuário que enviou
+    final_text = body.text
+    if body.user_id:
+        user_res = db.table("users").select("signature").eq("id", body.user_id).execute()
+        if user_res.data and user_res.data[0].get("signature"):
+            final_text = f"{body.text}\n\n{user_res.data[0]['signature']}"
+    
+    # 4. Enviar a mensagem pela Evolution API
     from app.services.evolution import EvolutionAPI
     evolution = EvolutionAPI(instance, apikey)
     
@@ -316,26 +324,26 @@ async def send_manual_message(body: SendMessageRequest):
     await evolution.send_presence(phone, composing=True)
     
     # Enviar
-    resp = await evolution.send_text(phone, body.text)
+    resp = await evolution.send_text(phone, final_text)
     
     if "error" in resp:
         raise HTTPException(status_code=500, detail=f"Evolution API Error: {resp['error']}")
         
     whatsapp_id = resp.get("key", {}).get("id")
         
-    # 4. Salvar no banco
+    # 5. Salvar no banco (com assinatura já concatenada)
     msg_result = db.table("messages").insert({
         "company_id": body.company_id,
         "contact_id": body.contact_id,
         "direction": "out",
-        "content": body.text,
+        "content": final_text,
         "whatsapp_id": whatsapp_id,
     }).execute()
     
-    # 5. Atualizar contato
+    # 6. Atualizar contato
     db.table("contacts").update({
         "last_message": "now()",
-        "last_message_content": body.text
+        "last_message_content": body.text  # Armazena o texto original sem assinatura no preview
     }).eq("id", body.contact_id).execute()
     
     return msg_result.data[0] if msg_result.data else {"status": "sent"}
