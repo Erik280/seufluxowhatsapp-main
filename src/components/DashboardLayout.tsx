@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import { MessageCircle, Kanban, Settings, LogOut, Zap, Megaphone, FolderOpen, Keyboard, Menu, X, Users } from 'lucide-react';
+import { MessageCircle, Kanban, Settings, LogOut, Zap, Megaphone, FolderOpen, Keyboard, Menu, X, Users, Crown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import './DashboardLayout.css';
 
-type ViewType = 'chat' | 'kanban' | 'settings' | 'media' | 'flows' | 'campaigns' | 'quick-replies' | 'team';
+type ViewType = 'chat' | 'kanban' | 'settings' | 'media' | 'flows' | 'campaigns' | 'quick-replies' | 'team' | 'superadmin';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -201,6 +201,17 @@ export default function DashboardLayout({ children, activeView, onViewChange }: 
                 <Users size={22} />
               </button>
             </>
+          )}
+
+          {/* Painel exclusivo SUPERADMIN */}
+          {user?.role === 'superadmin' && (
+            <button
+              className={`nav-btn nav-btn--superadmin ${activeView === 'superadmin' ? 'active-superadmin' : ''}`}
+              onClick={() => handleViewChange('superadmin')}
+              title="Painel Global (SuperAdmin)"
+            >
+              <Crown size={22} />
+            </button>
           )}
 
           {/* Configurações — todos podem acessar */}

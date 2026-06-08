@@ -142,6 +142,27 @@
   background: rgba(255, 107, 107, 0.08);
 }
 
+/* ---- SuperAdmin Crown Button ---- */
+.nav-btn--superadmin {
+  margin-top: 4px;
+  color: rgba(255, 215, 0, 0.5) !important;
+  border: 1px dashed rgba(255, 215, 0, 0.25) !important;
+}
+
+.nav-btn--superadmin:hover {
+  color: #FFD700 !important;
+  background: rgba(255, 215, 0, 0.08) !important;
+  border-color: rgba(255, 215, 0, 0.4) !important;
+}
+
+.active-superadmin {
+  color: #FFD700 !important;
+  background: rgba(255, 215, 0, 0.1) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 215, 0, 0.25) !important;
+  border-style: solid !important;
+}
+
+
 /* ---- User Role Badge ---- */
 .user-role-badge {
   display: flex;
