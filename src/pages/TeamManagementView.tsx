@@ -29,9 +29,7 @@ interface TeamUser {
   created_at: string;
 }
 
-interface CompanyInfo {
-  max_users: number;
-}
+
 
 // ============================================================
 // Helpers
