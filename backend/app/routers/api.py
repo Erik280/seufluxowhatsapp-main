@@ -7,6 +7,7 @@ import logging
 import uuid
 import re
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel
 from app.database import get_supabase
 from app.services.storage import StorageService
