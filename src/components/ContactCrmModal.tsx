@@ -36,8 +36,8 @@ interface AttendanceSession {
   ended_at: string | null;
   department_id: string | null;
   user_id: string | null;
-  departments?: { name: string };
-  users?: { name: string, email: string };
+  departments?: { name: string } | any;
+  users?: { name: string, email: string } | any;
 }
 
 interface ContactCrmModalProps {
@@ -567,9 +567,6 @@ export default function ContactCrmModal({ contactId, companyId, onClose }: Conta
                 )}
               </div>
             )}
-          </div>
-        </div>
-      </div>
           </div>
         </div>
       </div>

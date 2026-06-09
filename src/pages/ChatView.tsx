@@ -1974,6 +1974,55 @@ export default function ChatView() {
           </div>
         </div>
       )}
+
+      {/* Transfer Modal */}
+      {showTransferModal && (
+        <div className="modal-overlay" onClick={() => setShowTransferModal(false)}>
+          <div className="modal-content new-chat-modal" onClick={e => e.stopPropagation()}>
+            <h2>Transferir Atendimento</h2>
+            <div className="form-group">
+              <label>Setor de Destino</label>
+              <select 
+                value={transferDepartmentId} 
+                onChange={e => setTransferDepartmentId(e.target.value)}
+                style={{ width: '100%', padding: '10px', borderRadius: '8px', background: '#1a1f36', border: '1px solid #323d5e', color: '#fff' }}
+              >
+                <option value="">Selecione o Setor</option>
+                {allDepartments.map(d => (
+                  <option key={d.id} value={d.id}>{d.name}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="form-group">
+              <label>Atendente (Opcional)</label>
+              <select 
+                value={transferUserId} 
+                onChange={e => setTransferUserId(e.target.value)}
+                style={{ width: '100%', padding: '10px', borderRadius: '8px', background: '#1a1f36', border: '1px solid #323d5e', color: '#fff' }}
+                disabled={!transferDepartmentId}
+              >
+                <option value="">Fila Geral do Setor</option>
+                {allUsers.filter(u => u.department_id === transferDepartmentId).map(u => (
+                  <option key={u.id} value={u.id}>{u.name || u.email}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="modal-actions" style={{ marginTop: '20px' }}>
+              <button className="cancel-btn" onClick={() => setShowTransferModal(false)}>Cancelar</button>
+              <button 
+                className="save-btn" 
+                style={{ background: '#e74c3c' }}
+                onClick={handleTransferContact} 
+                disabled={!transferDepartmentId || isTransferring}
+              >
+                {isTransferring ? 'Transferindo...' : 'Transferir'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
