@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
-import { Zap, Settings, X, ToggleLeft, ToggleRight, Plus, Trash2, GripVertical, AlertTriangle, Search, FileText } from 'lucide-react';
+import { Zap, Settings, X, ToggleLeft, ToggleRight, Plus, Trash2, GripVertical, AlertTriangle, Search, FileText, Forward } from 'lucide-react';
 import QuickChat from '../components/QuickChat';
 import ContactCrmModal from '../components/ContactCrmModal';
 import { useAuth } from '../context/AuthContext';
@@ -388,6 +388,7 @@ export default function KanbanView() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [flows, setFlows] = useState<Flow[]>([]);
   const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [allDepartments, setAllDepartments] = useState<any[]>([]);
   const [companyId, setCompanyId] = useState<string>('');
   // Maps flow_id → total number of steps (for header badge and timeline)
   const [flowStepCounts, setFlowStepCounts] = useState<Record<string, number>>({});
@@ -421,6 +422,12 @@ export default function KanbanView() {
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const [companyTags, setCompanyTags] = useState<any[]>([]);
   const [selectedTagFilterId, setSelectedTagFilterId] = useState<string>('');
+
+  // Transfer Modal State
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferDepartmentId, setTransferDepartmentId] = useState('');
+  const [transferUserId, setTransferUserId] = useState('');
+  const [isTransferring, setIsTransferring] = useState(false);
 
   const fetchTags = async (cId: string) => {
     try {
@@ -467,14 +474,16 @@ export default function KanbanView() {
       }
       contactsQuery = contactsQuery.order('last_message', { ascending: false, nullsFirst: false });
 
-      const [stagesRes, contactsRes, flowsRes, usersRes] = await Promise.all([
+      const [stagesRes, contactsRes, flowsRes, usersRes, deptsRes] = await Promise.all([
         supabase.from('kanban_stages').select('*').eq('company_id', userData.company_id).order('order_index'),
         contactsQuery,
         supabase.from('chat_flows').select('id, name, is_active').eq('company_id', userData.company_id).order('name'),
-        supabase.from('users').select('id, name, email').eq('company_id', userData.company_id)
+        supabase.from('users').select('id, name, email').eq('company_id', userData.company_id),
+        supabase.from('departments').select('id, name').eq('company_id', userData.company_id).order('name')
       ]);
       
       if (usersRes.data) setAllUsers(usersRes.data);
+      if (deptsRes.data) setAllDepartments(deptsRes.data);
 
       fetchTags(userData.company_id);
 
@@ -685,6 +694,32 @@ export default function KanbanView() {
   // Automation cancelled
   const handleAutomationCancel = () => {
     setConfirmPending(null);
+  };
+
+  const handleTransferContact = async () => {
+    if (!selectedContact || !transferDepartmentId) return;
+    setIsTransferring(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/contacts/${selectedContact.id}/transfer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          department_id: transferDepartmentId,
+          assigned_to: transferUserId || null
+        })
+      });
+      if (res.ok) {
+        setShowTransferModal(false);
+        setIsQuickChatOpen(false);
+        setContacts(prev => prev.map(c => c.id === selectedContact.id ? { ...c, department_id: transferDepartmentId, assigned_to: transferUserId || null } : c));
+      } else {
+        alert('Erro ao transferir.');
+      }
+    } catch (err) {
+      alert('Erro de conexão.');
+    } finally {
+      setIsTransferring(false);
+    }
   };
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -1192,6 +1227,9 @@ export default function KanbanView() {
                 {selectedContact.name && <div className="quick-chat-phone" style={{ color: '#8892b0', fontSize: '0.85rem' }}>{selectedContact.phone}</div>}
               </div>
               <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <button className="crm-btn" onClick={() => setShowTransferModal(true)} title="Transferir Lead" style={{ background: 'transparent', border: 'none', color: '#8892b0', cursor: 'pointer', display: 'flex', padding: '4px' }}>
+                  <Forward size={20} />
+                </button>
                 <button className="crm-btn" onClick={() => setShowCrmModal(true)} title="Abrir Detalhes do Lead (CRM)" style={{ background: 'transparent', border: 'none', color: '#8892b0', cursor: 'pointer', display: 'flex', padding: '4px' }}>
                   <FileText size={20} />
                 </button>
@@ -1238,6 +1276,61 @@ export default function KanbanView() {
           onConfirm={handleAutomationConfirm}
           onCancel={handleAutomationCancel}
         />
+      )}
+
+      {/* Transfer Modal */}
+      {showTransferModal && (
+        <div className="kb-modal-backdrop" onClick={() => setShowTransferModal(false)}>
+          <div className="kb-modal" onClick={e => e.stopPropagation()} style={{ width: '400px' }}>
+            <div className="kb-modal-header">
+              <h3>Transferir Atendimento</h3>
+              <button className="kb-modal-close" onClick={() => setShowTransferModal(false)}><X size={18} /></button>
+            </div>
+            <div className="kb-modal-body">
+              <div className="kb-field">
+                <label>Setor de Destino</label>
+                <select 
+                  value={transferDepartmentId} 
+                  onChange={e => setTransferDepartmentId(e.target.value)}
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: '#fff' }}
+                >
+                  <option value="">Selecione o Setor</option>
+                  {allDepartments.map(dept => (
+                    <option key={dept.id} value={dept.id}>{dept.name}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="kb-field">
+                <label>Atendente Específico (Opcional)</label>
+                <select 
+                  value={transferUserId} 
+                  onChange={e => setTransferUserId(e.target.value)}
+                  disabled={!transferDepartmentId}
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: '#fff' }}
+                >
+                  <option value="">Qualquer Atendente da Fila</option>
+                  {allUsers
+                    .filter(u => u.department_id === transferDepartmentId || u.id === transferDepartmentId /* Simplificação, ideal filtrar por dep no backend se precisar rigor */)
+                    .map(u => (
+                      <option key={u.id} value={u.id}>{u.name || u.email}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            
+            <div className="kb-modal-footer">
+              <button className="kb-btn-cancel" onClick={() => setShowTransferModal(false)}>Cancelar</button>
+              <button 
+                className="kb-btn-save" 
+                onClick={handleTransferContact} 
+                disabled={!transferDepartmentId || isTransferring}
+              >
+                {isTransferring ? 'Transferindo...' : 'Transferir'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
