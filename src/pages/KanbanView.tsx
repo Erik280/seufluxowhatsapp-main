@@ -974,7 +974,7 @@ export default function KanbanView() {
                         )}
                         
                         {contact.assigned_to && (
-                          <div className="task-assignee" style={{ fontSize: '0.75rem', color: '#8892b0', marginTop: '4px' }}>
+                          <div className="task-assignee" style={{ fontSize: '0.75rem', color: '#F59E0B', marginTop: '4px' }}>
                             Atendente: {allUsers.find(u => u.id === contact.assigned_to)?.name || allUsers.find(u => u.id === contact.assigned_to)?.email || 'Usuário'}
                           </div>
                         )}
@@ -1140,7 +1140,7 @@ export default function KanbanView() {
                       )}
                       
                       {contact.assigned_to && (
-                        <div className="task-assignee" style={{ fontSize: '0.75rem', color: '#8892b0', marginTop: '4px' }}>
+                        <div className="task-assignee" style={{ fontSize: '0.75rem', color: '#F59E0B', marginTop: '4px' }}>
                           Atendente: {allUsers.find(u => u.id === contact.assigned_to)?.name || allUsers.find(u => u.id === contact.assigned_to)?.email || 'Usuário'}
                         </div>
                       )}
