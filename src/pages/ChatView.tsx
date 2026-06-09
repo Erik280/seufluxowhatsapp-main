@@ -50,7 +50,7 @@ interface QuickReply {
 }
 
 export default function ChatView() {
-  const { user } = useAuth();
+  const { user, isAgent } = useAuth();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [stages, setStages] = useState<any[]>([]);
@@ -320,8 +320,12 @@ export default function ChatView() {
           .select('*, contact_tags(tag_id, tags(id, name, color))')
           .eq('company_id', userData.company_id);
 
-        if (user?.role === 'agent') {
-          query = query.eq('assigned_to', user.id);
+        if (isAgent) {
+          if (user?.department_id) {
+            query = query.or(`assigned_to.eq.${user.id},and(assigned_to.is.null,department_id.eq.${user.department_id})`);
+          } else {
+            query = query.eq('assigned_to', user.id);
+          }
         }
 
         const { data: contactsData } = await query.order('last_message', { ascending: false, nullsFirst: false });
@@ -372,8 +376,12 @@ export default function ChatView() {
 
             // Very simple refresh for now
             let refreshQuery = supabase.from('contacts').select('*, contact_tags(tag_id, tags(id, name, color))').eq('company_id', userData.company_id);
-            if (user?.role === 'agent') {
-              refreshQuery = refreshQuery.eq('assigned_to', user.id);
+            if (isAgent) {
+              if (user?.department_id) {
+                refreshQuery = refreshQuery.or(`assigned_to.eq.${user.id},and(assigned_to.is.null,department_id.eq.${user.department_id})`);
+              } else {
+                refreshQuery = refreshQuery.eq('assigned_to', user.id);
+              }
             }
             refreshQuery.order('last_message', { ascending: false, nullsFirst: false })
               .then(({data}) => {

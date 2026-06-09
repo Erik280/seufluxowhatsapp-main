@@ -441,10 +441,17 @@ async def send_manual_message(body: SendMessageRequest):
     }).execute()
     
     # 6. Atualizar contato
-    db.table("contacts").update({
+    update_data = {
         "last_message": "now()",
         "last_message_content": body.text  # Armazena o texto original sem assinatura no preview
-    }).eq("id", body.contact_id).execute()
+    }
+    
+    # Auto-assign
+    contact_check = db.table("contacts").select("assigned_to").eq("id", body.contact_id).execute()
+    if contact_check.data and not contact_check.data[0].get("assigned_to") and body.user_id:
+        update_data["assigned_to"] = body.user_id
+
+    db.table("contacts").update(update_data).eq("id", body.contact_id).execute()
     
     return msg_result.data[0] if msg_result.data else {"status": "sent"}
 
