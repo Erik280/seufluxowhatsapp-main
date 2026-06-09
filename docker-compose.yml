@@ -6,7 +6,6 @@ services:
 
   seufluxo_front:
     image: ghcr.io/erik280/seufluxowhatsapp-main:latest
-    pull_policy: always
 
     networks:
       - network
@@ -40,7 +39,6 @@ services:
 
   seufluxo_api:
     image: ghcr.io/erik280/seufluxowhatsapp-api:latest
-    pull_policy: always
 
     networks:
       - network
