@@ -385,7 +385,14 @@ export default function ChatView() {
             }
             refreshQuery.order('last_message', { ascending: false, nullsFirst: false })
               .then(({data}) => {
-                if (data) setContacts(data);
+                if (data) {
+                  setContacts(data);
+                  setSelectedContact(prev => {
+                    if (!prev) return prev;
+                    const updatedContact = data.find(c => c.id === prev.id);
+                    return updatedContact ? { ...prev, ...updatedContact } : prev;
+                  });
+                }
               });
           })
           .subscribe();
@@ -1340,7 +1347,10 @@ export default function ChatView() {
                   {selectedContact.chat_status === 'bot' 
                     ? 'Online (Bot Ativo)' 
                     : selectedContact.assigned_to
-                      ? `Em atendimento por ${allUsers.find(u => u.id === selectedContact.assigned_to)?.name || 'Usuário'} - ${allDepartments.find(d => d.id === selectedContact.department_id)?.name || 'Sem Setor'}`
+                      ? `Em atendimento por ${(() => {
+                          const u = allUsers.find(x => x.id === selectedContact.assigned_to);
+                          return u ? (u.name || u.email) : 'Usuário';
+                        })()} - ${allDepartments.find(d => d.id === selectedContact.department_id)?.name || 'Sem Setor'}`
                       : selectedContact.department_id
                         ? `Aguardando no setor ${allDepartments.find(d => d.id === selectedContact.department_id)?.name || ''}`
                         : 'Atendimento Humano'

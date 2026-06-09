@@ -3,6 +3,7 @@ import { supabase, API_BASE_URL } from '../supabaseClient';
 import { Zap, Settings, X, ToggleLeft, ToggleRight, Plus, Trash2, GripVertical, AlertTriangle, Search, FileText } from 'lucide-react';
 import QuickChat from '../components/QuickChat';
 import ContactCrmModal from '../components/ContactCrmModal';
+import { useAuth } from '../context/AuthContext';
 import './KanbanView.css';
 
 interface KanbanStage {
@@ -33,6 +34,8 @@ interface Contact {
   flow_current_step_index?: number | null;
   unread_count?: number;
   contact_tags?: { tag_id: string; tags: { id: string; name: string; color: string } }[];
+  assigned_to?: string | null;
+  department_id?: string | null;
 }
 
 interface Flow {
@@ -380,9 +383,11 @@ function StageModal({ stage, flows, companyId, companyTags, onClose, onSaved, on
 // ─── Main KanbanView ─────────────────────────────────────────────────────────
 
 export default function KanbanView() {
+  const { user, isAgent } = useAuth();
   const [stages, setStages] = useState<KanbanStage[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [flows, setFlows] = useState<Flow[]>([]);
+  const [allUsers, setAllUsers] = useState<any[]>([]);
   const [companyId, setCompanyId] = useState<string>('');
   // Maps flow_id → total number of steps (for header badge and timeline)
   const [flowStepCounts, setFlowStepCounts] = useState<Record<string, number>>({});
@@ -452,11 +457,24 @@ export default function KanbanView() {
         body: JSON.stringify({ company_id: userData.company_id }),
       });
 
-      const [stagesRes, contactsRes, flowsRes] = await Promise.all([
+      let contactsQuery = supabase.from('contacts').select('*, contact_tags(tag_id, tags(id, name, color))').eq('company_id', userData.company_id);
+      if (isAgent && user) {
+        if (user.department_id) {
+          contactsQuery = contactsQuery.or(`assigned_to.eq.${user.id},and(assigned_to.is.null,department_id.eq.${user.department_id})`);
+        } else {
+          contactsQuery = contactsQuery.eq('assigned_to', user.id);
+        }
+      }
+      contactsQuery = contactsQuery.order('last_message', { ascending: false, nullsFirst: false });
+
+      const [stagesRes, contactsRes, flowsRes, usersRes] = await Promise.all([
         supabase.from('kanban_stages').select('*').eq('company_id', userData.company_id).order('order_index'),
-        supabase.from('contacts').select('*, contact_tags(tag_id, tags(id, name, color))').eq('company_id', userData.company_id).order('last_message', { ascending: false, nullsFirst: false }),
+        contactsQuery,
         supabase.from('chat_flows').select('id, name, is_active').eq('company_id', userData.company_id).order('name'),
+        supabase.from('users').select('id, name, email').eq('company_id', userData.company_id)
       ]);
+      
+      if (usersRes.data) setAllUsers(usersRes.data);
 
       fetchTags(userData.company_id);
 
@@ -508,11 +526,27 @@ export default function KanbanView() {
         })
         // INSERT/DELETE: re-fetch completo (precisam do filtro para segurança)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'contacts', filter: `company_id=eq.${userData.company_id}` }, () => {
-          supabase.from('contacts').select('*, contact_tags(tag_id, tags(id, name, color))').eq('company_id', userData.company_id).order('last_message', { ascending: false, nullsFirst: false })
+          let refreshQuery = supabase.from('contacts').select('*, contact_tags(tag_id, tags(id, name, color))').eq('company_id', userData.company_id);
+          if (isAgent && user) {
+            if (user.department_id) {
+              refreshQuery = refreshQuery.or(`assigned_to.eq.${user.id},and(assigned_to.is.null,department_id.eq.${user.department_id})`);
+            } else {
+              refreshQuery = refreshQuery.eq('assigned_to', user.id);
+            }
+          }
+          refreshQuery.order('last_message', { ascending: false, nullsFirst: false })
             .then(({ data }) => { if (data) setContacts(data); });
         })
         .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'contacts', filter: `company_id=eq.${userData.company_id}` }, () => {
-          supabase.from('contacts').select('*, contact_tags(tag_id, tags(id, name, color))').eq('company_id', userData.company_id).order('last_message', { ascending: false, nullsFirst: false })
+          let refreshQuery = supabase.from('contacts').select('*, contact_tags(tag_id, tags(id, name, color))').eq('company_id', userData.company_id);
+          if (isAgent && user) {
+            if (user.department_id) {
+              refreshQuery = refreshQuery.or(`assigned_to.eq.${user.id},and(assigned_to.is.null,department_id.eq.${user.department_id})`);
+            } else {
+              refreshQuery = refreshQuery.eq('assigned_to', user.id);
+            }
+          }
+          refreshQuery.order('last_message', { ascending: false, nullsFirst: false })
             .then(({ data }) => { if (data) setContacts(data); });
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'kanban_stages', filter: `company_id=eq.${userData.company_id}` }, () => {
@@ -900,6 +934,12 @@ export default function KanbanView() {
                           <div className="task-phone">{contact.phone}</div>
                         )}
                         
+                        {contact.assigned_to && (
+                          <div className="task-assignee" style={{ fontSize: '0.75rem', color: '#8892b0', marginTop: '4px' }}>
+                            Atendente: {allUsers.find(u => u.id === contact.assigned_to)?.name || allUsers.find(u => u.id === contact.assigned_to)?.email || 'Usuário'}
+                          </div>
+                        )}
+                        
                         {contact.last_message_content && (
                           <div className="task-preview">
                             {contact.last_message_content}
@@ -1058,6 +1098,12 @@ export default function KanbanView() {
 
                       {contact.name && (
                         <div className="task-phone">{contact.phone}</div>
+                      )}
+                      
+                      {contact.assigned_to && (
+                        <div className="task-assignee" style={{ fontSize: '0.75rem', color: '#8892b0', marginTop: '4px' }}>
+                          Atendente: {allUsers.find(u => u.id === contact.assigned_to)?.name || allUsers.find(u => u.id === contact.assigned_to)?.email || 'Usuário'}
+                        </div>
                       )}
                       
                       {contact.last_message_content && (
