@@ -474,15 +474,19 @@ export default function KanbanView() {
       }
       contactsQuery = contactsQuery.order('last_message', { ascending: false, nullsFirst: false });
 
-      const [stagesRes, contactsRes, flowsRes, usersRes, deptsRes] = await Promise.all([
+      const [stagesRes, contactsRes, flowsRes, deptsRes] = await Promise.all([
         supabase.from('kanban_stages').select('*').eq('company_id', userData.company_id).order('order_index'),
         contactsQuery,
         supabase.from('chat_flows').select('id, name, is_active').eq('company_id', userData.company_id).order('name'),
-        supabase.from('users').select('id, name, email').eq('company_id', userData.company_id),
         supabase.from('departments').select('id, name').eq('company_id', userData.company_id).order('name')
       ]);
       
-      if (usersRes.data) setAllUsers(usersRes.data);
+      const usersFetch = await fetch(`${API_BASE_URL}/api/team-users`, { headers: { 'x-user-id': user?.id || '' } });
+      if (usersFetch.ok) {
+        const usersData = await usersFetch.json();
+        setAllUsers(usersData);
+      }
+      
       if (deptsRes.data) setAllDepartments(deptsRes.data);
 
       fetchTags(userData.company_id);

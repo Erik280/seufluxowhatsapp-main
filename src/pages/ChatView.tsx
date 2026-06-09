@@ -347,8 +347,11 @@ export default function ChatView() {
         const { data: deptsData } = await supabase.from('departments').select('*').eq('company_id', userData.company_id);
         if (deptsData) setAllDepartments(deptsData);
         
-        const { data: usersData } = await supabase.from('users').select('*').eq('company_id', userData.company_id);
-        if (usersData) setAllUsers(usersData);
+        const usersRes = await fetch(`${API_BASE_URL}/api/team-users`, { headers: { 'x-user-id': user?.id || '' } });
+        if (usersRes.ok) {
+          const usersData = await usersRes.json();
+          setAllUsers(usersData);
+        }
 
         // Fetch Quick Replies via API to bypass RLS issues
         try {

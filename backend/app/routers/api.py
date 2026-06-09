@@ -6,7 +6,7 @@ Endpoints para gerenciar contacts, flows, steps e messages.
 import logging
 import uuid
 import re
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Header
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel
 from app.database import get_supabase
@@ -29,6 +29,28 @@ from app.models.schemas import (
 logger = logging.getLogger("seufluxo.api")
 
 router = APIRouter(prefix="/api", tags=["API"])
+
+
+# ========================
+# TEAM USERS
+# ========================
+
+@router.get("/team-users")
+async def get_team_users(x_user_id: str = Header(..., alias="x-user-id")):
+    """Retorna todos os usuários da empresa do solicitante (bypassa RLS de forma segura)."""
+    db = get_supabase()
+    
+    # 1. Verifica qual é a empresa do usuário solicitante
+    user_res = db.table("users").select("company_id").eq("id", x_user_id).execute()
+    if not user_res.data:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+        
+    company_id = user_res.data[0]["company_id"]
+    
+    # 2. Busca todos os usuários da mesma empresa (via service_role do backend)
+    team_res = db.table("users").select("id, name, email, role, department_id, is_active").eq("company_id", company_id).execute()
+    
+    return team_res.data or []
 
 
 # ========================
