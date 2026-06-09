@@ -1305,13 +1305,19 @@ export default function KanbanView() {
                 <label>Atendente Específico (Opcional)</label>
                 <select 
                   value={transferUserId} 
-                  onChange={e => setTransferUserId(e.target.value)}
-                  disabled={!transferDepartmentId}
+                  onChange={e => {
+                    const uid = e.target.value;
+                    setTransferUserId(uid);
+                    if (uid) {
+                      const u = allUsers.find(x => x.id === uid);
+                      if (u && u.department_id) setTransferDepartmentId(u.department_id);
+                    }
+                  }}
                   style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: '#fff' }}
                 >
                   <option value="">Qualquer Atendente da Fila</option>
                   {allUsers
-                    .filter(u => u.department_id === transferDepartmentId || u.id === transferDepartmentId /* Simplificação, ideal filtrar por dep no backend se precisar rigor */)
+                    .filter(u => !transferDepartmentId || u.department_id === transferDepartmentId)
                     .map(u => (
                       <option key={u.id} value={u.id}>{u.name || u.email}</option>
                   ))}

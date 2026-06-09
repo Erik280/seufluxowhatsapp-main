@@ -2030,12 +2030,20 @@ export default function ChatView() {
               <label>Atendente (Opcional)</label>
               <select 
                 value={transferUserId} 
-                onChange={e => setTransferUserId(e.target.value)}
+                onChange={e => {
+                  const uid = e.target.value;
+                  setTransferUserId(uid);
+                  if (uid) {
+                    const u = allUsers.find(x => x.id === uid);
+                    if (u && u.department_id) setTransferDepartmentId(u.department_id);
+                  }
+                }}
                 style={{ width: '100%', padding: '10px', borderRadius: '8px', background: '#1a1f36', border: '1px solid #323d5e', color: '#fff' }}
-                disabled={!transferDepartmentId}
               >
                 <option value="">Fila Geral do Setor</option>
-                {allUsers.filter(u => u.department_id === transferDepartmentId).map(u => (
+                {allUsers
+                  .filter(u => !transferDepartmentId || u.department_id === transferDepartmentId)
+                  .map(u => (
                   <option key={u.id} value={u.id}>{u.name || u.email}</option>
                 ))}
               </select>
