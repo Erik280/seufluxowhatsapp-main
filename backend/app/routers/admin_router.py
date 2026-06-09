@@ -29,17 +29,22 @@ router = APIRouter(prefix="/api/admin", tags=["Admin"])
 async def _get_admin_user(x_user_id: str):
     """Busca o usuário pelo id e verifica se tem role admin."""
     db = get_supabase()
-    result = (
-        db.table("users")
-        .select("id, company_id, role")
-        .eq("id", x_user_id)
-        .single()
-        .execute()
-    )
-    if not result.data:
-        raise HTTPException(status_code=401, detail="Usuário não encontrado.")
-    user = result.data
-    if user["role"] not in ("admin", "superadmin"):
+    try:
+        result = (
+            db.table("users")
+            .select("id, company_id, role")
+            .eq("id", x_user_id)
+            .execute()
+        )
+    except Exception as e:
+        logger.error(f"Erro ao buscar usuário {x_user_id}: {e}")
+        raise HTTPException(status_code=500, detail="Erro interno ao verificar permissões.")
+
+    if not result.data or len(result.data) == 0:
+        raise HTTPException(status_code=401, detail="Usuário não encontrado na base de dados.")
+    
+    user = result.data[0]
+    if user.get("role") not in ("admin", "superadmin"):
         raise HTTPException(status_code=403, detail="Acesso negado. Apenas admins podem acessar esta rota.")
     return user
 
