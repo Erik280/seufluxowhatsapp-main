@@ -16,6 +16,7 @@ from app.models.schemas import (
     CompanyCreate, CompanyResponse,
     UserCreate, UserResponse,
     ContactCreate, ContactResponse, ContactStatusUpdate, ContactStageUpdate,
+    ContactTransferRequest,
     FlowCreate, FlowResponse,
     StepCreate, StepResponse,
     MessageCreate, MessageResponse,
