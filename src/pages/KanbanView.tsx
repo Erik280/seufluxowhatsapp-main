@@ -1280,7 +1280,7 @@ export default function KanbanView() {
 
       {/* Transfer Modal */}
       {showTransferModal && (
-        <div className="kb-modal-backdrop" onClick={() => setShowTransferModal(false)}>
+        <div className="kb-modal-backdrop" onClick={() => setShowTransferModal(false)} style={{ zIndex: 10001 }}>
           <div className="kb-modal" onClick={e => e.stopPropagation()} style={{ width: '400px' }}>
             <div className="kb-modal-header">
               <h3>Transferir Atendimento</h3>
