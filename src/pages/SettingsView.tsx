@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
 import { Smartphone, Tags, Zap, Users, ShieldAlert, Book, FileText, Trash2, UploadCloud, User } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import './SettingsView.css';
 
 interface Company {
@@ -19,7 +20,8 @@ interface KnowledgeItem {
 }
 
 export default function SettingsView() {
-  const [activeTab, setActiveTab] = useState<'whatsapp' | 'tags' | 'flows' | 'team' | 'knowledge' | 'profile'>('profile');
+  const { isAdmin } = useAuth();
+  const [activeTab, setActiveTab] = useState<'whatsapp' | 'knowledge' | 'profile'>('profile');
   const [company, setCompany] = useState<Company | null>(null);
   
   // WhatsApp States
@@ -274,30 +276,14 @@ export default function SettingsView() {
           >
             <Smartphone size={18} /> Conexão WhatsApp
           </button>
-          <button 
-            className={`tab-btn ${activeTab === 'tags' ? 'active' : ''}`}
-            onClick={() => setActiveTab('tags')}
-          >
-            <Tags size={18} /> Etiquetas (Tags)
-          </button>
-          <button 
-            className={`tab-btn ${activeTab === 'flows' ? 'active' : ''}`}
-            onClick={() => setActiveTab('flows')}
-          >
-            <Zap size={18} /> Fluxos de Automação
-          </button>
-          <button 
-            className={`tab-btn ${activeTab === 'team' ? 'active' : ''}`}
-            onClick={() => setActiveTab('team')}
-          >
-            <Users size={18} /> Equipe
-          </button>
-          <button 
-            className={`tab-btn ${activeTab === 'knowledge' ? 'active' : ''}`}
-            onClick={() => setActiveTab('knowledge')}
-          >
-            <Book size={18} /> Base de Conhecimento (IA)
-          </button>
+          {isAdmin && (
+            <button 
+              className={`tab-btn ${activeTab === 'knowledge' ? 'active' : ''}`}
+              onClick={() => setActiveTab('knowledge')}
+            >
+              <Book size={18} /> Base de Conhecimento (IA)
+            </button>
+          )}
         </aside>
 
         {/* Content */}
@@ -379,7 +365,7 @@ export default function SettingsView() {
                     )}
                     
                     {/* Botão para resetar caso a instância tenha quebrado na Evolution API */}
-                    {company?.evolution_instance && (
+                    {company?.evolution_instance && isAdmin && (
                       <div style={{ marginTop: '20px' }}>
                         <button 
                           className="btn-primary" 
@@ -396,7 +382,7 @@ export default function SettingsView() {
                             setLoadingQr(false);
                           }}
                         >
-                          Resetar Conexão Travada
+                          Desconectar / Resetar Conexão
                         </button>
                         <p style={{ fontSize: '12px', marginTop: '5px', color: '#888' }}>Use isso apenas se o QR Code não quiser gerar de jeito nenhum.</p>
                       </div>
