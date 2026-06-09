@@ -315,11 +315,16 @@ export default function ChatView() {
         setCompanyId(userData.company_id);
         
         // 2. Fetch Contacts
-        const { data: contactsData } = await supabase
+        let query = supabase
           .from('contacts')
           .select('*, contact_tags(tag_id, tags(id, name, color))')
-          .eq('company_id', userData.company_id)
-          .order('last_message', { ascending: false, nullsFirst: false });
+          .eq('company_id', userData.company_id);
+
+        if (user?.role === 'agent') {
+          query = query.eq('assigned_to', user.id);
+        }
+
+        const { data: contactsData } = await query.order('last_message', { ascending: false, nullsFirst: false });
           
         if (contactsData) setContacts(contactsData);
 
@@ -366,7 +371,11 @@ export default function ChatView() {
             }
 
             // Very simple refresh for now
-            supabase.from('contacts').select('*, contact_tags(tag_id, tags(id, name, color))').eq('company_id', userData.company_id).order('last_message', { ascending: false, nullsFirst: false })
+            let refreshQuery = supabase.from('contacts').select('*, contact_tags(tag_id, tags(id, name, color))').eq('company_id', userData.company_id);
+            if (user?.role === 'agent') {
+              refreshQuery = refreshQuery.eq('assigned_to', user.id);
+            }
+            refreshQuery.order('last_message', { ascending: false, nullsFirst: false })
               .then(({data}) => {
                 if (data) setContacts(data);
               });
@@ -1265,7 +1274,12 @@ export default function ChatView() {
                     background: contact.chat_status === 'bot' ? '#00E5CC20' : '#ff6b6b20', 
                     color: contact.chat_status === 'bot' ? '#00E5CC' : '#ff6b6b' 
                   }}>
-                    {contact.chat_status === 'bot' ? 'Bot Ativo' : 'Humano'}
+                    {contact.chat_status === 'bot' 
+                      ? 'Bot Ativo' 
+                      : contact.assigned_to 
+                        ? `[Humano] ${allUsers.find(u => u.id === contact.assigned_to)?.name || ''}`.trim()
+                        : 'Humano'
+                    }
                   </span>
                   {contact.contact_tags?.map((ct: any) => ct.tags).filter(Boolean).map((tag: any) => (
                     <span key={tag.id} className="tag" style={{
