@@ -320,8 +320,8 @@ export default function ChatView() {
           .select('*, contact_tags(tag_id, tags(id, name, color))')
           .eq('company_id', userData.company_id);
 
-        if (isAgent) {
-          if (user?.department_id) {
+        if (isAgent && user) {
+          if (user.department_id) {
             query = query.or(`assigned_to.eq.${user.id},and(assigned_to.is.null,department_id.eq.${user.department_id})`);
           } else {
             query = query.eq('assigned_to', user.id);
@@ -376,8 +376,8 @@ export default function ChatView() {
 
             // Very simple refresh for now
             let refreshQuery = supabase.from('contacts').select('*, contact_tags(tag_id, tags(id, name, color))').eq('company_id', userData.company_id);
-            if (isAgent) {
-              if (user?.department_id) {
+            if (isAgent && user) {
+              if (user.department_id) {
                 refreshQuery = refreshQuery.or(`assigned_to.eq.${user.id},and(assigned_to.is.null,department_id.eq.${user.department_id})`);
               } else {
                 refreshQuery = refreshQuery.eq('assigned_to', user.id);
