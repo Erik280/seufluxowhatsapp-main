@@ -175,6 +175,35 @@ async def execute_flow(
                 await asyncio.sleep(delay)
             continue
 
+        elif step_type == "transfer":
+            transfer_dept_id = step.get("transfer_department_id")
+            if transfer_dept_id:
+                logger.info(f"  [transfer] → Transferindo para {transfer_dept_id}")
+                try:
+                    # Increment unread_count so it pops up for humans
+                    contact_res = db.table("contacts").select("unread_count").eq("id", contact_id).execute()
+                    current_unread = contact_res.data[0].get("unread_count") if contact_res.data else 0
+                    
+                    db.table("contacts").update({
+                        "department_id": transfer_dept_id,
+                        "chat_status": "human",
+                        "assigned_to": None,
+                        "unread_count": current_unread + 1
+                    }).eq("id", contact_id).execute()
+                    
+                    db.table("messages").insert({
+                        "company_id": company_id,
+                        "contact_id": contact_id,
+                        "direction": "out",
+                        "content": "Sistema: Contato transferido para um setor de atendimento humano."
+                    }).execute()
+                    
+                    # Interrompe a execução dos próximos passos pois já não é mais bot
+                    break
+                except Exception as e:
+                    logger.error(f"Erro ao transferir contato no fluxo: {e}")
+            continue
+
         elif step_type == "composing":
             # Apenas envia presença "digitando..." por N segundos
             logger.info(f"  [composing] {delay}s digitando...")

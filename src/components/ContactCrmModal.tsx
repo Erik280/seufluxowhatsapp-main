@@ -30,6 +30,16 @@ interface Stage {
   name: string;
 }
 
+interface AttendanceSession {
+  id: string;
+  started_at: string;
+  ended_at: string | null;
+  department_id: string | null;
+  user_id: string | null;
+  departments?: { name: string };
+  users?: { name: string, email: string };
+}
+
 interface ContactCrmModalProps {
   contactId: string;
   companyId: string;
@@ -58,6 +68,10 @@ export default function ContactCrmModal({ contactId, companyId, onClose }: Conta
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [newTagName, setNewTagName] = useState('');
   const [isSavingCrm, setIsSavingCrm] = useState(false);
+
+  // Tabs state
+  const [activeTab, setActiveTab] = useState<'details' | 'history'>('details');
+  const [sessions, setSessions] = useState<AttendanceSession[]>([]);
 
   // Send Flow Modal State
   const [showSendFlowModal, setShowSendFlowModal] = useState(false);
@@ -94,15 +108,20 @@ export default function ContactCrmModal({ contactId, companyId, onClose }: Conta
       }
 
       // Fetch global data
-      const [stagesRes, tagsRes, flowsRes] = await Promise.all([
+      const [stagesRes, tagsRes, flowsRes, sessionsRes] = await Promise.all([
         supabase.from('kanban_stages').select('id, name').eq('company_id', companyId).order('order_index'),
         fetch(`${API_BASE_URL}/api/tags/${companyId}`),
-        supabase.from('chat_flows').select('id, name').eq('company_id', companyId).order('name')
+        supabase.from('chat_flows').select('id, name').eq('company_id', companyId).order('name'),
+        supabase.from('attendance_sessions').select(`
+          id, started_at, ended_at, department_id, user_id,
+          departments(name), users(name, email)
+        `).eq('contact_id', contactId).order('started_at', { ascending: false })
       ]);
 
       if (stagesRes.data) setStages(stagesRes.data);
       if (tagsRes.ok) setCompanyTags(await tagsRes.json());
       if (flowsRes.data) setChatFlows(flowsRes.data);
+      if (sessionsRes.data) setSessions(sessionsRes.data);
     };
     
     fetchData();
@@ -311,196 +330,246 @@ export default function ContactCrmModal({ contactId, companyId, onClose }: Conta
             <h3>{contact.name || 'Sem Nome'}</h3>
             <p className="crm-modal-phone">{contact.phone}</p>
 
-            <button
-              onClick={handleCopyContact}
-              title="Copiar nome e telefone"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                margin: '8px auto 0',
-                background: copied ? 'rgba(0, 255, 136, 0.12)' : 'rgba(255, 255, 255, 0.04)',
-                border: `1px solid ${copied ? 'rgba(0, 255, 136, 0.4)' : 'rgba(255, 255, 255, 0.1)'}`,
-                borderRadius: '20px',
-                padding: '5px 14px',
-                color: copied ? '#00FF88' : '#8892b0',
-                fontSize: '0.78rem',
-                fontWeight: 500,
-                cursor: 'pointer',
-                transition: 'all 0.25s ease',
-              }}
-            >
-              {copied ? <Check size={13} /> : <Copy size={13} />}
-              {copied ? 'Copiado!' : 'Copiar contato'}
-            </button>
-
-            <button
-              className={`bot-status-btn ${contact.chat_status === 'bot' ? 'active' : 'paused'}`}
-              onClick={toggleBot}
-              style={{ width: '100%', marginTop: '16px' }}
-            >
-              {contact.chat_status === 'bot' ? 'Pausar Fluxo' : 'Ativar Fluxo'}
-            </button>
-
-            {/* Botão Enviar Fluxo Manual */}
-            <button
-              onClick={() => { setShowSendFlowModal(true); setSelectedFlowId(''); setSendFlowSuccess(false); }}
-              style={{
-                width: '100%',
-                marginTop: '10px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%)',
-                border: '1px solid rgba(99, 102, 241, 0.4)',
-                borderRadius: '8px',
-                padding: '10px 16px',
-                color: '#a78bfa',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.25s ease',
-                letterSpacing: '0.04em',
-              }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(99, 102, 241, 0.28) 0%, rgba(139, 92, 246, 0.28) 100%)';
-                (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(167, 139, 250, 0.7)';
-                (e.currentTarget as HTMLButtonElement).style.color = '#c4b5fd';
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%)';
-                (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(99, 102, 241, 0.4)';
-                (e.currentTarget as HTMLButtonElement).style.color = '#a78bfa';
-              }}
-            >
-              <Zap size={15} />
-              Enviar Fluxo Agora
-            </button>
-
-            <div className="crm-section">
-              <h3>Estágio Kanban</h3>
-              <select className="crm-select" value={contact.stage_id || ''} onChange={(e) => handleStageChange(e.target.value)}>
-                <option value="">Sem estágio</option>
-                {stages.map(stage => (
-                  <option key={stage.id} value={stage.id}>{stage.name}</option>
-                ))}
-              </select>
-
-              <button
-                className="crm-schedule-btn"
-                onClick={() => setShowScheduleModal(true)}
-                style={{ marginTop: '15px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+            <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.1)', marginBottom: '16px' }}>
+              <button 
+                onClick={() => setActiveTab('details')} 
+                style={{ flex: 1, padding: '10px', background: 'transparent', border: 'none', borderBottom: activeTab === 'details' ? '2px solid #00E5CC' : '2px solid transparent', color: activeTab === 'details' ? '#00E5CC' : '#8892b0', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
               >
-                <Calendar size={16} /> Agendar Mensagem
+                Detalhes
+              </button>
+              <button 
+                onClick={() => setActiveTab('history')} 
+                style={{ flex: 1, padding: '10px', background: 'transparent', border: 'none', borderBottom: activeTab === 'history' ? '2px solid #00E5CC' : '2px solid transparent', color: activeTab === 'history' ? '#00E5CC' : '#8892b0', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
+              >
+                Histórico
               </button>
             </div>
 
-            <div className="crm-section">
-              <h3>Detalhes do Contato</h3>
-              <div className="crm-field">
-                <label>Nome</label>
-                <input
-                  type="text"
-                  className="crm-input"
-                  value={crmName}
-                  onChange={e => setCrmName(e.target.value)}
-                  placeholder="Nome do lead"
-                />
-              </div>
-              <div className="crm-field">
-                <label>E-mail</label>
-                <input
-                  type="email"
-                  className="crm-input"
-                  value={crmEmail}
-                  onChange={e => setCrmEmail(e.target.value)}
-                  placeholder="email@exemplo.com"
-                />
-              </div>
-              <div className="crm-field">
-                <label>Observações</label>
-                <textarea
-                  className="crm-textarea"
-                  value={crmNotes}
-                  onChange={e => setCrmNotes(e.target.value)}
-                  placeholder="Anotações sobre o lead..."
-                  rows={4}
-                />
-              </div>
-              <div className="crm-field">
-                <label>Tags (Categorias)</label>
-                <div className="crm-tags-list" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px', minHeight: '24px', alignItems: 'center' }}>
-                  {selectedTags.map(tag => (
-                    <span key={tag.id} className="crm-tag-item" style={{
-                      background: 'rgba(255, 255, 255, 0.06)',
-                      border: '1px solid rgba(255, 255, 255, 0.12)',
-                      padding: '3px 8px',
-                      borderRadius: '4px',
-                      fontSize: '0.75rem',
-                      color: '#ccd6f6',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px'
-                    }}>
-                      {tag.name}
-                      <button type="button" onClick={() => handleRemoveTagFromLead(tag.id)} style={{
-                        background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', padding: 0, fontSize: '0.85rem', display: 'flex', alignItems: 'center'
-                      }}>×</button>
-                    </span>
-                  ))}
-                  {selectedTags.length === 0 && <span style={{ color: '#8892b0', fontSize: '0.75rem', fontStyle: 'italic' }}>Nenhuma tag adicionada.</span>}
-                </div>
-                <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
-                  <select
-                    className="crm-select"
-                    value=""
-                    onChange={e => {
-                      const tagId = e.target.value;
-                      if (tagId) handleAddTagToLead(tagId);
-                    }}
-                    style={{ flex: 1, padding: '6px 10px', fontSize: '0.8rem', height: '36px' }}
-                  >
-                    <option value="">+ Adicionar tag existente...</option>
-                    {companyTags.filter(t => !selectedTags.some(st => st.id === t.id)).map(tag => (
-                      <option key={tag.id} value={tag.id}>{tag.name}</option>
+            {activeTab === 'details' && (
+              <>
+                <button
+                  onClick={handleCopyContact}
+                  title="Copiar nome e telefone"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    margin: '8px auto 0',
+                    background: copied ? 'rgba(0, 255, 136, 0.12)' : 'rgba(255, 255, 255, 0.04)',
+                    border: `1px solid ${copied ? 'rgba(0, 255, 136, 0.4)' : 'rgba(255, 255, 255, 0.1)'}`,
+                    borderRadius: '20px',
+                    padding: '5px 14px',
+                    color: copied ? '#00FF88' : '#8892b0',
+                    fontSize: '0.78rem',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    transition: 'all 0.25s ease',
+                  }}
+                >
+                  {copied ? <Check size={13} /> : <Copy size={13} />}
+                  {copied ? 'Copiado!' : 'Copiar contato'}
+                </button>
+
+                <button
+                  className={`bot-status-btn ${contact.chat_status === 'bot' ? 'active' : 'paused'}`}
+                  onClick={toggleBot}
+                  style={{ width: '100%', marginTop: '16px' }}
+                >
+                  {contact.chat_status === 'bot' ? 'Pausar Fluxo' : 'Ativar Fluxo'}
+                </button>
+
+                <button
+                  onClick={() => { setShowSendFlowModal(true); setSelectedFlowId(''); setSendFlowSuccess(false); }}
+                  style={{
+                    width: '100%',
+                    marginTop: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%)',
+                    border: '1px solid rgba(99, 102, 241, 0.4)',
+                    borderRadius: '8px',
+                    padding: '10px 16px',
+                    color: '#a78bfa',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.25s ease',
+                    letterSpacing: '0.04em',
+                  }}
+                >
+                  <Zap size={15} />
+                  Enviar Fluxo Agora
+                </button>
+
+                <div className="crm-section">
+                  <h3>Estágio Kanban</h3>
+                  <select className="crm-select" value={contact.stage_id || ''} onChange={(e) => handleStageChange(e.target.value)}>
+                    <option value="">Sem estágio</option>
+                    {stages.map(stage => (
+                      <option key={stage.id} value={stage.id}>{stage.name}</option>
                     ))}
                   </select>
-                </div>
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  <input
-                    type="text"
-                    className="crm-input"
-                    placeholder="Nova tag..."
-                    value={newTagName}
-                    onChange={e => setNewTagName(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleCreateNewTag();
-                      }
-                    }}
-                    style={{ flex: 1, padding: '6px 10px', fontSize: '0.8rem', height: '36px' }}
-                  />
+
                   <button
-                    type="button"
                     className="crm-schedule-btn"
-                    onClick={handleCreateNewTag}
-                    style={{ margin: 0, padding: '0 12px', fontSize: '0.8rem', height: '36px', width: 'auto', background: 'rgba(0, 229, 204, 0.1)', color: '#00E5CC', border: '1px solid rgba(0, 229, 204, 0.2)' }}
+                    onClick={() => setShowScheduleModal(true)}
+                    style={{ marginTop: '15px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                   >
-                    Criar
+                    <Calendar size={16} /> Agendar Mensagem
                   </button>
                 </div>
+
+                <div className="crm-section">
+                  <h3>Detalhes do Contato</h3>
+                  <div className="crm-field">
+                    <label>Nome</label>
+                    <input
+                      type="text"
+                      className="crm-input"
+                      value={crmName}
+                      onChange={e => setCrmName(e.target.value)}
+                      placeholder="Nome do lead"
+                    />
+                  </div>
+                  <div className="crm-field">
+                    <label>E-mail</label>
+                    <input
+                      type="email"
+                      className="crm-input"
+                      value={crmEmail}
+                      onChange={e => setCrmEmail(e.target.value)}
+                      placeholder="email@exemplo.com"
+                    />
+                  </div>
+                  <div className="crm-field">
+                    <label>Observações</label>
+                    <textarea
+                      className="crm-textarea"
+                      value={crmNotes}
+                      onChange={e => setCrmNotes(e.target.value)}
+                      placeholder="Anotações sobre o lead..."
+                      rows={4}
+                    />
+                  </div>
+                  <div className="crm-field">
+                    <label>Tags (Categorias)</label>
+                    <div className="crm-tags-list" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px', minHeight: '24px', alignItems: 'center' }}>
+                      {selectedTags.map(tag => (
+                        <span key={tag.id} className="crm-tag-item" style={{
+                          background: 'rgba(255, 255, 255, 0.06)',
+                          border: '1px solid rgba(255, 255, 255, 0.12)',
+                          padding: '3px 8px',
+                          borderRadius: '4px',
+                          fontSize: '0.75rem',
+                          color: '#ccd6f6',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}>
+                          {tag.name}
+                          <button type="button" onClick={() => handleRemoveTagFromLead(tag.id)} style={{
+                            background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', padding: 0, fontSize: '0.85rem', display: 'flex', alignItems: 'center'
+                          }}>×</button>
+                        </span>
+                      ))}
+                      {selectedTags.length === 0 && <span style={{ color: '#8892b0', fontSize: '0.75rem', fontStyle: 'italic' }}>Nenhuma tag adicionada.</span>}
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
+                      <select
+                        className="crm-select"
+                        value=""
+                        onChange={e => {
+                          const tagId = e.target.value;
+                          if (tagId) handleAddTagToLead(tagId);
+                        }}
+                        style={{ flex: 1, padding: '6px 10px', fontSize: '0.8rem', height: '36px' }}
+                      >
+                        <option value="">+ Adicionar tag existente...</option>
+                        {companyTags.filter(t => !selectedTags.some(st => st.id === t.id)).map(tag => (
+                          <option key={tag.id} value={tag.id}>{tag.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <input
+                        type="text"
+                        className="crm-input"
+                        placeholder="Nova tag..."
+                        value={newTagName}
+                        onChange={e => setNewTagName(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleCreateNewTag();
+                          }
+                        }}
+                        style={{ flex: 1, padding: '6px 10px', fontSize: '0.8rem', height: '36px' }}
+                      />
+                      <button
+                        type="button"
+                        className="crm-schedule-btn"
+                        onClick={handleCreateNewTag}
+                        style={{ margin: 0, padding: '0 12px', fontSize: '0.8rem', height: '36px', width: 'auto', background: 'rgba(0, 229, 204, 0.1)', color: '#00E5CC', border: '1px solid rgba(0, 229, 204, 0.2)' }}
+                      >
+                        Criar
+                      </button>
+                    </div>
+                  </div>
+                  <button
+                    className="crm-save-btn"
+                    onClick={handleSaveCRM}
+                    disabled={isSavingCrm}
+                    style={{ width: '100%' }}
+                  >
+                    {isSavingCrm ? 'Salvando...' : 'Salvar Dados'}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {activeTab === 'history' && (
+              <div className="crm-section" style={{ marginTop: '10px' }}>
+                <h3 style={{ marginBottom: '16px' }}>Histórico de Atendimentos</h3>
+                {sessions.length === 0 ? (
+                  <p style={{ color: '#8892b0', fontSize: '0.85rem', fontStyle: 'italic', textAlign: 'center' }}>
+                    Nenhum histórico de atendimento encontrado.
+                  </p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {sessions.map(session => (
+                      <div key={session.id} style={{ 
+                        background: 'rgba(255,255,255,0.03)', 
+                        borderLeft: session.ended_at ? '3px solid #8892b0' : '3px solid #00E5CC',
+                        padding: '12px 16px', 
+                        borderRadius: '0 8px 8px 0',
+                        fontSize: '0.85rem'
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                          <span style={{ color: '#e6f1ff', fontWeight: 600 }}>
+                            {session.departments?.name ? session.departments.name : 'Triagem Bot'}
+                          </span>
+                          <span style={{ color: session.ended_at ? '#8892b0' : '#00FF88', fontSize: '0.75rem', fontWeight: 600 }}>
+                            {session.ended_at ? 'Finalizado' : 'Em andamento'}
+                          </span>
+                        </div>
+                        <div style={{ color: '#8892b0', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <span><strong>Atendente:</strong> {session.users?.name || session.users?.email || 'Nenhum (Fila)'}</span>
+                          <span><strong>Início:</strong> {new Date(session.started_at).toLocaleString()}</span>
+                          {session.ended_at && (
+                            <span><strong>Fim:</strong> {new Date(session.ended_at).toLocaleString()}</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              <button
-                className="crm-save-btn"
-                onClick={handleSaveCRM}
-                disabled={isSavingCrm}
-                style={{ width: '100%' }}
-              >
-                {isSavingCrm ? 'Salvando...' : 'Salvar Dados'}
-              </button>
-            </div>
+            )}
+          </div>
+        </div>
+      </div>
           </div>
         </div>
       </div>

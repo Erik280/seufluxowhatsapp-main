@@ -3,13 +3,13 @@ import { supabase, API_BASE_URL } from '../supabaseClient';
 import {
   Plus, Trash2, GripVertical, ChevronDown, ChevronUp, Copy,
   MessageSquare, Mic, Image, Video, Clock, Keyboard, Radio,
-  Play, Save, ToggleLeft, ToggleRight, X, Tag, Upload, Smile, FileText
+  Play, Save, ToggleLeft, ToggleRight, X, Tag, Upload, Smile, FileText, ArrowRightLeft
 } from 'lucide-react';
 import './FlowBuilderView.css';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type StepType = 'text' | 'audio' | 'image' | 'video' | 'delay' | 'composing' | 'recording' | 'react' | 'document';
+type StepType = 'text' | 'audio' | 'image' | 'video' | 'delay' | 'composing' | 'recording' | 'react' | 'document' | 'transfer';
 
 interface FlowStep {
   id: string;
@@ -19,6 +19,7 @@ interface FlowStep {
   delay_duration: number;
   order_index: number;
   media_library_id?: string | null;
+  transfer_department_id?: string | null;
 }
 
 interface Flow {
@@ -50,6 +51,7 @@ const STEP_TYPES: { type: StepType; label: string; icon: any; color: string; has
   { type: 'video',     label: 'Vídeo',        icon: Video,     color: '#e67e22', hasContent: true,  hasDelay: true },
   { type: 'document',  label: 'Documento',    icon: FileText,  color: '#e91e8c', hasContent: true,  hasDelay: true },
   { type: 'react',     label: 'Reagir',       icon: Smile,     color: '#00ff88', hasContent: true,  hasDelay: true },
+  { type: 'transfer',  label: 'Transferir',   icon: ArrowRightLeft, color: '#e74c3c', hasContent: false, hasDelay: false },
 ];
 
 const getStepConfig = (type: StepType) => STEP_TYPES.find(t => t.type === type) || STEP_TYPES[1];
@@ -62,6 +64,7 @@ export default function FlowBuilderView() {
   const [selectedFlow, setSelectedFlow] = useState<Flow | null>(null);
   const [steps, setSteps] = useState<FlowStep[]>([]);
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
+  const [departments, setDepartments] = useState<{id: string, name: string}[]>([]);
   const [newFlowName, setNewFlowName] = useState('');
   const [showNewFlow, setShowNewFlow] = useState(false);
   const [keywordInput, setKeywordInput] = useState('');
@@ -164,12 +167,14 @@ export default function FlowBuilderView() {
       if (!userData) return;
       setCompanyId(userData.company_id);
 
-      const [flowsRes, mediaRes] = await Promise.all([
+      const [flowsRes, mediaRes, deptRes] = await Promise.all([
         supabase.from('chat_flows').select('*').eq('company_id', userData.company_id).order('created_at'),
         supabase.from('media_library').select('*').eq('company_id', userData.company_id),
+        supabase.from('departments').select('*').eq('company_id', userData.company_id)
       ]);
       if (flowsRes.data) setFlows(flowsRes.data);
       if (mediaRes.data) setMediaItems(mediaRes.data);
+      if (deptRes.data) setDepartments(deptRes.data);
     };
     init();
   }, []);
@@ -326,7 +331,8 @@ export default function FlowBuilderView() {
         content: step.content,
         delay_duration: step.delay_duration,
         order_index: step.order_index,
-        media_library_id: step.media_library_id
+        media_library_id: step.media_library_id,
+        transfer_department_id: step.transfer_department_id
       }));
 
       const { error: stepsError } = await supabase.from('flow_steps').insert(newStepsPayload);
@@ -390,6 +396,7 @@ export default function FlowBuilderView() {
         content: step.content || '',
         delay_duration: step.delay_duration,
         media_library_id: step.media_library_id || null,
+        transfer_department_id: step.transfer_department_id || null,
       }).eq('id', step.id).select();
 
       // Fallback: media_library_id column may not exist yet
@@ -453,6 +460,7 @@ export default function FlowBuilderView() {
       content: step.content,
       delay_duration: step.delay_duration,
       media_library_id: step.media_library_id,
+      transfer_department_id: step.transfer_department_id,
       order_index: index + 1
     };
 
@@ -619,10 +627,12 @@ export default function FlowBuilderView() {
                           ? `${step.delay_duration}s`
                           : step.type === 'react'
                             ? `Reação: ${step.content || '(nenhuma)'}`
-                            : step.media_library_id
-                              // Show library file name when a media item is linked
-                              ? (mediaItems.find(m => m.id === step.media_library_id)?.name || step.content?.slice(0, 50) || '(sem conteúdo)')
-                              : step.content?.slice(0, 50) || '(sem conteúdo)'}
+                            : step.type === 'transfer'
+                              ? `Transferir para: ${departments.find(d => d.id === step.transfer_department_id)?.name || '(não selecionado)'}`
+                              : step.media_library_id
+                                // Show library file name when a media item is linked
+                                ? (mediaItems.find(m => m.id === step.media_library_id)?.name || step.content?.slice(0, 50) || '(sem conteúdo)')
+                                : step.content?.slice(0, 50) || '(sem conteúdo)'}
                       </span>
                     </div>
                     <div className="fb-step-actions">
@@ -646,16 +656,43 @@ export default function FlowBuilderView() {
                   {isExpanded && (
                     <div className="fb-step-body">
                       {/* Delay */}
-                      <div className="fb-field">
-                        <label>Delay (segundos)</label>
-                        <input
-                          type="number"
-                          min={0}
-                          max={60}
-                          value={step.delay_duration}
-                          onChange={e => updateStep(step.id, { delay_duration: parseInt(e.target.value) || 0 })}
-                        />
-                      </div>
+                      {cfg.hasDelay && (
+                        <div className="fb-field">
+                          <label>Delay (segundos)</label>
+                          <input
+                            type="number"
+                            min={0}
+                            max={60}
+                            value={step.delay_duration}
+                            onChange={e => updateStep(step.id, { delay_duration: parseInt(e.target.value) || 0 })}
+                          />
+                        </div>
+                      )}
+
+                      {/* Transfer Department */}
+                      {step.type === 'transfer' && (
+                        <div className="fb-field">
+                          <label>Setor de Destino</label>
+                          <select
+                            value={step.transfer_department_id || ''}
+                            onChange={e => updateStep(step.id, { transfer_department_id: e.target.value })}
+                            style={{
+                              width: '100%',
+                              padding: '10px',
+                              borderRadius: '8px',
+                              background: '#1a1f36',
+                              border: '1px solid #323d5e',
+                              color: '#fff',
+                              fontSize: '0.9rem'
+                            }}
+                          >
+                            <option value="">Selecione um Setor...</option>
+                            {departments.map(d => (
+                              <option key={d.id} value={d.id}>{d.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
 
                       {/* Content */}
                       {cfg.hasContent && (

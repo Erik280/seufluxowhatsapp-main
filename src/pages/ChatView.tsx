@@ -17,6 +17,8 @@ interface Contact {
   avatar_url?: string | null;
   unread_count?: number;
   contact_tags?: { tag_id: string; tags: { id: string; name: string; color: string } }[];
+  assigned_to?: string | null;
+  department_id?: string | null;
 }
 
 interface Message {
@@ -57,6 +59,14 @@ export default function ChatView() {
   const [companyId, setCompanyId] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [allDepartments, setAllDepartments] = useState<any[]>([]);
+  
+  // Transfer Modal State
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferDepartmentId, setTransferDepartmentId] = useState('');
+  const [transferUserId, setTransferUserId] = useState('');
+  const [isTransferring, setIsTransferring] = useState(false);
   
 
   // Media Library state
@@ -323,6 +333,13 @@ export default function ChatView() {
           .eq('company_id', userData.company_id)
           .order('order_index', { ascending: true });
         if (stagesData) setStages(stagesData);
+        
+        // Fetch Departments & Users
+        const { data: deptsData } = await supabase.from('departments').select('*').eq('company_id', userData.company_id);
+        if (deptsData) setAllDepartments(deptsData);
+        
+        const { data: usersData } = await supabase.from('users').select('*').eq('company_id', userData.company_id);
+        if (usersData) setAllUsers(usersData);
 
         // Fetch Quick Replies via API to bypass RLS issues
         try {
@@ -338,7 +355,16 @@ export default function ChatView() {
         // 3. Subscribe to Realtime Contacts
         const contactSub = supabase
           .channel(`contacts-${userData.company_id}-${Math.random()}`)
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts', filter: `company_id=eq.${userData.company_id}` }, (_payload) => {
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts', filter: `company_id=eq.${userData.company_id}` }, (payload: any) => {
+            if (payload.eventType === 'UPDATE' && payload.new && payload.old) {
+              const newUnread = payload.new.unread_count || 0;
+              const oldUnread = payload.old.unread_count || 0;
+              if (newUnread > oldUnread) {
+                const audio = new Audio('/sound/notification.mp3');
+                audio.play().catch(e => console.warn('Notificação de áudio bloqueada:', e));
+              }
+            }
+
             // Very simple refresh for now
             supabase.from('contacts').select('*, contact_tags(tag_id, tags(id, name, color))').eq('company_id', userData.company_id).order('last_message', { ascending: false, nullsFirst: false })
               .then(({data}) => {
@@ -1008,6 +1034,47 @@ export default function ChatView() {
     }
   };
 
+  const handleResolveContact = async () => {
+    if (!selectedContact) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/contacts/${selectedContact.id}/resolve`, { method: 'POST' });
+      if (res.ok) {
+        showToast('Atendimento finalizado. O contato retornou ao Bot.');
+        setSelectedContact(prev => prev ? { ...prev, chat_status: 'bot', assigned_to: null, department_id: null } : null);
+      } else {
+        showToast('Erro ao finalizar.', 'error');
+      }
+    } catch (err) {
+      showToast('Erro de conexão.', 'error');
+    }
+  };
+
+  const handleTransferContact = async () => {
+    if (!selectedContact || !transferDepartmentId) return;
+    setIsTransferring(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/contacts/${selectedContact.id}/transfer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          department_id: transferDepartmentId,
+          assigned_to: transferUserId || null
+        })
+      });
+      if (res.ok) {
+        showToast('Contato transferido com sucesso.');
+        setShowTransferModal(false);
+        setSelectedContact(prev => prev ? { ...prev, chat_status: 'human', department_id: transferDepartmentId, assigned_to: transferUserId || null } : null);
+      } else {
+        showToast('Erro ao transferir.', 'error');
+      }
+    } catch (err) {
+      showToast('Erro de conexão.', 'error');
+    } finally {
+      setIsTransferring(false);
+    }
+  };
+
   const handleSaveQuickReply = async () => {
     if (!saveQRShortcut.trim()) {
       showToast('Digite um atalho.', 'error');
@@ -1247,10 +1314,35 @@ export default function ChatView() {
                 <h3 onClick={() => setShowCrmModal(true)} style={{ cursor: 'pointer', display: 'inline-block' }} title="Abrir Detalhes do Lead (CRM)">
                   {selectedContact.name || selectedContact.phone}
                 </h3>
-                <span className="status" style={{ color: selectedContact.chat_status === 'bot' ? '#00FF88' : '#ff6b6b', display: 'block' }}>
-                  {selectedContact.chat_status === 'bot' ? 'Online (Bot Ativo)' : 'Atendimento Humano'}
+                <span className="status" style={{ color: selectedContact.chat_status === 'bot' ? '#00FF88' : '#ff6b6b', display: 'block', fontSize: '0.85rem' }}>
+                  {selectedContact.chat_status === 'bot' 
+                    ? 'Online (Bot Ativo)' 
+                    : selectedContact.assigned_to
+                      ? `Em atendimento por ${allUsers.find(u => u.id === selectedContact.assigned_to)?.name || 'Usuário'} - ${allDepartments.find(d => d.id === selectedContact.department_id)?.name || 'Sem Setor'}`
+                      : selectedContact.department_id
+                        ? `Aguardando no setor ${allDepartments.find(d => d.id === selectedContact.department_id)?.name || ''}`
+                        : 'Atendimento Humano'
+                  }
                 </span>
               </div>
+              
+              <div className="header-actions" style={{ display: 'flex', gap: '8px', marginLeft: 'auto', marginRight: '16px' }}>
+                <button
+                  onClick={handleResolveContact}
+                  className="fb-btn-resolve"
+                  style={{ background: '#323d5e', border: 'none', padding: '8px 12px', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500 }}
+                >
+                  Finalizar
+                </button>
+                <button
+                  onClick={() => setShowTransferModal(true)}
+                  className="fb-btn-transfer"
+                  style={{ background: '#e74c3c', border: 'none', padding: '8px 12px', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500 }}
+                >
+                  Transferir
+                </button>
+              </div>
+
               <button
                 className="crm-btn"
                 onClick={() => setShowCrmModal(true)}

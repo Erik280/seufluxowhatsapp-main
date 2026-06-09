@@ -142,6 +142,103 @@ async def send_contact_presence(contact_id: str, body: PresenceRequest):
     return {"status": "ok", "presence": body.presence}
 
 # ========================
+# ATTENDANCE / TRANSFER
+# ========================
+
+class AssignRequest(BaseModel):
+    user_id: str
+
+@router.patch("/contacts/{contact_id}/assign")
+async def assign_contact(contact_id: str, body: AssignRequest):
+    """Atribui o contato a um usuário e inicia uma attendance_session."""
+    db = get_supabase()
+    
+    # Atualizar contato
+    contact_res = db.table("contacts").update({
+        "assigned_to": body.user_id,
+        "chat_status": "human"
+    }).eq("id", contact_id).execute()
+    
+    if not contact_res.data:
+        raise HTTPException(status_code=404, detail="Contact not found")
+        
+    contact = contact_res.data[0]
+    
+    # Iniciar sessão
+    db.table("attendance_sessions").insert({
+        "company_id": contact["company_id"],
+        "contact_id": contact_id,
+        "user_id": body.user_id,
+        "department_id": contact.get("department_id")
+    }).execute()
+    
+    return contact
+
+
+@router.post("/contacts/{contact_id}/resolve")
+async def resolve_contact(contact_id: str):
+    """Finaliza o atendimento, volta pro bot e fecha a attendance_session."""
+    db = get_supabase()
+    
+    # Fechar sessão ativa
+    db.table("attendance_sessions").update({
+        "ended_at": "now()"
+    }).eq("contact_id", contact_id).is_("ended_at", "null").execute()
+    
+    # Atualizar contato
+    contact_res = db.table("contacts").update({
+        "chat_status": "bot",
+        "assigned_to": None,
+        "department_id": None
+    }).eq("id", contact_id).execute()
+    
+    if not contact_res.data:
+        raise HTTPException(status_code=404, detail="Contact not found")
+        
+    return contact_res.data[0]
+
+
+@router.post("/contacts/{contact_id}/transfer")
+async def transfer_contact(contact_id: str, body: ContactTransferRequest):
+    """Transfere o contato para outro setor e/ou usuário."""
+    db = get_supabase()
+    
+    # Fechar sessão ativa
+    db.table("attendance_sessions").update({
+        "ended_at": "now()"
+    }).eq("contact_id", contact_id).is_("ended_at", "null").execute()
+    
+    # Obter contato atual para incrementar unread_count e enviar mensagem
+    contact_res = db.table("contacts").select("*").eq("id", contact_id).execute()
+    if not contact_res.data:
+        raise HTTPException(status_code=404, detail="Contact not found")
+        
+    contact = contact_res.data[0]
+    current_unread = contact.get("unread_count") or 0
+    
+    # Atualizar contato
+    update_data = {
+        "department_id": body.department_id,
+        "assigned_to": body.assigned_to,
+        "chat_status": "human",
+        "unread_count": current_unread + 1
+    }
+    
+    updated_res = db.table("contacts").update(update_data).eq("id", contact_id).execute()
+    
+    # Se transferiu pra alguém específico, abre logo a sessão
+    if body.assigned_to:
+        db.table("attendance_sessions").insert({
+            "company_id": contact["company_id"],
+            "contact_id": contact_id,
+            "user_id": body.assigned_to,
+            "department_id": body.department_id
+        }).execute()
+        
+    return updated_res.data[0]
+
+
+# ========================
 # READ STATUS
 # ========================
 
@@ -245,6 +342,7 @@ async def create_step(body: StepCreate):
             "content": body.content,
             "delay_duration": body.delay_duration,
             "order_index": body.order_index,
+            "transfer_department_id": body.transfer_department_id,
         })
         .execute()
     )

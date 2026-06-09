@@ -38,6 +38,7 @@ class StepType(str, Enum):
     recording = "recording"
     react = "react"
     document = "document"
+    transfer = "transfer"
 
 
 # ========================
@@ -128,6 +129,10 @@ class ContactResponse(ContactBase):
 class ContactStatusUpdate(BaseModel):
     chat_status: ChatStatus
 
+class ContactTransferRequest(BaseModel):
+    department_id: str
+    assigned_to: Optional[str] = None
+
 
 # ========================
 # Chat Flow
@@ -157,6 +162,7 @@ class StepBase(BaseModel):
     content: str
     delay_duration: int = Field(default=3, ge=0, le=30)
     order_index: int = 0
+    transfer_department_id: Optional[str] = None
 
 class StepCreate(StepBase):
     flow_id: str
