@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
-import { Smartphone, Tags, Zap, Users, ShieldAlert, Book, FileText, Trash2, UploadCloud, User } from 'lucide-react';
+import { Smartphone, ShieldAlert, Book, FileText, Trash2, UploadCloud, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import './SettingsView.css';
 
@@ -421,36 +421,7 @@ export default function SettingsView() {
             </div>
           )}
 
-          {activeTab === 'tags' && (
-            <div className="settings-card">
-              <h3>Gerenciar Etiquetas (Tags)</h3>
-              <p className="settings-desc">
-                Crie e edite as cores das tags para organizar seus clientes no CRM.
-              </p>
-              {/* Em breve: Listagem e criação de Tags */}
-              <div className="placeholder-content">Em desenvolvimento...</div>
-            </div>
-          )}
 
-          {activeTab === 'flows' && (
-            <div className="settings-card">
-              <h3>Fluxos de Automação (Respostas Automáticas)</h3>
-              <p className="settings-desc">
-                Crie fluxos baseados em palavras-chave para responder seus clientes automaticamente com delay humanizado.
-              </p>
-              <div className="placeholder-content">Em desenvolvimento...</div>
-            </div>
-          )}
-
-          {activeTab === 'team' && (
-            <div className="settings-card">
-              <h3>Gerenciar Equipe</h3>
-              <p className="settings-desc">
-                Adicione e gerencie os atendentes que terão acesso ao sistema.
-              </p>
-              <div className="placeholder-content">Em desenvolvimento...</div>
-            </div>
-          )}
 
           {activeTab === 'knowledge' && (
             <div className="settings-card knowledge-card">
