@@ -282,3 +282,10 @@ class QuickReplyResponse(QuickReplyBase):
     company_id: str
     created_at: datetime
 
+class QuickReplyUpdate(BaseModel):
+    shortcut: Optional[str] = None
+    content: Optional[str] = None
+    media_url: Optional[str] = None
+    media_type: Optional[str] = None
+
+

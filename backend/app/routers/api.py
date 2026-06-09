@@ -23,7 +23,7 @@ from app.models.schemas import (
     EvolutionWebhookData,
     KanbanStageCreate, KanbanStageResponse,
     TagCreate, TagResponse, ScheduleMessageRequest,
-    QuickReplyCreate, QuickReplyResponse
+    QuickReplyCreate, QuickReplyResponse, QuickReplyUpdate
 )
 
 logger = logging.getLogger("seufluxo.api")
@@ -1582,6 +1582,64 @@ async def delete_quick_reply(reply_id: str):
     if not res.data:
         raise HTTPException(status_code=404, detail="Resposta rápida não encontrada")
     return None
+
+@router.patch("/quick-replies/{reply_id}", response_model=QuickReplyResponse)
+async def update_quick_reply(reply_id: str, body: QuickReplyUpdate):
+    db = get_supabase()
+    
+    check = db.table("quick_replies").select("*").eq("id", reply_id).execute()
+    if not check.data:
+        raise HTTPException(status_code=404, detail="Resposta rápida não encontrada")
+    
+    current = check.data[0]
+    
+    if body.shortcut and body.shortcut != current["shortcut"]:
+        col_check = db.table("quick_replies").select("id").eq("company_id", current["company_id"]).eq("shortcut", body.shortcut).execute()
+        if col_check.data:
+            raise HTTPException(status_code=400, detail="Já existe uma resposta rápida com este atalho")
+            
+    update_data = body.dict(exclude_unset=True)
+    
+    content = update_data.get("content", current["content"])
+    if content and ("supabase.co/storage/v1/object/sign/lead-media" in content or "/storage/v1/object/public/lead-media" in content):
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                media_resp = await client.get(content)
+                if media_resp.status_code == 200:
+                    media_bytes = media_resp.content
+                    content_type = media_resp.headers.get("content-type", "application/octet-stream")
+                    from app.services.storage import StorageService
+                    minio = StorageService()
+                    ext = content_type.split("/")[-1] if "/" in content_type else "bin"
+                    filename = f"{current['company_id']}/quick_{uuid.uuid4()}.{ext}"
+                    import anyio
+                    new_url = await anyio.to_thread.run_sync(
+                        minio.upload_file, media_bytes, filename, content_type
+                    )
+                    media_type_val = "document"
+                    if content_type.startswith("image/"): media_type_val = "image"
+                    elif content_type.startswith("audio/"): media_type_val = "audio"
+                    elif content_type.startswith("video/"): media_type_val = "video"
+                    
+                    db.table("media_library").insert({
+                        "company_id": current["company_id"],
+                        "name": f"QR (Edit): {update_data.get('shortcut', current['shortcut'])}",
+                        "media_type": media_type_val,
+                        "url": new_url
+                    }).execute()
+                    
+                    update_data["content"] = new_url
+                    update_data["media_url"] = new_url
+                    update_data["media_type"] = media_type_val
+        except Exception:
+            pass
+            
+    res = db.table("quick_replies").update(update_data).eq("id", reply_id).execute()
+    if not res.data:
+        raise HTTPException(status_code=500, detail="Erro ao atualizar resposta rápida")
+    return res.data[0]
+
 
 # ========================
 # KNOWLEDGE BASE (RAG)

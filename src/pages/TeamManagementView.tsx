@@ -76,9 +76,10 @@ export default function TeamManagementView() {
   const [teamUsers, setTeamUsers] = useState<TeamUser[]>([]);
   const [maxUsers, setMaxUsers] = useState(5);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
 
-  // New user form
-  const [newUser, setNewUser] = useState({
+  // Form user
+  const [userForm, setUserForm] = useState({
     name: '',
     email: '',
     password: '',
@@ -183,35 +184,79 @@ export default function TeamManagementView() {
 
   // ---- USERS ----
 
-  const handleCreateUser = async () => {
-    if (!newUser.email || !newUser.password || !user?.id) return;
+  const handleSaveUser = async () => {
+    if (!user?.id) return;
+    
+    if (!editingUserId) {
+      if (!userForm.email || !userForm.password) return;
+    }
+    
     setSaving(true);
     try {
-      const res = await adminFetch(`${API_BASE_URL}/api/admin/users`, user.id, {
-        method: 'POST',
-        body: JSON.stringify({
-          email: newUser.email,
-          password: newUser.password,
-          name: newUser.name || undefined,
-          role: newUser.role,
-          department_id: newUser.department_id || undefined,
-          company_id: user.company_id,
-        }),
-      });
-      if (res.ok) {
-        const created = await res.json();
-        setTeamUsers(prev => [...prev, created]);
-        setNewUser({ name: '', email: '', password: '', role: 'agent', department_id: '' });
-        setShowCreateModal(false);
-        showToast('success', `Usuário "${created.email}" criado com sucesso!`);
+      if (editingUserId) {
+        // Edit mode
+        const res = await adminFetch(`${API_BASE_URL}/api/admin/users/${editingUserId}`, user.id, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            name: userForm.name || undefined,
+            role: userForm.role,
+            department_id: userForm.department_id || undefined,
+          }),
+        });
+        if (res.ok) {
+          const updated = await res.json();
+          setTeamUsers(prev => prev.map(u => u.id === editingUserId ? updated : u));
+          setShowCreateModal(false);
+          showToast('success', 'Usuário atualizado com sucesso!');
+        } else {
+          const err = await res.json();
+          showToast('error', err.detail || 'Erro ao atualizar usuário.');
+        }
       } else {
-        const err = await res.json();
-        showToast('error', err.detail || 'Erro ao criar usuário.');
+        // Create mode
+        const res = await adminFetch(`${API_BASE_URL}/api/admin/users`, user.id, {
+          method: 'POST',
+          body: JSON.stringify({
+            email: userForm.email,
+            password: userForm.password,
+            name: userForm.name || undefined,
+            role: userForm.role,
+            department_id: userForm.department_id || undefined,
+            company_id: user.company_id,
+          }),
+        });
+        if (res.ok) {
+          const created = await res.json();
+          setTeamUsers(prev => [...prev, created]);
+          setShowCreateModal(false);
+          showToast('success', `Usuário "${created.email}" criado com sucesso!`);
+        } else {
+          const err = await res.json();
+          showToast('error', err.detail || 'Erro ao criar usuário.');
+        }
       }
     } catch {
       showToast('error', 'Erro de conexão.');
     }
     setSaving(false);
+  };
+
+  const openNewUserModal = () => {
+    setEditingUserId(null);
+    setUserForm({ name: '', email: '', password: '', role: 'agent', department_id: '' });
+    setShowCreateModal(true);
+  };
+
+  const openEditUserModal = (u: TeamUser) => {
+    setEditingUserId(u.id);
+    setUserForm({
+      name: u.name || '',
+      email: u.email,
+      password: '',
+      role: u.role,
+      department_id: u.department_id || '',
+    });
+    setShowCreateModal(true);
   };
 
   const handleToggleActive = async (userId: string, currentState: boolean) => {
@@ -309,7 +354,7 @@ export default function TeamManagementView() {
             <h3>Atendentes ({teamUsers.length})</h3>
             <button
               className="btn-create-user"
-              onClick={() => setShowCreateModal(true)}
+              onClick={openNewUserModal}
               disabled={activeUsersCount >= maxUsers}
             >
               <UserPlus size={16} />
@@ -345,6 +390,13 @@ export default function TeamManagementView() {
                     {!u.is_active && <span className="user-inactive-tag">Inativo</span>}
                   </div>
                   <div className="user-card-actions">
+                    <button
+                      className="btn-icon btn-edit"
+                      onClick={() => openEditUserModal(u)}
+                      title="Editar usuário"
+                    >
+                      <Edit3 size={15} />
+                    </button>
                     <button
                       className={`btn-toggle-user ${u.is_active ? 'btn-deactivate' : 'btn-activate'}`}
                       onClick={() => handleToggleActive(u.id, u.is_active)}
@@ -467,7 +519,7 @@ export default function TeamManagementView() {
         <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
           <div className="modal-box" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3><UserPlus size={20} /> Novo Atendente</h3>
+              <h3><UserPlus size={20} /> {editingUserId ? 'Editar Atendente' : 'Novo Atendente'}</h3>
               <button className="modal-close" onClick={() => setShowCreateModal(false)}>
                 <X size={20} />
               </button>
@@ -479,8 +531,8 @@ export default function TeamManagementView() {
                 <input
                   type="text"
                   placeholder="Nome completo"
-                  value={newUser.name}
-                  onChange={e => setNewUser(p => ({ ...p, name: e.target.value }))}
+                  value={userForm.name}
+                  onChange={e => setUserForm(p => ({ ...p, name: e.target.value }))}
                   className="modal-input"
                 />
               </div>
@@ -489,29 +541,33 @@ export default function TeamManagementView() {
                 <input
                   type="email"
                   placeholder="email@empresa.com"
-                  value={newUser.email}
-                  onChange={e => setNewUser(p => ({ ...p, email: e.target.value }))}
+                  value={userForm.email}
+                  onChange={e => setUserForm(p => ({ ...p, email: e.target.value }))}
                   className="modal-input"
                   required
+                  disabled={!!editingUserId}
+                  style={editingUserId ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
                 />
               </div>
-              <div className="modal-field">
-                <label>Senha Inicial *</label>
-                <input
-                  type="password"
-                  placeholder="Mínimo 6 caracteres"
-                  value={newUser.password}
-                  onChange={e => setNewUser(p => ({ ...p, password: e.target.value }))}
-                  className="modal-input"
-                  required
-                />
-              </div>
+              {!editingUserId && (
+                <div className="modal-field">
+                  <label>Senha Inicial *</label>
+                  <input
+                    type="password"
+                    placeholder="Mínimo 6 caracteres"
+                    value={userForm.password}
+                    onChange={e => setUserForm(p => ({ ...p, password: e.target.value }))}
+                    className="modal-input"
+                    required
+                  />
+                </div>
+              )}
               <div className="modal-field">
                 <label>Função (Role)</label>
                 <div className="select-wrapper">
                   <select
-                    value={newUser.role}
-                    onChange={e => setNewUser(p => ({ ...p, role: e.target.value as any }))}
+                    value={userForm.role}
+                    onChange={e => setUserForm(p => ({ ...p, role: e.target.value as any }))}
                     className="modal-select"
                   >
                     <option value="agent">Atendente</option>
@@ -525,8 +581,8 @@ export default function TeamManagementView() {
                 <label>Departamento</label>
                 <div className="select-wrapper">
                   <select
-                    value={newUser.department_id}
-                    onChange={e => setNewUser(p => ({ ...p, department_id: e.target.value }))}
+                    value={userForm.department_id}
+                    onChange={e => setUserForm(p => ({ ...p, department_id: e.target.value }))}
                     className="modal-select"
                   >
                     <option value="">Sem departamento</option>
@@ -545,11 +601,11 @@ export default function TeamManagementView() {
               </button>
               <button
                 className="btn-confirm-modal"
-                onClick={handleCreateUser}
-                disabled={saving || !newUser.email || !newUser.password}
+                onClick={handleSaveUser}
+                disabled={saving || (!editingUserId && (!userForm.email || !userForm.password))}
               >
-                {saving ? <Loader2 size={16} className="spin" /> : <UserPlus size={16} />}
-                Criar Atendente
+                {saving ? <Loader2 size={16} className="spin" /> : (editingUserId ? <Edit3 size={16} /> : <UserPlus size={16} />)}
+                {editingUserId ? 'Salvar Edição' : 'Criar Atendente'}
               </button>
             </div>
           </div>
