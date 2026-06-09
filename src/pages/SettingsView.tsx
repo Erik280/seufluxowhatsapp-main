@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
-import { Smartphone, Tags, Zap, Users, ShieldAlert, Book, FileText, Trash2, UploadCloud } from 'lucide-react';
+import { Smartphone, Tags, Zap, Users, ShieldAlert, Book, FileText, Trash2, UploadCloud, User } from 'lucide-react';
 import './SettingsView.css';
 
 interface Company {
@@ -19,7 +19,7 @@ interface KnowledgeItem {
 }
 
 export default function SettingsView() {
-  const [activeTab, setActiveTab] = useState<'whatsapp' | 'tags' | 'flows' | 'team' | 'knowledge'>('whatsapp');
+  const [activeTab, setActiveTab] = useState<'whatsapp' | 'tags' | 'flows' | 'team' | 'knowledge' | 'profile'>('profile');
   const [company, setCompany] = useState<Company | null>(null);
   
   // WhatsApp States
@@ -34,9 +34,55 @@ export default function SettingsView() {
   const [knowledgeLoading, setKnowledgeLoading] = useState(false);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
 
+  // Profile States
+  const [profileName, setProfileName] = useState('');
+  const [profileSignature, setProfileSignature] = useState('');
+  const [profileSaving, setProfileSaving] = useState(false);
+
   useEffect(() => {
     fetchCompanyData();
+    fetchProfileData();
   }, []);
+
+  const fetchProfileData = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    
+    const { data: userData } = await supabase
+      .from('users')
+      .select('name, signature')
+      .eq('auth_id', session.user.id)
+      .single();
+      
+    if (userData) {
+      setProfileName(userData.name || '');
+      setProfileSignature(userData.signature || '');
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    setProfileSaving(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { error } = await supabase
+        .from('users')
+        .update({
+          name: profileName,
+          signature: profileSignature
+        })
+        .eq('auth_id', session.user.id);
+
+      if (error) throw error;
+      alert('Perfil salvo com sucesso!');
+    } catch (e: any) {
+      console.error(e);
+      alert(`Erro ao salvar perfil: ${e.message}`);
+    } finally {
+      setProfileSaving(false);
+    }
+  };
 
   const fetchCompanyData = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -217,6 +263,12 @@ export default function SettingsView() {
         {/* Sidebar */}
         <aside className="settings-sidebar">
           <button 
+            className={`tab-btn ${activeTab === 'profile' ? 'active' : ''}`}
+            onClick={() => setActiveTab('profile')}
+          >
+            <User size={18} /> Minha Conta
+          </button>
+          <button 
             className={`tab-btn ${activeTab === 'whatsapp' ? 'active' : ''}`}
             onClick={() => setActiveTab('whatsapp')}
           >
@@ -250,6 +302,48 @@ export default function SettingsView() {
 
         {/* Content */}
         <main className="settings-content">
+          {activeTab === 'profile' && (
+            <div className="settings-panel fade-in">
+              <h3>Minha Conta</h3>
+              <p className="settings-desc">Atualize suas informações pessoais e assinatura de atendimento.</p>
+              
+              <div className="profile-form">
+                <div className="form-group">
+                  <label>Nome de Exibição</label>
+                  <input 
+                    type="text" 
+                    value={profileName}
+                    onChange={e => setProfileName(e.target.value)}
+                    placeholder="Ex: João Silva"
+                    className="settings-input"
+                  />
+                  <small>Este nome aparecerá no painel para sua equipe.</small>
+                </div>
+                
+                <div className="form-group">
+                  <label>Assinatura (WhatsApp)</label>
+                  <input 
+                    type="text" 
+                    value={profileSignature}
+                    onChange={e => setProfileSignature(e.target.value)}
+                    placeholder="Ex: João do Comercial"
+                    className="settings-input"
+                  />
+                  <small>Sua assinatura será enviada automaticamente em negrito antes das mensagens: *Sua Assinatura* Olá...</small>
+                </div>
+
+                <button 
+                  className="btn-primary" 
+                  onClick={handleSaveProfile}
+                  disabled={profileSaving}
+                  style={{ marginTop: 16 }}
+                >
+                  {profileSaving ? 'Salvando...' : 'Salvar Alterações'}
+                </button>
+              </div>
+            </div>
+          )}
+
           {activeTab === 'whatsapp' && (
             <div className="settings-card">
               <h3>Conexão do WhatsApp</h3>

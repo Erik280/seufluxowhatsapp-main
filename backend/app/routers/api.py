@@ -315,7 +315,7 @@ async def send_manual_message(body: SendMessageRequest):
     if body.user_id:
         user_res = db.table("users").select("signature").eq("id", body.user_id).execute()
         if user_res.data and user_res.data[0].get("signature"):
-            final_text = f"{body.text}\n\n{user_res.data[0]['signature']}"
+            final_text = f"*{user_res.data[0]['signature']}* {body.text}"
     
     # 4. Enviar a mensagem pela Evolution API
     from app.services.evolution import EvolutionAPI

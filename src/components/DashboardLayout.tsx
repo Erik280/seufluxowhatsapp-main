@@ -229,6 +229,7 @@ export default function DashboardLayout({ children, activeView, onViewChange }: 
           {user && (
             <div className="user-role-badge" title={`${user.name || user.email} · ${user.role}`}>
               <span className={`role-dot role-${user.role}`} />
+              <span className="user-name-label">{user.name?.split(' ')[0] || user.email.split('@')[0]}</span>
             </div>
           )}
           <button className="nav-btn logout-btn" onClick={handleLogout} title="Sair">
