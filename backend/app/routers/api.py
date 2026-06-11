@@ -406,6 +406,7 @@ class SendMessageRequest(BaseModel):
     company_id: str
     text: str
     user_id: Optional[str] = None  # ID do usuário que está enviando (para assinatura)
+    use_signature: Optional[bool] = True
 
 @router.post("/messages/send")
 async def send_manual_message(body: SendMessageRequest):
@@ -433,7 +434,7 @@ async def send_manual_message(body: SendMessageRequest):
     
     # 3. Verificar assinatura do usuário que enviou
     final_text = body.text
-    if body.user_id:
+    if body.user_id and body.use_signature:
         user_res = db.table("users").select("signature").eq("id", body.user_id).execute()
         if user_res.data and user_res.data[0].get("signature"):
             final_text = f"*{user_res.data[0]['signature']}:*\n{body.text}"
