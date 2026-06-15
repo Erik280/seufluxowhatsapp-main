@@ -653,6 +653,24 @@ export default function KanbanView() {
     setConfirmPending(null);
   };
 
+  // ── Cancelar fluxo em andamento/travado ──────────────────────────────────
+  const cancelFlow = async (contactId: string) => {
+    if (!confirm('Deseja realmente cancelar e finalizar o status do fluxo inacabado para este lead?')) return;
+    
+    // Atualização otimista
+    setContacts(prev => prev.map(c => 
+      c.id === contactId 
+        ? { ...c, flow_current_flow_id: null, flow_current_step_index: null } 
+        : c
+    ));
+    
+    try {
+      await fetch(`${API_BASE_URL}/api/contacts/${contactId}/cancel-flow`, { method: 'POST' });
+    } catch (err) {
+      console.error('Failed to cancel flow', err);
+    }
+  };
+
   // ══════════════════════════════════════════════════════════════════════════
   // COLUMN DRAG & DROP (reordering)
   // ══════════════════════════════════════════════════════════════════════════
@@ -1080,8 +1098,20 @@ export default function KanbanView() {
                         </div>
                       )}
                       {isRunning && (
-                        <div className="flow-step-label">
-                          Passo {currentStep! + 1}/{totalSteps}
+                        <div className="flow-step-label-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}>
+                          <div className="flow-step-label">
+                            Passo {currentStep! + 1}/{totalSteps}
+                          </div>
+                          <button 
+                            className="kb-cancel-flow-btn" 
+                            title="Finalizar/Cancelar fluxo em andamento"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              cancelFlow(contact.id);
+                            }}
+                          >
+                            <X size={12} />
+                          </button>
                         </div>
                       )}
 

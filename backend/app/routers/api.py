@@ -178,6 +178,24 @@ async def dismiss_flow_alert(contact_id: str):
     return {"status": "ok", "contact_id": contact_id, "flow_alert": False}
 
 
+@router.post("/contacts/{contact_id}/cancel-flow")
+async def cancel_flow(contact_id: str):
+    """Limpa o status do fluxo em andamento do contato (usado para cancelar fluxos travados)."""
+    db = get_supabase()
+    result = (
+        db.table("contacts")
+        .update({
+            "flow_current_flow_id": None,
+            "flow_current_step_index": None,
+        })
+        .eq("id", contact_id)
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    return {"status": "ok", "contact_id": contact_id, "flow_cancelled": True}
+
+
 # ========================
 # CHAT FLOWS
 # ========================

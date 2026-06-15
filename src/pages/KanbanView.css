@@ -1186,3 +1186,25 @@
     font-size: 1rem;
   }
 }
+
+.kb-cancel-flow-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  color: #ff6b6b;
+  border-radius: 4px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s;
+  opacity: 0.6;
+}
+
+.kb-cancel-flow-btn:hover {
+  opacity: 1;
+  background: rgba(255, 107, 107, 0.15);
+  border-color: #ff6b6b;
+}
