@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { FolderOpen, Plus, Mic, Trash2, Send, FileText, Zap, Filter, ArrowLeft, Smile, Forward, Search, Check, Pencil } from 'lucide-react';
+import { FolderOpen, Plus, Mic, Trash2, Send, FileText, Zap, Filter, ArrowLeft, Smile, Forward, Search, Check, Pencil, AlertTriangle, X } from 'lucide-react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
 import ContactCrmModal from '../components/ContactCrmModal';
 import './ChatView.css';
@@ -16,6 +16,11 @@ interface Contact {
   avatar_url?: string | null;
   unread_count?: number;
   contact_tags?: { tag_id: string; tags: { id: string; name: string; color: string } }[];
+  // Alerta de fluxo incompleto
+  flow_alert?: boolean;
+  flow_alert_step?: string | null;
+  flow_alert_message?: string | null;
+  flow_failed_at?: string | null;
 }
 
 interface Message {
@@ -108,6 +113,32 @@ export default function ChatView() {
   const [selectedTagFilterId, setSelectedTagFilterId] = useState<string>('');
 
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  // ── Alerta de Fluxo Incompleto ────────────────────────────────────────
+  const [flowAlertBanner, setFlowAlertBanner] = useState<Contact | null>(null);
+  const alertSoundRef = useRef<AudioContext | null>(null);
+
+  const playAlertSound = useCallback(() => {
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      alertSoundRef.current = ctx;
+      // Dois bipes de atenção
+      [0, 0.25].forEach(startAt => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, ctx.currentTime + startAt);
+        gain.gain.setValueAtTime(0.4, ctx.currentTime + startAt);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + startAt + 0.18);
+        osc.start(ctx.currentTime + startAt);
+        osc.stop(ctx.currentTime + startAt + 0.18);
+      });
+    } catch (e) {
+      console.warn('Alert sound failed:', e);
+    }
+  }, []);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -336,11 +367,22 @@ export default function ChatView() {
         // 3. Subscribe to Realtime Contacts
         const contactSub = supabase
           .channel(`contacts-${userData.company_id}-${Math.random()}`)
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts', filter: `company_id=eq.${userData.company_id}` }, (_payload) => {
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts', filter: `company_id=eq.${userData.company_id}` }, (payload) => {
             // Very simple refresh for now
             supabase.from('contacts').select('*, contact_tags(tag_id, tags(id, name, color))').eq('company_id', userData.company_id).order('last_message', { ascending: false, nullsFirst: false })
               .then(({data}) => {
-                if (data) setContacts(data);
+                if (data) {
+                  setContacts(data);
+
+                  // ── Verifica se o evento gerou um novo alerta de fluxo incompleto ──
+                  if (payload.eventType === 'UPDATE' && payload.new?.flow_alert === true && !payload.old?.flow_alert) {
+                    const alertedContact = (data as Contact[]).find(c => c.id === payload.new.id);
+                    if (alertedContact) {
+                      setFlowAlertBanner(alertedContact);
+                      playAlertSound();
+                    }
+                  }
+                }
               });
           })
           .subscribe();
@@ -1051,6 +1093,48 @@ export default function ChatView() {
 
   return (
     <div className={`chat-view-root ${mobileView === 'messages' ? 'view-messages' : ''}`}>
+
+      {/* ── Banner de Alerta: Fluxo Incompleto ─────────────────────────────── */}
+      {flowAlertBanner && (
+        <div className="flow-alert-banner" role="alert" aria-live="assertive">
+          <div className="flow-alert-banner__icon">
+            <AlertTriangle size={22} />
+          </div>
+          <div className="flow-alert-banner__body">
+            <strong className="flow-alert-banner__title">⚠️ Fluxo Incompleto</strong>
+            <p className="flow-alert-banner__text">
+              A conversa com <strong>{flowAlertBanner.name || flowAlertBanner.phone}</strong> teve um erro
+              ao enviar <strong>{flowAlertBanner.flow_alert_step?.toUpperCase() || 'MÍDIA'}</strong> no fluxo automático.
+              Continue o atendimento manualmente.
+            </p>
+          </div>
+          <div className="flow-alert-banner__actions">
+            <button
+              className="flow-alert-banner__btn flow-alert-banner__btn--primary"
+              onClick={async () => {
+                const c = flowAlertBanner;
+                setSelectedContact(c);
+                setMobileView('messages');
+                setFlowAlertBanner(null);
+                setContacts(prev => prev.map(x => x.id === c.id ? { ...x, flow_alert: false } : x));
+                try {
+                  await fetch(`${API_BASE_URL}/api/contacts/${c.id}/dismiss-flow-alert`, { method: 'POST' });
+                } catch (e) { /* silent */ }
+              }}
+            >
+              Ver Conversa
+            </button>
+            <button
+              className="flow-alert-banner__btn flow-alert-banner__btn--close"
+              onClick={() => setFlowAlertBanner(null)}
+              aria-label="Fechar alerta"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Column 1: Chat List */}
       <section className="chat-list-col">
         <header className="chat-list-header">
@@ -1143,6 +1227,13 @@ export default function ChatView() {
               );
             }
 
+            // ── Contatos com alerta de fluxo incompleto sobem para o topo ──
+            filtered = [...filtered].sort((a, b) => {
+              if (a.flow_alert && !b.flow_alert) return -1;
+              if (!a.flow_alert && b.flow_alert) return 1;
+              return 0;
+            });
+
             if (filtered.length === 0) {
               return (
                 <div style={{ padding: '20px', textAlign: 'center', color: '#8892b0', fontSize: '0.875rem' }}>
@@ -1158,6 +1249,18 @@ export default function ChatView() {
               onClick={async () => {
                 setSelectedContact(contact);
                 setMobileView('messages');
+
+                // ── Dispensar alerta de fluxo incompleto ao abrir conversa ──
+                if (contact.flow_alert) {
+                  setContacts(prev => prev.map(c => c.id === contact.id ? { ...c, flow_alert: false } : c));
+                  if (flowAlertBanner?.id === contact.id) setFlowAlertBanner(null);
+                  try {
+                    await fetch(`${API_BASE_URL}/api/contacts/${contact.id}/dismiss-flow-alert`, { method: 'POST' });
+                  } catch (e) {
+                    console.error('Failed to dismiss flow alert', e);
+                  }
+                }
+
                 if (contact.unread_count && contact.unread_count > 0) {
                   // Zerar localmente primeiro para UX rápido
                   setContacts(prev => prev.map(c => c.id === contact.id ? { ...c, unread_count: 0 } : c));
@@ -1170,11 +1273,14 @@ export default function ChatView() {
                 }
               }}
             >
-              <div className="avatar">
+              <div className={`avatar ${contact.flow_alert ? 'avatar--flow-alert' : ''}`}>
                 {contact.avatar_url ? (
                   <img src={contact.avatar_url} alt={contact.name || contact.phone} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
                 ) : (
                   contact.name ? contact.name.substring(0, 2).toUpperCase() : '👤'
+                )}
+                {contact.flow_alert && (
+                  <span className="flow-alert-dot" title="Fluxo Incompleto!">⚠️</span>
                 )}
               </div>
               <div className="chat-info">

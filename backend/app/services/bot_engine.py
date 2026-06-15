@@ -9,8 +9,10 @@ Step types: text, audio, image, video, delay, composing, recording
 
 import asyncio
 import logging
+from datetime import datetime, timezone
 from app.database import get_supabase
 from app.services.evolution import EvolutionAPI
+from app.services.retry_utils import send_with_retry, RetryExhaustedError
 
 logger = logging.getLogger("seufluxo.bot_engine")
 
@@ -210,28 +212,63 @@ async def execute_flow(
         if delay > 0:
             await asyncio.sleep(delay)
 
-        # ── 3. Enviar mensagem ──
+        # ── 3. Enviar mensagem (com retry automático) ──
         try:
             if step_type == "text":
                 logger.info(f"  [text] → {content[:60]}")
-                await evolution.send_text(contact_phone, content)
+                await send_with_retry(
+                    lambda c=content: evolution.send_text(contact_phone, c),
+                    step_type="text"
+                )
 
             elif step_type == "audio":
                 logger.info(f"  [audio PTT] → {content[:60]}")
-                await evolution.send_audio(contact_phone, content)
+                await send_with_retry(
+                    lambda c=content: evolution.send_audio(contact_phone, c),
+                    step_type="audio"
+                )
 
             elif step_type == "image":
                 logger.info(f"  [image] → {content[:60]}")
-                await evolution.send_image(contact_phone, content)
+                await send_with_retry(
+                    lambda c=content: evolution.send_image(contact_phone, c),
+                    step_type="image"
+                )
 
             elif step_type == "video":
                 logger.info(f"  [video] → {content[:60]}")
-                await evolution.send_video(contact_phone, content)
+                await send_with_retry(
+                    lambda c=content: evolution.send_video(contact_phone, c),
+                    step_type="video"
+                )
 
             elif step_type == "document":
                 filename = content.split("/")[-1].split("?")[0]  # limpa query string da URL
                 logger.info(f"  [document] → {filename} ({content[:60]})")
-                await evolution.send_document(contact_phone, content, filename=filename)
+                await send_with_retry(
+                    lambda c=content, f=filename: evolution.send_document(contact_phone, c, filename=f),
+                    step_type="document"
+                )
+
+        except RetryExhaustedError as retry_err:
+            logger.error(
+                f"[bot_engine] Fluxo INCOMPLETO para {contact_phone}. "
+                f"Step [{retry_err.step_type}] falhou após {retry_err.attempts} tentativas. "
+                f"Último erro: {retry_err.last_error}"
+            )
+            # ── Marcar alerta de fluxo incompleto no contato ──────────────
+            try:
+                db.table("contacts").update({
+                    "flow_alert": True,
+                    "flow_alert_step": retry_err.step_type,
+                    "flow_alert_message": retry_err.last_error[:500],
+                    "flow_failed_at": datetime.now(timezone.utc).isoformat(),
+                    "last_message": datetime.now(timezone.utc).isoformat(),  # sobe para o topo
+                }).eq("id", contact_id).execute()
+            except Exception as db_err:
+                logger.error(f"[bot_engine] Falha ao salvar alerta de fluxo incompleto: {db_err}")
+            # Interromper o fluxo imediatamente — não continuar os próximos steps
+            return
 
         except Exception as e:
             logger.error(f"Erro ao enviar step [{step_type}]: {e}")

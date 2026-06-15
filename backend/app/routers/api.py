@@ -158,6 +158,26 @@ async def mark_contact_as_read(contact_id: str):
         raise HTTPException(status_code=404, detail="Contact not found")
     return {"status": "ok", "contact_id": contact_id, "unread_count": 0}
 
+
+@router.post("/contacts/{contact_id}/dismiss-flow-alert")
+async def dismiss_flow_alert(contact_id: str):
+    """Limpa o alerta de fluxo incompleto de um contato (chamado quando o atendente abre a conversa)."""
+    db = get_supabase()
+    result = (
+        db.table("contacts")
+        .update({
+            "flow_alert": False,
+            "flow_alert_step": None,
+            "flow_alert_message": None,
+        })
+        .eq("id", contact_id)
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    return {"status": "ok", "contact_id": contact_id, "flow_alert": False}
+
+
 # ========================
 # CHAT FLOWS
 # ========================
