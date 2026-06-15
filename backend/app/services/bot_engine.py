@@ -264,6 +264,8 @@ async def execute_flow(
                     "flow_alert_message": retry_err.last_error[:500],
                     "flow_failed_at": datetime.now(timezone.utc).isoformat(),
                     "last_message": datetime.now(timezone.utc).isoformat(),  # sobe para o topo
+                    "flow_current_flow_id": None,     # <-- finaliza o fluxo no kanban
+                    "flow_current_step_index": None,
                 }).eq("id", contact_id).execute()
             except Exception as db_err:
                 logger.error(f"[bot_engine] Falha ao salvar alerta de fluxo incompleto: {db_err}")
