@@ -6,8 +6,7 @@ Endpoints para gerenciar contacts, flows, steps e messages.
 import logging
 import uuid
 import re
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Header
-from typing import Optional, List, Dict, Any
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
 from app.database import get_supabase
 from app.services.storage import StorageService
@@ -16,41 +15,18 @@ from app.models.schemas import (
     CompanyCreate, CompanyResponse,
     UserCreate, UserResponse,
     ContactCreate, ContactResponse, ContactStatusUpdate, ContactStageUpdate,
-    ContactTransferRequest,
     FlowCreate, FlowResponse,
     StepCreate, StepResponse,
     MessageCreate, MessageResponse,
     EvolutionWebhookData,
     KanbanStageCreate, KanbanStageResponse,
     TagCreate, TagResponse, ScheduleMessageRequest,
-    QuickReplyCreate, QuickReplyResponse, QuickReplyUpdate
+    QuickReplyCreate, QuickReplyResponse
 )
 
 logger = logging.getLogger("seufluxo.api")
 
 router = APIRouter(prefix="/api", tags=["API"])
-
-
-# ========================
-# TEAM USERS
-# ========================
-
-@router.get("/team-users")
-async def get_team_users(x_user_id: str = Header(..., alias="x-user-id")):
-    """Retorna todos os usuários da empresa do solicitante (bypassa RLS de forma segura)."""
-    db = get_supabase()
-    
-    # 1. Verifica qual é a empresa do usuário solicitante
-    user_res = db.table("users").select("company_id").eq("id", x_user_id).execute()
-    if not user_res.data:
-        raise HTTPException(status_code=404, detail="Usuário não encontrado")
-        
-    company_id = user_res.data[0]["company_id"]
-    
-    # 2. Busca todos os usuários da mesma empresa (via service_role do backend)
-    team_res = db.table("users").select("id, name, email, role, department_id, is_active").eq("company_id", company_id).execute()
-    
-    return team_res.data or []
 
 
 # ========================
@@ -165,103 +141,6 @@ async def send_contact_presence(contact_id: str, body: PresenceRequest):
     return {"status": "ok", "presence": body.presence}
 
 # ========================
-# ATTENDANCE / TRANSFER
-# ========================
-
-class AssignRequest(BaseModel):
-    user_id: str
-
-@router.patch("/contacts/{contact_id}/assign")
-async def assign_contact(contact_id: str, body: AssignRequest):
-    """Atribui o contato a um usuário e inicia uma attendance_session."""
-    db = get_supabase()
-    
-    # Atualizar contato
-    contact_res = db.table("contacts").update({
-        "assigned_to": body.user_id,
-        "chat_status": "human"
-    }).eq("id", contact_id).execute()
-    
-    if not contact_res.data:
-        raise HTTPException(status_code=404, detail="Contact not found")
-        
-    contact = contact_res.data[0]
-    
-    # Iniciar sessão
-    db.table("attendance_sessions").insert({
-        "company_id": contact["company_id"],
-        "contact_id": contact_id,
-        "user_id": body.user_id,
-        "department_id": contact.get("department_id")
-    }).execute()
-    
-    return contact
-
-
-@router.post("/contacts/{contact_id}/resolve")
-async def resolve_contact(contact_id: str):
-    """Finaliza o atendimento, volta pro bot e fecha a attendance_session."""
-    db = get_supabase()
-    
-    # Fechar sessão ativa
-    db.table("attendance_sessions").update({
-        "ended_at": "now()"
-    }).eq("contact_id", contact_id).is_("ended_at", "null").execute()
-    
-    # Atualizar contato
-    contact_res = db.table("contacts").update({
-        "chat_status": "bot",
-        "assigned_to": None,
-        "department_id": None
-    }).eq("id", contact_id).execute()
-    
-    if not contact_res.data:
-        raise HTTPException(status_code=404, detail="Contact not found")
-        
-    return contact_res.data[0]
-
-
-@router.post("/contacts/{contact_id}/transfer")
-async def transfer_contact(contact_id: str, body: ContactTransferRequest):
-    """Transfere o contato para outro setor e/ou usuário."""
-    db = get_supabase()
-    
-    # Fechar sessão ativa
-    db.table("attendance_sessions").update({
-        "ended_at": "now()"
-    }).eq("contact_id", contact_id).is_("ended_at", "null").execute()
-    
-    # Obter contato atual para incrementar unread_count e enviar mensagem
-    contact_res = db.table("contacts").select("*").eq("id", contact_id).execute()
-    if not contact_res.data:
-        raise HTTPException(status_code=404, detail="Contact not found")
-        
-    contact = contact_res.data[0]
-    current_unread = contact.get("unread_count") or 0
-    
-    # Atualizar contato
-    update_data = {
-        "department_id": body.department_id,
-        "assigned_to": body.assigned_to,
-        "chat_status": "human",
-        "unread_count": current_unread + 1
-    }
-    
-    updated_res = db.table("contacts").update(update_data).eq("id", contact_id).execute()
-    
-    # Se transferiu pra alguém específico, abre logo a sessão
-    if body.assigned_to:
-        db.table("attendance_sessions").insert({
-            "company_id": contact["company_id"],
-            "contact_id": contact_id,
-            "user_id": body.assigned_to,
-            "department_id": body.department_id
-        }).execute()
-        
-    return updated_res.data[0]
-
-
-# ========================
 # READ STATUS
 # ========================
 
@@ -365,7 +244,6 @@ async def create_step(body: StepCreate):
             "content": body.content,
             "delay_duration": body.delay_duration,
             "order_index": body.order_index,
-            "transfer_department_id": body.transfer_department_id,
         })
         .execute()
     )
@@ -405,8 +283,6 @@ class SendMessageRequest(BaseModel):
     contact_id: str
     company_id: str
     text: str
-    user_id: Optional[str] = None  # ID do usuário que está enviando (para assinatura)
-    use_signature: Optional[bool] = True
 
 @router.post("/messages/send")
 async def send_manual_message(body: SendMessageRequest):
@@ -432,14 +308,7 @@ async def send_manual_message(body: SendMessageRequest):
         
     phone = contact_res.data[0]["phone"]
     
-    # 3. Verificar assinatura do usuário que enviou
-    final_text = body.text
-    if body.user_id and body.use_signature:
-        user_res = db.table("users").select("signature").eq("id", body.user_id).execute()
-        if user_res.data and user_res.data[0].get("signature"):
-            final_text = f"*{user_res.data[0]['signature']}:*\n{body.text}"
-    
-    # 4. Enviar a mensagem pela Evolution API
+    # 3. Enviar a mensagem pela Evolution API
     from app.services.evolution import EvolutionAPI
     evolution = EvolutionAPI(instance, apikey)
     
@@ -447,34 +316,27 @@ async def send_manual_message(body: SendMessageRequest):
     await evolution.send_presence(phone, composing=True)
     
     # Enviar
-    resp = await evolution.send_text(phone, final_text)
+    resp = await evolution.send_text(phone, body.text)
     
     if "error" in resp:
         raise HTTPException(status_code=500, detail=f"Evolution API Error: {resp['error']}")
         
     whatsapp_id = resp.get("key", {}).get("id")
         
-    # 5. Salvar no banco (com assinatura já concatenada)
+    # 4. Salvar no banco
     msg_result = db.table("messages").insert({
         "company_id": body.company_id,
         "contact_id": body.contact_id,
         "direction": "out",
-        "content": final_text,
+        "content": body.text,
         "whatsapp_id": whatsapp_id,
     }).execute()
     
-    # 6. Atualizar contato
-    update_data = {
+    # 5. Atualizar contato
+    db.table("contacts").update({
         "last_message": "now()",
-        "last_message_content": body.text  # Armazena o texto original sem assinatura no preview
-    }
-    
-    # Auto-assign
-    contact_check = db.table("contacts").select("assigned_to").eq("id", body.contact_id).execute()
-    if contact_check.data and not contact_check.data[0].get("assigned_to") and body.user_id:
-        update_data["assigned_to"] = body.user_id
-
-    db.table("contacts").update(update_data).eq("id", body.contact_id).execute()
+        "last_message_content": body.text
+    }).eq("id", body.contact_id).execute()
     
     return msg_result.data[0] if msg_result.data else {"status": "sent"}
 
@@ -1605,64 +1467,6 @@ async def delete_quick_reply(reply_id: str):
     if not res.data:
         raise HTTPException(status_code=404, detail="Resposta rápida não encontrada")
     return None
-
-@router.patch("/quick-replies/{reply_id}", response_model=QuickReplyResponse)
-async def update_quick_reply(reply_id: str, body: QuickReplyUpdate):
-    db = get_supabase()
-    
-    check = db.table("quick_replies").select("*").eq("id", reply_id).execute()
-    if not check.data:
-        raise HTTPException(status_code=404, detail="Resposta rápida não encontrada")
-    
-    current = check.data[0]
-    
-    if body.shortcut and body.shortcut != current["shortcut"]:
-        col_check = db.table("quick_replies").select("id").eq("company_id", current["company_id"]).eq("shortcut", body.shortcut).execute()
-        if col_check.data:
-            raise HTTPException(status_code=400, detail="Já existe uma resposta rápida com este atalho")
-            
-    update_data = body.dict(exclude_unset=True)
-    
-    content = update_data.get("content", current["content"])
-    if content and ("supabase.co/storage/v1/object/sign/lead-media" in content or "/storage/v1/object/public/lead-media" in content):
-        try:
-            import httpx
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                media_resp = await client.get(content)
-                if media_resp.status_code == 200:
-                    media_bytes = media_resp.content
-                    content_type = media_resp.headers.get("content-type", "application/octet-stream")
-                    from app.services.storage import StorageService
-                    minio = StorageService()
-                    ext = content_type.split("/")[-1] if "/" in content_type else "bin"
-                    filename = f"{current['company_id']}/quick_{uuid.uuid4()}.{ext}"
-                    import anyio
-                    new_url = await anyio.to_thread.run_sync(
-                        minio.upload_file, media_bytes, filename, content_type
-                    )
-                    media_type_val = "document"
-                    if content_type.startswith("image/"): media_type_val = "image"
-                    elif content_type.startswith("audio/"): media_type_val = "audio"
-                    elif content_type.startswith("video/"): media_type_val = "video"
-                    
-                    db.table("media_library").insert({
-                        "company_id": current["company_id"],
-                        "name": f"QR (Edit): {update_data.get('shortcut', current['shortcut'])}",
-                        "media_type": media_type_val,
-                        "url": new_url
-                    }).execute()
-                    
-                    update_data["content"] = new_url
-                    update_data["media_url"] = new_url
-                    update_data["media_type"] = media_type_val
-        except Exception:
-            pass
-            
-    res = db.table("quick_replies").update(update_data).eq("id", reply_id).execute()
-    if not res.data:
-        raise HTTPException(status_code=500, detail="Erro ao atualizar resposta rápida")
-    return res.data[0]
-
 
 # ========================
 # KNOWLEDGE BASE (RAG)

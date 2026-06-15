@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
-import { Smartphone, ShieldAlert, Book, FileText, Trash2, UploadCloud, User } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { Smartphone, Tags, Zap, Users, ShieldAlert, Book, FileText, Trash2, UploadCloud } from 'lucide-react';
 import './SettingsView.css';
 
 interface Company {
@@ -20,8 +19,7 @@ interface KnowledgeItem {
 }
 
 export default function SettingsView() {
-  const { isAdmin } = useAuth();
-  const [activeTab, setActiveTab] = useState<'whatsapp' | 'knowledge' | 'profile'>('profile');
+  const [activeTab, setActiveTab] = useState<'whatsapp' | 'tags' | 'flows' | 'team' | 'knowledge'>('whatsapp');
   const [company, setCompany] = useState<Company | null>(null);
   
   // WhatsApp States
@@ -36,55 +34,9 @@ export default function SettingsView() {
   const [knowledgeLoading, setKnowledgeLoading] = useState(false);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
 
-  // Profile States
-  const [profileName, setProfileName] = useState('');
-  const [profileSignature, setProfileSignature] = useState('');
-  const [profileSaving, setProfileSaving] = useState(false);
-
   useEffect(() => {
     fetchCompanyData();
-    fetchProfileData();
   }, []);
-
-  const fetchProfileData = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-    
-    const { data: userData } = await supabase
-      .from('users')
-      .select('name, signature')
-      .eq('auth_id', session.user.id)
-      .single();
-      
-    if (userData) {
-      setProfileName(userData.name || '');
-      setProfileSignature(userData.signature || '');
-    }
-  };
-
-  const handleSaveProfile = async () => {
-    setProfileSaving(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const { error } = await supabase
-        .from('users')
-        .update({
-          name: profileName,
-          signature: profileSignature
-        })
-        .eq('auth_id', session.user.id);
-
-      if (error) throw error;
-      alert('Perfil salvo com sucesso!');
-    } catch (e: any) {
-      console.error(e);
-      alert(`Erro ao salvar perfil: ${e.message}`);
-    } finally {
-      setProfileSaving(false);
-    }
-  };
 
   const fetchCompanyData = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -265,71 +217,39 @@ export default function SettingsView() {
         {/* Sidebar */}
         <aside className="settings-sidebar">
           <button 
-            className={`tab-btn ${activeTab === 'profile' ? 'active' : ''}`}
-            onClick={() => setActiveTab('profile')}
-          >
-            <User size={18} /> Minha Conta
-          </button>
-          <button 
             className={`tab-btn ${activeTab === 'whatsapp' ? 'active' : ''}`}
             onClick={() => setActiveTab('whatsapp')}
           >
             <Smartphone size={18} /> Conexão WhatsApp
           </button>
-          {isAdmin && (
-            <button 
-              className={`tab-btn ${activeTab === 'knowledge' ? 'active' : ''}`}
-              onClick={() => setActiveTab('knowledge')}
-            >
-              <Book size={18} /> Base de Conhecimento (IA)
-            </button>
-          )}
+          <button 
+            className={`tab-btn ${activeTab === 'tags' ? 'active' : ''}`}
+            onClick={() => setActiveTab('tags')}
+          >
+            <Tags size={18} /> Etiquetas (Tags)
+          </button>
+          <button 
+            className={`tab-btn ${activeTab === 'flows' ? 'active' : ''}`}
+            onClick={() => setActiveTab('flows')}
+          >
+            <Zap size={18} /> Fluxos de Automação
+          </button>
+          <button 
+            className={`tab-btn ${activeTab === 'team' ? 'active' : ''}`}
+            onClick={() => setActiveTab('team')}
+          >
+            <Users size={18} /> Equipe
+          </button>
+          <button 
+            className={`tab-btn ${activeTab === 'knowledge' ? 'active' : ''}`}
+            onClick={() => setActiveTab('knowledge')}
+          >
+            <Book size={18} /> Base de Conhecimento (IA)
+          </button>
         </aside>
 
         {/* Content */}
         <main className="settings-content">
-          {activeTab === 'profile' && (
-            <div className="settings-panel fade-in">
-              <h3>Minha Conta</h3>
-              <p className="settings-desc">Atualize suas informações pessoais e assinatura de atendimento.</p>
-              
-              <div className="profile-form">
-                <div className="form-group">
-                  <label>Nome de Exibição</label>
-                  <input 
-                    type="text" 
-                    value={profileName}
-                    onChange={e => setProfileName(e.target.value)}
-                    placeholder="Ex: João Silva"
-                    className="settings-input"
-                  />
-                  <small>Este nome aparecerá no painel para sua equipe.</small>
-                </div>
-                
-                <div className="form-group">
-                  <label>Assinatura (WhatsApp)</label>
-                  <input 
-                    type="text" 
-                    value={profileSignature}
-                    onChange={e => setProfileSignature(e.target.value)}
-                    placeholder="Ex: João do Comercial"
-                    className="settings-input"
-                  />
-                  <small>Sua assinatura será enviada automaticamente em negrito antes das mensagens: *Sua Assinatura* Olá...</small>
-                </div>
-
-                <button 
-                  className="btn-primary" 
-                  onClick={handleSaveProfile}
-                  disabled={profileSaving}
-                  style={{ marginTop: 16 }}
-                >
-                  {profileSaving ? 'Salvando...' : 'Salvar Alterações'}
-                </button>
-              </div>
-            </div>
-          )}
-
           {activeTab === 'whatsapp' && (
             <div className="settings-card">
               <h3>Conexão do WhatsApp</h3>
@@ -365,7 +285,7 @@ export default function SettingsView() {
                     )}
                     
                     {/* Botão para resetar caso a instância tenha quebrado na Evolution API */}
-                    {company?.evolution_instance && isAdmin && (
+                    {company?.evolution_instance && (
                       <div style={{ marginTop: '20px' }}>
                         <button 
                           className="btn-primary" 
@@ -382,7 +302,7 @@ export default function SettingsView() {
                             setLoadingQr(false);
                           }}
                         >
-                          Desconectar / Resetar Conexão
+                          Resetar Conexão Travada
                         </button>
                         <p style={{ fontSize: '12px', marginTop: '5px', color: '#888' }}>Use isso apenas se o QR Code não quiser gerar de jeito nenhum.</p>
                       </div>
@@ -421,7 +341,36 @@ export default function SettingsView() {
             </div>
           )}
 
+          {activeTab === 'tags' && (
+            <div className="settings-card">
+              <h3>Gerenciar Etiquetas (Tags)</h3>
+              <p className="settings-desc">
+                Crie e edite as cores das tags para organizar seus clientes no CRM.
+              </p>
+              {/* Em breve: Listagem e criação de Tags */}
+              <div className="placeholder-content">Em desenvolvimento...</div>
+            </div>
+          )}
 
+          {activeTab === 'flows' && (
+            <div className="settings-card">
+              <h3>Fluxos de Automação (Respostas Automáticas)</h3>
+              <p className="settings-desc">
+                Crie fluxos baseados em palavras-chave para responder seus clientes automaticamente com delay humanizado.
+              </p>
+              <div className="placeholder-content">Em desenvolvimento...</div>
+            </div>
+          )}
+
+          {activeTab === 'team' && (
+            <div className="settings-card">
+              <h3>Gerenciar Equipe</h3>
+              <p className="settings-desc">
+                Adicione e gerencie os atendentes que terão acesso ao sistema.
+              </p>
+              <div className="placeholder-content">Em desenvolvimento...</div>
+            </div>
+          )}
 
           {activeTab === 'knowledge' && (
             <div className="settings-card knowledge-card">

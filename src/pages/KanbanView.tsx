@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
-import { Zap, Settings, X, ToggleLeft, ToggleRight, Plus, Trash2, GripVertical, AlertTriangle, Search, FileText, Forward } from 'lucide-react';
+import { Zap, Settings, X, ToggleLeft, ToggleRight, Plus, Trash2, GripVertical, AlertTriangle, Search, FileText } from 'lucide-react';
 import QuickChat from '../components/QuickChat';
 import ContactCrmModal from '../components/ContactCrmModal';
-import { useAuth } from '../context/AuthContext';
 import './KanbanView.css';
 
 interface KanbanStage {
@@ -34,8 +33,6 @@ interface Contact {
   flow_current_step_index?: number | null;
   unread_count?: number;
   contact_tags?: { tag_id: string; tags: { id: string; name: string; color: string } }[];
-  assigned_to?: string | null;
-  department_id?: string | null;
 }
 
 interface Flow {
@@ -383,12 +380,9 @@ function StageModal({ stage, flows, companyId, companyTags, onClose, onSaved, on
 // ─── Main KanbanView ─────────────────────────────────────────────────────────
 
 export default function KanbanView() {
-  const { user, isAgent } = useAuth();
   const [stages, setStages] = useState<KanbanStage[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [flows, setFlows] = useState<Flow[]>([]);
-  const [allUsers, setAllUsers] = useState<any[]>([]);
-  const [allDepartments, setAllDepartments] = useState<any[]>([]);
   const [companyId, setCompanyId] = useState<string>('');
   // Maps flow_id → total number of steps (for header badge and timeline)
   const [flowStepCounts, setFlowStepCounts] = useState<Record<string, number>>({});
@@ -422,12 +416,6 @@ export default function KanbanView() {
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const [companyTags, setCompanyTags] = useState<any[]>([]);
   const [selectedTagFilterId, setSelectedTagFilterId] = useState<string>('');
-
-  // Transfer Modal State
-  const [showTransferModal, setShowTransferModal] = useState(false);
-  const [transferDepartmentId, setTransferDepartmentId] = useState('');
-  const [transferUserId, setTransferUserId] = useState('');
-  const [isTransferring, setIsTransferring] = useState(false);
 
   const fetchTags = async (cId: string) => {
     try {
@@ -464,30 +452,11 @@ export default function KanbanView() {
         body: JSON.stringify({ company_id: userData.company_id }),
       });
 
-      let contactsQuery = supabase.from('contacts').select('*, contact_tags(tag_id, tags(id, name, color))').eq('company_id', userData.company_id);
-      if (isAgent && user) {
-        if (user.department_id) {
-          contactsQuery = contactsQuery.or(`assigned_to.eq.${user.id},and(assigned_to.is.null,department_id.eq.${user.department_id})`);
-        } else {
-          contactsQuery = contactsQuery.eq('assigned_to', user.id);
-        }
-      }
-      contactsQuery = contactsQuery.order('last_message', { ascending: false, nullsFirst: false });
-
-      const [stagesRes, contactsRes, flowsRes, deptsRes] = await Promise.all([
+      const [stagesRes, contactsRes, flowsRes] = await Promise.all([
         supabase.from('kanban_stages').select('*').eq('company_id', userData.company_id).order('order_index'),
-        contactsQuery,
+        supabase.from('contacts').select('*, contact_tags(tag_id, tags(id, name, color))').eq('company_id', userData.company_id).order('last_message', { ascending: false, nullsFirst: false }),
         supabase.from('chat_flows').select('id, name, is_active').eq('company_id', userData.company_id).order('name'),
-        supabase.from('departments').select('id, name').eq('company_id', userData.company_id).order('name')
       ]);
-      
-      const usersFetch = await fetch(`${API_BASE_URL}/api/team-users`, { headers: { 'x-user-id': user?.id || '' } });
-      if (usersFetch.ok) {
-        const usersData = await usersFetch.json();
-        setAllUsers(usersData);
-      }
-      
-      if (deptsRes.data) setAllDepartments(deptsRes.data);
 
       fetchTags(userData.company_id);
 
@@ -539,27 +508,11 @@ export default function KanbanView() {
         })
         // INSERT/DELETE: re-fetch completo (precisam do filtro para segurança)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'contacts', filter: `company_id=eq.${userData.company_id}` }, () => {
-          let refreshQuery = supabase.from('contacts').select('*, contact_tags(tag_id, tags(id, name, color))').eq('company_id', userData.company_id);
-          if (isAgent && user) {
-            if (user.department_id) {
-              refreshQuery = refreshQuery.or(`assigned_to.eq.${user.id},and(assigned_to.is.null,department_id.eq.${user.department_id})`);
-            } else {
-              refreshQuery = refreshQuery.eq('assigned_to', user.id);
-            }
-          }
-          refreshQuery.order('last_message', { ascending: false, nullsFirst: false })
+          supabase.from('contacts').select('*, contact_tags(tag_id, tags(id, name, color))').eq('company_id', userData.company_id).order('last_message', { ascending: false, nullsFirst: false })
             .then(({ data }) => { if (data) setContacts(data); });
         })
         .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'contacts', filter: `company_id=eq.${userData.company_id}` }, () => {
-          let refreshQuery = supabase.from('contacts').select('*, contact_tags(tag_id, tags(id, name, color))').eq('company_id', userData.company_id);
-          if (isAgent && user) {
-            if (user.department_id) {
-              refreshQuery = refreshQuery.or(`assigned_to.eq.${user.id},and(assigned_to.is.null,department_id.eq.${user.department_id})`);
-            } else {
-              refreshQuery = refreshQuery.eq('assigned_to', user.id);
-            }
-          }
-          refreshQuery.order('last_message', { ascending: false, nullsFirst: false })
+          supabase.from('contacts').select('*, contact_tags(tag_id, tags(id, name, color))').eq('company_id', userData.company_id).order('last_message', { ascending: false, nullsFirst: false })
             .then(({ data }) => { if (data) setContacts(data); });
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'kanban_stages', filter: `company_id=eq.${userData.company_id}` }, () => {
@@ -698,32 +651,6 @@ export default function KanbanView() {
   // Automation cancelled
   const handleAutomationCancel = () => {
     setConfirmPending(null);
-  };
-
-  const handleTransferContact = async () => {
-    if (!selectedContact || !transferDepartmentId) return;
-    setIsTransferring(true);
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/contacts/${selectedContact.id}/transfer`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          department_id: transferDepartmentId,
-          assigned_to: transferUserId || null
-        })
-      });
-      if (res.ok) {
-        setShowTransferModal(false);
-        setIsQuickChatOpen(false);
-        setContacts(prev => prev.map(c => c.id === selectedContact.id ? { ...c, department_id: transferDepartmentId, assigned_to: transferUserId || null } : c));
-      } else {
-        alert('Erro ao transferir.');
-      }
-    } catch (err) {
-      alert('Erro de conexão.');
-    } finally {
-      setIsTransferring(false);
-    }
   };
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -973,12 +900,6 @@ export default function KanbanView() {
                           <div className="task-phone">{contact.phone}</div>
                         )}
                         
-                        {contact.assigned_to && (
-                          <div className="task-assignee" style={{ fontSize: '0.75rem', color: '#F59E0B', marginTop: '4px' }}>
-                            Atendente: {allUsers.find(u => u.id === contact.assigned_to)?.name || allUsers.find(u => u.id === contact.assigned_to)?.email || 'Usuário'}
-                          </div>
-                        )}
-                        
                         {contact.last_message_content && (
                           <div className="task-preview">
                             {contact.last_message_content}
@@ -1139,12 +1060,6 @@ export default function KanbanView() {
                         <div className="task-phone">{contact.phone}</div>
                       )}
                       
-                      {contact.assigned_to && (
-                        <div className="task-assignee" style={{ fontSize: '0.75rem', color: '#F59E0B', marginTop: '4px' }}>
-                          Atendente: {allUsers.find(u => u.id === contact.assigned_to)?.name || allUsers.find(u => u.id === contact.assigned_to)?.email || 'Usuário'}
-                        </div>
-                      )}
-                      
                       {contact.last_message_content && (
                         <div className="task-preview">
                           {contact.last_message_content}
@@ -1231,9 +1146,6 @@ export default function KanbanView() {
                 {selectedContact.name && <div className="quick-chat-phone" style={{ color: '#8892b0', fontSize: '0.85rem' }}>{selectedContact.phone}</div>}
               </div>
               <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                <button className="crm-btn" onClick={() => setShowTransferModal(true)} title="Transferir Lead" style={{ background: 'transparent', border: 'none', color: '#8892b0', cursor: 'pointer', display: 'flex', padding: '4px' }}>
-                  <Forward size={20} />
-                </button>
                 <button className="crm-btn" onClick={() => setShowCrmModal(true)} title="Abrir Detalhes do Lead (CRM)" style={{ background: 'transparent', border: 'none', color: '#8892b0', cursor: 'pointer', display: 'flex', padding: '4px' }}>
                   <FileText size={20} />
                 </button>
@@ -1280,67 +1192,6 @@ export default function KanbanView() {
           onConfirm={handleAutomationConfirm}
           onCancel={handleAutomationCancel}
         />
-      )}
-
-      {/* Transfer Modal */}
-      {showTransferModal && (
-        <div className="kb-modal-backdrop" onClick={() => setShowTransferModal(false)} style={{ zIndex: 10001 }}>
-          <div className="kb-modal" onClick={e => e.stopPropagation()} style={{ width: '400px' }}>
-            <div className="kb-modal-header">
-              <h3>Transferir Atendimento</h3>
-              <button className="kb-modal-close" onClick={() => setShowTransferModal(false)}><X size={18} /></button>
-            </div>
-            <div className="kb-modal-body">
-              <div className="kb-field">
-                <label>Setor de Destino</label>
-                <select 
-                  value={transferDepartmentId} 
-                  onChange={e => setTransferDepartmentId(e.target.value)}
-                  style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: '#fff' }}
-                >
-                  <option value="">Selecione o Setor</option>
-                  {allDepartments.map(dept => (
-                    <option key={dept.id} value={dept.id}>{dept.name}</option>
-                  ))}
-                </select>
-              </div>
-              
-              <div className="kb-field">
-                <label>Atendente Específico (Opcional)</label>
-                <select 
-                  value={transferUserId} 
-                  onChange={e => {
-                    const uid = e.target.value;
-                    setTransferUserId(uid);
-                    if (uid) {
-                      const u = allUsers.find(x => x.id === uid);
-                      if (u && u.department_id) setTransferDepartmentId(u.department_id);
-                    }
-                  }}
-                  style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: '#fff' }}
-                >
-                  <option value="">Qualquer Atendente da Fila</option>
-                  {allUsers
-                    .filter(u => !transferDepartmentId || u.department_id === transferDepartmentId)
-                    .map(u => (
-                      <option key={u.id} value={u.id}>{u.name || u.email}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            
-            <div className="kb-modal-footer">
-              <button className="kb-btn-cancel" onClick={() => setShowTransferModal(false)}>Cancelar</button>
-              <button 
-                className="kb-btn-save" 
-                onClick={handleTransferContact} 
-                disabled={!transferDepartmentId || isTransferring}
-              >
-                {isTransferring ? 'Transferindo...' : 'Transferir'}
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );

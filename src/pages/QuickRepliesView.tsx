@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Trash2, Plus, Zap, Edit2 } from 'lucide-react';
+import { Trash2, Plus, Zap } from 'lucide-react';
 import { API_BASE_URL, supabase } from '../supabaseClient';
 import './QuickRepliesView.css';
 
@@ -19,7 +19,6 @@ export default function QuickRepliesView() {
   
   // Form State
   const [showModal, setShowModal] = useState(false);
-  const [editingReplyId, setEditingReplyId] = useState<string | null>(null);
   const [newShortcut, setNewShortcut] = useState('');
   const [newContent, setNewContent] = useState('');
   const [saving, setSaving] = useState(false);
@@ -92,33 +91,6 @@ export default function QuickRepliesView() {
     }
   };
 
-  const openNewModal = () => {
-    setEditingReplyId(null);
-    setNewShortcut('');
-    setNewContent('');
-    setSelectedMediaId('');
-    setReplyMode('text');
-    setShowModal(true);
-  };
-
-  const openEditModal = (reply: QuickReply) => {
-    setEditingReplyId(reply.id);
-    setNewShortcut(reply.shortcut);
-    if (reply.media_url && reply.media_type) {
-      setReplyMode('media');
-      setNewContent('');
-      // Não temos o selectedMediaId exato se a mídia foi apagada da library, mas
-      // o usuário terá que selecionar uma nova se quiser mudar a mídia, 
-      // ou deixar vazio. Para simplificar, deixamos vazio e avisamos.
-      setSelectedMediaId(''); 
-    } else {
-      setReplyMode('text');
-      setNewContent(reply.content);
-      setSelectedMediaId('');
-    }
-    setShowModal(true);
-  };
-
   const handleSave = async () => {
     if (!newShortcut.trim()) {
       showToast('Preencha o atalho.', 'error');
@@ -152,40 +124,28 @@ export default function QuickRepliesView() {
 
     setSaving(true);
     try {
-      const url = editingReplyId 
-        ? `${API_BASE_URL}/api/quick-replies/${editingReplyId}` 
-        : `${API_BASE_URL}/api/quick-replies`;
-        
-      const method = editingReplyId ? 'PATCH' : 'POST';
-      
-      const payload: any = {
-        shortcut: newShortcut.trim().toLowerCase(),
-        content,
-        media_url: mediaUrl,
-        media_type: mediaType
-      };
-      
-      if (!editingReplyId) {
-        payload.company_id = companyId;
-      }
-
-      const res = await fetch(url, {
-        method,
+      const res = await fetch(`${API_BASE_URL}/api/quick-replies`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          company_id: companyId,
+          shortcut: newShortcut.trim().toLowerCase(),
+          content,
+          media_url: mediaUrl,
+          media_type: mediaType
+        })
       });
       if (res.ok) {
-        showToast(editingReplyId ? 'Resposta rápida atualizada!' : 'Resposta rápida criada!');
+        showToast('Resposta rápida criada!');
         setShowModal(false);
         setNewShortcut('');
         setNewContent('');
         setSelectedMediaId('');
         setReplyMode('text');
-        setEditingReplyId(null);
         if (companyId) fetchReplies(companyId);
       } else {
         const err = await res.json();
-        showToast(err.detail || 'Erro ao salvar', 'error');
+        showToast(err.detail || 'Erro ao criar', 'error');
       }
     } catch (err) {
       console.error(err);
@@ -220,7 +180,7 @@ export default function QuickRepliesView() {
           <Zap size={24} color="#00E5CC" />
           <h1>Respostas Rápidas</h1>
         </div>
-        <button className="qr-add-btn" onClick={openNewModal}>
+        <button className="qr-add-btn" onClick={() => setShowModal(true)}>
           <Plus size={18} />
           <span>Novo Atalho</span>
         </button>
@@ -241,14 +201,9 @@ export default function QuickRepliesView() {
               <div key={reply.id} className="qr-card">
                 <div className="qr-card-header">
                   <span className="qr-shortcut">/{reply.shortcut}</span>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button className="qr-del-btn" onClick={() => openEditModal(reply)} title="Editar">
-                      <Edit2 size={16} color="#8892b0" />
-                    </button>
-                    <button className="qr-del-btn" onClick={() => handleDelete(reply.id)} title="Excluir">
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
+                  <button className="qr-del-btn" onClick={() => handleDelete(reply.id)}>
+                    <Trash2 size={16} />
+                  </button>
                 </div>
                 <div className="qr-card-body">
                   {reply.media_url && reply.media_type ? (
@@ -275,7 +230,7 @@ export default function QuickRepliesView() {
         <div className="schedule-modal-overlay">
           <div className="schedule-modal-content">
             <div className="schedule-modal-header">
-              <h2>{editingReplyId ? 'Editar Resposta Rápida' : 'Nova Resposta Rápida'}</h2>
+              <h2>Nova Resposta Rápida</h2>
               <button className="close-btn" onClick={() => setShowModal(false)}>✕</button>
             </div>
             <div className="schedule-modal-body">

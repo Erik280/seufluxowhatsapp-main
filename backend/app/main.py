@@ -10,8 +10,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.routers import webhook, api, evolution_router
-from app.routers.admin_router import router as admin_router
-from app.routers.superadmin_router import router as superadmin_router
 from app.services.scheduler import start_scheduler, stop_scheduler
 
 
@@ -59,8 +57,8 @@ app = FastAPI(
 settings = get_settings()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=settings.cors_origins_list,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -69,8 +67,6 @@ app.add_middleware(
 app.include_router(webhook.router)
 app.include_router(api.router)
 app.include_router(evolution_router.router)
-app.include_router(admin_router)
-app.include_router(superadmin_router)
 
 
 # ── Health Check ──

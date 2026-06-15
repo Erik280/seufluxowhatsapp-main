@@ -21,7 +21,6 @@ class ChatStatus(str, Enum):
 class UserRole(str, Enum):
     superadmin = "superadmin"
     admin = "admin"
-    manager = "manager"
     agent = "agent"
 
 class MessageDirection(str, Enum):
@@ -38,7 +37,6 @@ class StepType(str, Enum):
     recording = "recording"
     react = "react"
     document = "document"
-    transfer = "transfer"
 
 
 # ========================
@@ -59,22 +57,6 @@ class CompanyResponse(CompanyBase):
 
 
 # ========================
-# Department
-# ========================
-
-class DepartmentBase(BaseModel):
-    name: str
-
-class DepartmentCreate(DepartmentBase):
-    company_id: str
-
-class DepartmentResponse(DepartmentBase):
-    id: str
-    company_id: str
-    created_at: datetime
-
-
-# ========================
 # User
 # ========================
 
@@ -82,27 +64,15 @@ class UserBase(BaseModel):
     email: str
     name: Optional[str] = None
     role: UserRole = UserRole.agent
-    department_id: Optional[str] = None
 
 class UserCreate(UserBase):
     company_id: str
-
-# Schema para criação de usuário pelo Admin via Supabase Admin API
-class AdminUserCreate(BaseModel):
-    email: str
-    password: str
-    name: Optional[str] = None
-    role: UserRole = UserRole.agent
-    department_id: Optional[str] = None
-    company_id: str  # Será validado no backend contra o company_id do admin
 
 class UserResponse(UserBase):
     id: str
     company_id: str
     is_active: bool
     created_at: datetime
-    signature: Optional[str] = None
-    department_id: Optional[str] = None
 
 
 # ========================
@@ -128,10 +98,6 @@ class ContactResponse(ContactBase):
 
 class ContactStatusUpdate(BaseModel):
     chat_status: ChatStatus
-
-class ContactTransferRequest(BaseModel):
-    department_id: str
-    assigned_to: Optional[str] = None
 
 
 # ========================
@@ -162,7 +128,6 @@ class StepBase(BaseModel):
     content: str
     delay_duration: int = Field(default=3, ge=0, le=30)
     order_index: int = 0
-    transfer_department_id: Optional[str] = None
 
 class StepCreate(StepBase):
     flow_id: str
@@ -281,11 +246,4 @@ class QuickReplyResponse(QuickReplyBase):
     id: str
     company_id: str
     created_at: datetime
-
-class QuickReplyUpdate(BaseModel):
-    shortcut: Optional[str] = None
-    content: Optional[str] = None
-    media_url: Optional[str] = None
-    media_type: Optional[str] = None
-
 

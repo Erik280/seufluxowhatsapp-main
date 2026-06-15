@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { FolderOpen, Plus, Mic, Trash2, Send, FileText, Zap, Filter, ArrowLeft, Smile, Forward, Search, Check, Pencil } from 'lucide-react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
 import ContactCrmModal from '../components/ContactCrmModal';
-import { useAuth } from '../context/AuthContext';
 import './ChatView.css';
 
 interface Contact {
@@ -17,8 +16,6 @@ interface Contact {
   avatar_url?: string | null;
   unread_count?: number;
   contact_tags?: { tag_id: string; tags: { id: string; name: string; color: string } }[];
-  assigned_to?: string | null;
-  department_id?: string | null;
 }
 
 interface Message {
@@ -50,7 +47,6 @@ interface QuickReply {
 }
 
 export default function ChatView() {
-  const { user, isAgent } = useAuth();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [stages, setStages] = useState<any[]>([]);
@@ -59,14 +55,6 @@ export default function ChatView() {
   const [companyId, setCompanyId] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
-  const [allUsers, setAllUsers] = useState<any[]>([]);
-  const [allDepartments, setAllDepartments] = useState<any[]>([]);
-  
-  // Transfer Modal State
-  const [showTransferModal, setShowTransferModal] = useState(false);
-  const [transferDepartmentId, setTransferDepartmentId] = useState('');
-  const [transferUserId, setTransferUserId] = useState('');
-  const [isTransferring, setIsTransferring] = useState(false);
   
 
   // Media Library state
@@ -315,20 +303,11 @@ export default function ChatView() {
         setCompanyId(userData.company_id);
         
         // 2. Fetch Contacts
-        let query = supabase
+        const { data: contactsData } = await supabase
           .from('contacts')
           .select('*, contact_tags(tag_id, tags(id, name, color))')
-          .eq('company_id', userData.company_id);
-
-        if (isAgent && user) {
-          if (user.department_id) {
-            query = query.or(`assigned_to.eq.${user.id},and(assigned_to.is.null,department_id.eq.${user.department_id})`);
-          } else {
-            query = query.eq('assigned_to', user.id);
-          }
-        }
-
-        const { data: contactsData } = await query.order('last_message', { ascending: false, nullsFirst: false });
+          .eq('company_id', userData.company_id)
+          .order('last_message', { ascending: false, nullsFirst: false });
           
         if (contactsData) setContacts(contactsData);
 
@@ -342,16 +321,6 @@ export default function ChatView() {
           .eq('company_id', userData.company_id)
           .order('order_index', { ascending: true });
         if (stagesData) setStages(stagesData);
-        
-        // Fetch Departments & Users
-        const { data: deptsData } = await supabase.from('departments').select('*').eq('company_id', userData.company_id);
-        if (deptsData) setAllDepartments(deptsData);
-        
-        const usersRes = await fetch(`${API_BASE_URL}/api/team-users`, { headers: { 'x-user-id': user?.id || '' } });
-        if (usersRes.ok) {
-          const usersData = await usersRes.json();
-          setAllUsers(usersData);
-        }
 
         // Fetch Quick Replies via API to bypass RLS issues
         try {
@@ -367,35 +336,11 @@ export default function ChatView() {
         // 3. Subscribe to Realtime Contacts
         const contactSub = supabase
           .channel(`contacts-${userData.company_id}-${Math.random()}`)
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts', filter: `company_id=eq.${userData.company_id}` }, (payload: any) => {
-            if (payload.eventType === 'UPDATE' && payload.new && payload.old) {
-              const newUnread = payload.new.unread_count || 0;
-              const oldUnread = payload.old.unread_count || 0;
-              if (newUnread > oldUnread) {
-                const audio = new Audio('/sound/notification.mp3');
-                audio.play().catch(e => console.warn('Notificação de áudio bloqueada:', e));
-              }
-            }
-
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts', filter: `company_id=eq.${userData.company_id}` }, (_payload) => {
             // Very simple refresh for now
-            let refreshQuery = supabase.from('contacts').select('*, contact_tags(tag_id, tags(id, name, color))').eq('company_id', userData.company_id);
-            if (isAgent && user) {
-              if (user.department_id) {
-                refreshQuery = refreshQuery.or(`assigned_to.eq.${user.id},and(assigned_to.is.null,department_id.eq.${user.department_id})`);
-              } else {
-                refreshQuery = refreshQuery.eq('assigned_to', user.id);
-              }
-            }
-            refreshQuery.order('last_message', { ascending: false, nullsFirst: false })
+            supabase.from('contacts').select('*, contact_tags(tag_id, tags(id, name, color))').eq('company_id', userData.company_id).order('last_message', { ascending: false, nullsFirst: false })
               .then(({data}) => {
-                if (data) {
-                  setContacts(data);
-                  setSelectedContact(prev => {
-                    if (!prev) return prev;
-                    const updatedContact = data.find(c => c.id === prev.id);
-                    return updatedContact ? { ...prev, ...updatedContact } : prev;
-                  });
-                }
+                if (data) setContacts(data);
               });
           })
           .subscribe();
@@ -488,8 +433,7 @@ export default function ChatView() {
         body: JSON.stringify({
           contact_id: selectedContact.id,
           company_id: companyId,
-          text: text,
-          user_id: user?.id || null  // Para concatenar assinatura do atendente
+          text: text
         })
       });
 
@@ -1061,47 +1005,6 @@ export default function ChatView() {
     }
   };
 
-  const handleResolveContact = async () => {
-    if (!selectedContact) return;
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/contacts/${selectedContact.id}/resolve`, { method: 'POST' });
-      if (res.ok) {
-        showToast('Atendimento finalizado. O contato retornou ao Bot.');
-        setSelectedContact(prev => prev ? { ...prev, chat_status: 'bot', assigned_to: null, department_id: null } : null);
-      } else {
-        showToast('Erro ao finalizar.', 'error');
-      }
-    } catch (err) {
-      showToast('Erro de conexão.', 'error');
-    }
-  };
-
-  const handleTransferContact = async () => {
-    if (!selectedContact || !transferDepartmentId) return;
-    setIsTransferring(true);
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/contacts/${selectedContact.id}/transfer`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          department_id: transferDepartmentId,
-          assigned_to: transferUserId || null
-        })
-      });
-      if (res.ok) {
-        showToast('Contato transferido com sucesso.');
-        setShowTransferModal(false);
-        setSelectedContact(prev => prev ? { ...prev, chat_status: 'human', department_id: transferDepartmentId, assigned_to: transferUserId || null } : null);
-      } else {
-        showToast('Erro ao transferir.', 'error');
-      }
-    } catch (err) {
-      showToast('Erro de conexão.', 'error');
-    } finally {
-      setIsTransferring(false);
-    }
-  };
-
   const handleSaveQuickReply = async () => {
     if (!saveQRShortcut.trim()) {
       showToast('Digite um atalho.', 'error');
@@ -1292,12 +1195,7 @@ export default function ChatView() {
                     background: contact.chat_status === 'bot' ? '#00E5CC20' : '#ff6b6b20', 
                     color: contact.chat_status === 'bot' ? '#00E5CC' : '#ff6b6b' 
                   }}>
-                    {contact.chat_status === 'bot' 
-                      ? 'Bot Ativo' 
-                      : contact.assigned_to 
-                        ? `[Humano] ${allUsers.find(u => u.id === contact.assigned_to)?.name || ''}`.trim()
-                        : 'Humano'
-                    }
+                    {contact.chat_status === 'bot' ? 'Bot Ativo' : 'Humano'}
                   </span>
                   {contact.contact_tags?.map((ct: any) => ct.tags).filter(Boolean).map((tag: any) => (
                     <span key={tag.id} className="tag" style={{
@@ -1346,38 +1244,10 @@ export default function ChatView() {
                 <h3 onClick={() => setShowCrmModal(true)} style={{ cursor: 'pointer', display: 'inline-block' }} title="Abrir Detalhes do Lead (CRM)">
                   {selectedContact.name || selectedContact.phone}
                 </h3>
-                <span className="status" style={{ color: selectedContact.chat_status === 'bot' ? '#00FF88' : '#ff6b6b', display: 'block', fontSize: '0.85rem' }}>
-                  {selectedContact.chat_status === 'bot' 
-                    ? 'Online (Bot Ativo)' 
-                    : selectedContact.assigned_to
-                      ? `Em atendimento por ${(() => {
-                          const u = allUsers.find(x => x.id === selectedContact.assigned_to);
-                          return u ? (u.name || u.email) : 'Usuário';
-                        })()} - ${allDepartments.find(d => d.id === selectedContact.department_id)?.name || 'Sem Setor'}`
-                      : selectedContact.department_id
-                        ? `Aguardando no setor ${allDepartments.find(d => d.id === selectedContact.department_id)?.name || ''}`
-                        : 'Atendimento Humano'
-                  }
+                <span className="status" style={{ color: selectedContact.chat_status === 'bot' ? '#00FF88' : '#ff6b6b', display: 'block' }}>
+                  {selectedContact.chat_status === 'bot' ? 'Online (Bot Ativo)' : 'Atendimento Humano'}
                 </span>
               </div>
-              
-              <div className="header-actions" style={{ display: 'flex', gap: '8px', marginLeft: 'auto', marginRight: '16px' }}>
-                <button
-                  onClick={handleResolveContact}
-                  className="fb-btn-resolve"
-                  style={{ background: '#323d5e', border: 'none', padding: '8px 12px', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500 }}
-                >
-                  Finalizar
-                </button>
-                <button
-                  onClick={() => setShowTransferModal(true)}
-                  className="fb-btn-transfer"
-                  style={{ background: '#e74c3c', border: 'none', padding: '8px 12px', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500 }}
-                >
-                  Transferir
-                </button>
-              </div>
-
               <button
                 className="crm-btn"
                 onClick={() => setShowCrmModal(true)}
@@ -2004,63 +1874,6 @@ export default function ChatView() {
               >
                 <Forward size={14} />
                 {isForwarding ? 'Encaminhando...' : `Encaminhar${forwardSelected.length > 0 ? ` (${forwardSelected.length})` : ''}`}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Transfer Modal */}
-      {showTransferModal && (
-        <div className="modal-overlay" onClick={() => setShowTransferModal(false)}>
-          <div className="modal-content new-chat-modal" onClick={e => e.stopPropagation()}>
-            <h2>Transferir Atendimento</h2>
-            <div className="form-group">
-              <label>Setor de Destino</label>
-              <select 
-                value={transferDepartmentId} 
-                onChange={e => setTransferDepartmentId(e.target.value)}
-                style={{ width: '100%', padding: '10px', borderRadius: '8px', background: '#1a1f36', border: '1px solid #323d5e', color: '#fff' }}
-              >
-                <option value="">Selecione o Setor</option>
-                {allDepartments.map(d => (
-                  <option key={d.id} value={d.id}>{d.name}</option>
-                ))}
-              </select>
-            </div>
-            
-            <div className="form-group">
-              <label>Atendente (Opcional)</label>
-              <select 
-                value={transferUserId} 
-                onChange={e => {
-                  const uid = e.target.value;
-                  setTransferUserId(uid);
-                  if (uid) {
-                    const u = allUsers.find(x => x.id === uid);
-                    if (u && u.department_id) setTransferDepartmentId(u.department_id);
-                  }
-                }}
-                style={{ width: '100%', padding: '10px', borderRadius: '8px', background: '#1a1f36', border: '1px solid #323d5e', color: '#fff' }}
-              >
-                <option value="">Fila Geral do Setor</option>
-                {allUsers
-                  .filter(u => !transferDepartmentId || u.department_id === transferDepartmentId)
-                  .map(u => (
-                  <option key={u.id} value={u.id}>{u.name || u.email}</option>
-                ))}
-              </select>
-            </div>
-            
-            <div className="modal-actions" style={{ marginTop: '20px' }}>
-              <button className="cancel-btn" onClick={() => setShowTransferModal(false)}>Cancelar</button>
-              <button 
-                className="save-btn" 
-                style={{ background: '#e74c3c' }}
-                onClick={handleTransferContact} 
-                disabled={!transferDepartmentId || isTransferring}
-              >
-                {isTransferring ? 'Transferindo...' : 'Transferir'}
               </button>
             </div>
           </div>

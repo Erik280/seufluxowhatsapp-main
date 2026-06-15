@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
-import { Search } from 'lucide-react';
 import './MediaLibraryView.css';
 
 interface MediaItem {
@@ -15,7 +14,6 @@ export default function MediaLibraryView() {
   const [mediaList, setMediaList] = useState<MediaItem[]>([]);
   const [companyId, setCompanyId] = useState<string>('');
   const [loading, setLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -89,25 +87,13 @@ export default function MediaLibraryView() {
     <div className="media-library-root" style={{ padding: '20px', color: '#e6f1ff' }}>
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h2>Biblioteca de Mídia</h2>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          <div style={{ position: 'relative', width: '300px' }}>
-            <Search size={16} color="#8892b0" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }} />
-            <input 
-              type="text" 
-              placeholder="Buscar por nome..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ width: '100%', padding: '10px 10px 10px 35px', borderRadius: '8px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: '#e6f1ff', outline: 'none' }}
-            />
-          </div>
-          <button 
-            className="btn-primary" 
-            onClick={() => fileInputRef.current?.click()}
-            disabled={loading}
-          >
-            {loading ? 'Enviando...' : '+ Adicionar Nova Mídia'}
-          </button>
-        </div>
+        <button 
+          className="btn-primary" 
+          onClick={() => fileInputRef.current?.click()}
+          disabled={loading}
+        >
+          {loading ? 'Enviando...' : '+ Adicionar Nova Mídia'}
+        </button>
         <input 
           type="file" 
           ref={fileInputRef} 
@@ -117,24 +103,10 @@ export default function MediaLibraryView() {
         />
       </header>
 
-      <div style={{ 
-        display: 'flex', 
-        flexWrap: 'nowrap', 
-        overflowX: 'auto', 
-        gap: '20px', 
-        paddingBottom: '20px' 
-      }}>
-        {mediaList.filter(m => m.name.toLowerCase().includes(searchTerm.toLowerCase())).map(media => (
-          <div key={media.id} style={{ 
-            background: '#112240', 
-            padding: '15px', 
-            borderRadius: '8px', 
-            position: 'relative',
-            minWidth: '280px',
-            maxWidth: '300px',
-            flexShrink: 0
-          }}>
-            <h4 style={{ margin: '0 0 10px 0', fontSize: '16px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={media.name}>{media.name}</h4>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px' }}>
+        {mediaList.map(media => (
+          <div key={media.id} style={{ background: '#112240', padding: '15px', borderRadius: '8px', position: 'relative' }}>
+            <h4 style={{ margin: '0 0 10px 0', fontSize: '16px' }}>{media.name}</h4>
             <span style={{ fontSize: '12px', background: '#233554', padding: '2px 6px', borderRadius: '4px', marginBottom: '10px', display: 'inline-block' }}>
               {media.media_type.toUpperCase()}
             </span>
@@ -155,7 +127,7 @@ export default function MediaLibraryView() {
         ))}
 
         {mediaList.length === 0 && !loading && (
-          <p style={{ width: '100%', textAlign: 'center', color: '#8892b0' }}>Nenhuma mídia salva ainda.</p>
+          <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#8892b0' }}>Nenhuma mídia salva ainda.</p>
         )}
       </div>
     </div>
