@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
-import { Smartphone, Tags, Zap, Users, ShieldAlert, Book, FileText, Trash2, UploadCloud } from 'lucide-react';
+import { Smartphone, Tags, Zap, Users, ShieldAlert, Book, FileText, Trash2, UploadCloud, UserCircle, Eye } from 'lucide-react';
 import './SettingsView.css';
 
 interface Company {
@@ -19,8 +19,16 @@ interface KnowledgeItem {
 }
 
 export default function SettingsView() {
-  const [activeTab, setActiveTab] = useState<'whatsapp' | 'tags' | 'flows' | 'team' | 'knowledge'>('whatsapp');
+  const [activeTab, setActiveTab] = useState<'whatsapp' | 'tags' | 'flows' | 'team' | 'knowledge' | 'profile'>('whatsapp');
   const [company, setCompany] = useState<Company | null>(null);
+
+  // Profile states
+  const [profileUserId, setProfileUserId] = useState<string>('');
+  const [profileName, setProfileName] = useState('');
+  const [profileSignature, setProfileSignature] = useState('');
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileSaveMsg, setProfileSaveMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [showSigPreview, setShowSigPreview] = useState(false);
   
   // WhatsApp States
   const [qrCode, setQrCode] = useState<string | null>(null);
@@ -36,7 +44,40 @@ export default function SettingsView() {
 
   useEffect(() => {
     fetchCompanyData();
+    fetchProfile();
   }, []);
+
+  const fetchProfile = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const { data } = await supabase
+      .from('users')
+      .select('id, name, signature')
+      .eq('auth_id', session.user.id)
+      .single();
+    if (data) {
+      setProfileUserId(data.id);
+      setProfileName(data.name || '');
+      setProfileSignature(data.signature || '');
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!profileUserId) return;
+    setIsSavingProfile(true);
+    setProfileSaveMsg(null);
+    const { error } = await supabase
+      .from('users')
+      .update({ name: profileName.trim() || null, signature: profileSignature.trim() || null })
+      .eq('id', profileUserId);
+    setIsSavingProfile(false);
+    if (error) {
+      setProfileSaveMsg({ text: 'Erro ao salvar. Tente novamente.', ok: false });
+    } else {
+      setProfileSaveMsg({ text: 'Perfil salvo com sucesso!', ok: true });
+      setTimeout(() => setProfileSaveMsg(null), 3000);
+    }
+  };
 
   const fetchCompanyData = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -246,6 +287,12 @@ export default function SettingsView() {
           >
             <Book size={18} /> Base de Conhecimento (IA)
           </button>
+          <button 
+            className={`tab-btn ${activeTab === 'profile' ? 'active' : ''}`}
+            onClick={() => setActiveTab('profile')}
+          >
+            <UserCircle size={18} /> Meu Perfil
+          </button>
         </aside>
 
         {/* Content */}
@@ -453,6 +500,78 @@ export default function SettingsView() {
                 )}
               </div>
 
+            </div>
+          )}
+          {activeTab === 'profile' && (
+            <div className="settings-card">
+              <h3>Meu Perfil</h3>
+              <p className="settings-desc">
+                Configure seu nome e assinatura que serão usados nas mensagens do Chat quando a assinatura estiver ativada.
+              </p>
+
+              <div className="profile-form">
+                <div className="profile-field">
+                  <label htmlFor="profile-name">Seu Nome</label>
+                  <input
+                    id="profile-name"
+                    type="text"
+                    className="kb-input"
+                    placeholder="Ex: Erik"
+                    value={profileName}
+                    onChange={e => setProfileName(e.target.value)}
+                  />
+                </div>
+
+                <div className="profile-field">
+                  <label htmlFor="profile-signature">Assinatura (texto abaixo do nome)</label>
+                  <textarea
+                    id="profile-signature"
+                    className="kb-textarea"
+                    placeholder="Ex: Atendente Comercial | SeuFluxo &#128640;"
+                    value={profileSignature}
+                    onChange={e => setProfileSignature(e.target.value)}
+                    rows={3}
+                  />
+                  <span className="profile-hint">
+                    Deixe em branco para usar apenas o nome como assinatura.
+                  </span>
+                </div>
+
+                <div className="sig-preview-wrapper">
+                  <button
+                    className="sig-preview-toggle"
+                    onClick={() => setShowSigPreview(v => !v)}
+                  >
+                    <Eye size={15} style={{ marginRight: 6 }} />
+                    {showSigPreview ? 'Ocultar prévia' : 'Ver prévia da mensagem'}
+                  </button>
+
+                  {showSigPreview && (
+                    <div className="sig-preview-bubble">
+                      <div className="sig-preview-name">*{profileName || 'Seu Nome'}:*</div>
+                      {profileSignature && (
+                        <div className="sig-preview-sub">{profileSignature}</div>
+                      )}
+                      <div className="sig-preview-body">Olá! Como posso ajudar você hoje? 😊</div>
+                      <span className="sig-preview-time">agora</span>
+                    </div>
+                  )}
+                </div>
+
+                {profileSaveMsg && (
+                  <p className={`profile-save-msg ${profileSaveMsg.ok ? 'ok' : 'err'}`}>
+                    {profileSaveMsg.text}
+                  </p>
+                )}
+
+                <button
+                  className="btn-primary"
+                  onClick={handleSaveProfile}
+                  disabled={isSavingProfile}
+                >
+                  {isSavingProfile ? 'Salvando...' : 'Salvar Perfil'}
+                </button>
+              </div>
             </div>
           )}
         </main>

@@ -60,7 +60,13 @@ export default function ChatView() {
   const [companyId, setCompanyId] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
-  
+
+  // Current user info for signature
+  const [currentUser, setCurrentUser] = useState<{ name: string | null; signature: string | null } | null>(null);
+  const [useSignature, setUseSignature] = useState(() => {
+    const saved = localStorage.getItem('chat_use_signature');
+    return saved !== null ? saved === 'true' : false;
+  });
 
   // Media Library state
   const [showMediaModal, setShowMediaModal] = useState(false);
@@ -326,12 +332,13 @@ export default function ChatView() {
       
       const { data: userData } = await supabase
         .from('users')
-        .select('company_id')
+        .select('company_id, name, signature')
         .eq('auth_id', session.user.id)
         .single();
         
       if (userData) {
         setCompanyId(userData.company_id);
+        setCurrentUser({ name: userData.name || null, signature: userData.signature || null });
         
         // 2. Fetch Contacts
         const { data: contactsData } = await supabase
@@ -451,7 +458,18 @@ export default function ChatView() {
   const handleSend = async () => {
     if (!inputValue.trim() || !selectedContact || !companyId) return;
 
-    const text = inputValue.trim();
+    const rawText = inputValue.trim();
+
+    // ── Build final text with optional signature ──
+    let text = rawText;
+    if (useSignature && currentUser) {
+      const sigName = currentUser.name || 'Atendente';
+      const sigLine = currentUser.signature
+        ? `*${sigName}:*\n${currentUser.signature}`
+        : `*${sigName}:*`;
+      text = `${sigLine}\n${rawText}`;
+    }
+
     setInputValue('');
 
     // ── Optimistic UI for Text ──
@@ -492,6 +510,14 @@ export default function ChatView() {
       setMessages(prev => prev.map(m => m.temp_id === tempId ? { ...m, status: 'error' } : m));
       showToast('Falha na conexão ao enviar mensagem.', 'error');
     }
+  };
+
+  const toggleSignature = () => {
+    setUseSignature(prev => {
+      const next = !prev;
+      localStorage.setItem('chat_use_signature', String(next));
+      return next;
+    });
   };
 
   // ── Shared file upload handler (used by button AND drag-and-drop) ──
@@ -1636,6 +1662,16 @@ export default function ChatView() {
                     />
                     <Plus size={20} />
                   </label>
+                  {/* ── Signature Toggle Button ── */}
+                  {currentUser && (
+                    <button
+                      className={`signature-toggle-btn ${useSignature ? 'active' : ''}`}
+                      onClick={toggleSignature}
+                      title={useSignature ? `Assinatura ativa: ${currentUser.name || 'Atendente'}` : 'Ativar assinatura'}
+                    >
+                      <span className="sig-icon">✍</span>
+                    </button>
+                  )}
                   {inputValue.trim() ? (
                     <>
                       <input 
@@ -1652,7 +1688,7 @@ export default function ChatView() {
                     <>
                       <input 
                         type="text" 
-                        placeholder="Digite uma mensagem..." 
+                        placeholder={useSignature && currentUser ? `Mensagem (assinado como ${currentUser.name || 'Atendente'})` : 'Digite uma mensagem...'} 
                         value={inputValue}
                         onChange={e => handleTyping(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && handleSend()}

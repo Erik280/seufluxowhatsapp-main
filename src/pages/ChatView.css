@@ -478,6 +478,60 @@
   pointer-events: none;
 }
 
+/* ── Signature Toggle Button ── */
+.signature-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--color-text-muted, #8892b0);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.signature-toggle-btn:hover {
+  border-color: rgba(0, 229, 204, 0.5);
+  color: var(--color-neon-cyan, #00E5CC);
+  background: rgba(0, 229, 204, 0.06);
+}
+
+.signature-toggle-btn.active {
+  background: rgba(0, 229, 204, 0.12);
+  border-color: var(--color-neon-cyan, #00E5CC);
+  color: var(--color-neon-cyan, #00E5CC);
+  box-shadow: 0 0 10px rgba(0, 229, 204, 0.25);
+}
+
+.signature-toggle-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  right: -3px;
+  width: 8px;
+  height: 8px;
+  background: var(--color-neon-green, #00FF88);
+  border-radius: 50%;
+  border: 1px solid rgba(11, 15, 30, 0.9);
+  box-shadow: 0 0 6px rgba(0, 255, 136, 0.6);
+  animation: sig-dot-pulse 2s ease-in-out infinite;
+}
+
+@keyframes sig-dot-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.8); }
+}
+
+.sig-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
 /* ---- CRM Details are now inside the modal ---- */
 
 .crm-header {
