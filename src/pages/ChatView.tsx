@@ -464,10 +464,7 @@ export default function ChatView() {
     let text = rawText;
     if (useSignature && currentUser) {
       const sigName = currentUser.name || 'Atendente';
-      const sigLine = currentUser.signature
-        ? `*${sigName}:*\n${currentUser.signature}`
-        : `*${sigName}:*`;
-      text = `${sigLine}\n${rawText}`;
+      text = `*${sigName}:*\n${rawText}`;
     }
 
     setInputValue('');
