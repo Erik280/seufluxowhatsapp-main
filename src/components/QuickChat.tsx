@@ -11,6 +11,7 @@ interface Message {
   media_url?: string | null;
   media_type?: string | null;
   created_at: string;
+  is_external_send?: boolean;
 }
 
 interface QuickReply {
@@ -497,6 +498,9 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
                     <Send size={10} />
                   )}
                 </div>
+              )}
+              {msg.is_external_send && (
+                <span className="external-send-badge">Envio externo</span>
               )}
             </div>
           </div>

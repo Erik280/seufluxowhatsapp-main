@@ -518,7 +518,8 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
                 logger.info(f"[{instance_name}] ✅ Mensagem editada (upsert): '{(msg['content'] or '')[:40]}' → '{new_text[:40]}'")
                 return {"status": "ok", "mode": "message_edited"}
 
-    # ── 2. Mensagens enviadas por mim (WhatsApp Web / App) ──
+    # ── 2. Mensagens enviadas externamente (WhatsApp App / WhatsApp Web) ──
+    # Captura texto e todos os tipos de mídia; marca como is_external_send=True
     if is_from_me:
         # Salvar apenas se o contato JÁ EXISTE no sistema
         contact_result = (
@@ -529,20 +530,69 @@ async def evolution_webhook(request: Request, background_tasks: BackgroundTasks)
             .limit(1)
             .execute()
         )
-        if contact_result.data and message_text:
-            contact_id = contact_result.data[0]["id"]
-            db.table("messages").insert({
-                "company_id": company_id,
-                "contact_id": contact_id,
-                "direction": "out",
-                "content": message_text,
-                "whatsapp_id": key.get("id")
-            }).execute()
-            db.table("contacts").update({"last_message": "now()"}).eq("id", contact_id).execute()
-            logger.info(f"[fromMe] Mensagem salva para contato {phone} (direction=out)")
-            return {"status": "ok", "mode": "from_me_saved"}
+        if not contact_result.data:
+            return {"status": "ignored", "reason": "fromMe_no_contact"}
 
-        return {"status": "ignored", "reason": "fromMe_no_contact_or_empty"}
+        contact_id = contact_result.data[0]["id"]
+
+        # ── Detectar presença de mídia ──
+        has_media = any(
+            k in message_obj
+            for k in ["audioMessage", "imageMessage", "videoMessage", "documentMessage", "stickerMessage"]
+        )
+
+        # ── Construir conteúdo (texto ou placeholder de mídia) ──
+        content = message_text or None
+        if not content:
+            if "audioMessage" in message_obj:
+                content = "[🎤 Áudio]"
+            elif "imageMessage" in message_obj:
+                img_caption = message_obj["imageMessage"].get("caption", "").strip()
+                content = img_caption if img_caption else "[🖼️ Imagem]"
+            elif "videoMessage" in message_obj:
+                vid_caption = message_obj["videoMessage"].get("caption", "").strip()
+                content = vid_caption if vid_caption else "[📹 Vídeo]"
+            elif "documentMessage" in message_obj:
+                doc_msg = message_obj["documentMessage"]
+                doc_name = (doc_msg.get("fileName") or doc_msg.get("title") or "").strip()
+                content = f"[📄 {doc_name}]" if doc_name else "[📄 Documento]"
+            elif "stickerMessage" in message_obj:
+                content = "[Figurinha]"
+
+        # ── Ignorar apenas se não há texto nem mídia reconhecida ──
+        if not content and not has_media:
+            logger.debug(f"[fromMe] Ignorado — sem conteúdo válido para {phone}")
+            return {"status": "ignored", "reason": "fromMe_empty"}
+
+        # ── Inserir mensagem como Envio Externo ──
+        msg_res = db.table("messages").insert({
+            "company_id": company_id,
+            "contact_id": contact_id,
+            "direction": "out",
+            "content": content,
+            "whatsapp_id": key.get("id"),
+            "is_external_send": True,
+        }).execute()
+
+        # ── Disparar download de mídia em background (mesmo fluxo das msgs recebidas) ──
+        if msg_res.data and has_media and "stickerMessage" not in message_obj:
+            message_id = msg_res.data[0]["id"]
+            background_tasks.add_task(
+                process_incoming_media,
+                message_id=message_id,
+                company_id=company_id,
+                instance_name=instance_name,
+                evolution_apikey=evolution_apikey,
+                message_obj=message_obj,
+                full_message_data=data
+            )
+
+        db.table("contacts").update({"last_message": "now()"}).eq("id", contact_id).execute()
+        logger.info(
+            f"[fromMe] Envio externo salvo para {phone} "
+            f"| mídia={has_media} | conteúdo='{(content or '')[:60]}'"
+        )
+        return {"status": "ok", "mode": "from_me_external_saved"}
 
     # ── 3. Buscar o stage padrão da empresa ──
     default_stage_id = _get_or_create_default_stage(db, company_id)

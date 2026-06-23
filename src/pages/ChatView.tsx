@@ -37,6 +37,7 @@ interface Message {
   is_edited?: boolean;
   edited_at?: string | null;
   original_content?: string | null;
+  is_external_send?: boolean;
   // Feedback de upload
   status?: 'pending' | 'success' | 'error';
   temp_id?: string;
@@ -1605,6 +1606,9 @@ export default function ChatView() {
                           </div>
                         )}
                       </div>
+                    )}
+                    {msg.is_external_send && (
+                      <span className="external-send-badge">Envio externo</span>
                     )}
                   </div>
                 </div>
