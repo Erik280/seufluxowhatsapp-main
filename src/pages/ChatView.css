@@ -315,8 +315,8 @@
   display: flex;
   flex-direction: column;
   max-width: 70%;
-  /* Espaço na borda inferior para o msg-actions não colidir com a próxima mensagem */
-  margin-bottom: 6px;
+  /* Espaço entre mensagens; o msg-actions flutua acima com top: -32px (position:absolute) */
+  margin-bottom: 20px;
 }
 
 .message.in {
@@ -1626,15 +1626,14 @@
   gap: 6px;
   align-items: center;
   position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
+  top: -32px;
   background: rgba(11, 15, 30, 0.95);
   border: 1px solid var(--color-border);
   padding: 4px 8px;
   border-radius: 20px;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity 0.2s ease;
   z-index: 100;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
@@ -1642,19 +1641,19 @@
 .msg-actions::before {
   content: '';
   position: absolute;
-  top: -15px;
-  bottom: -15px;
-  left: -30px;
-  right: -30px;
+  top: -10px;
+  bottom: -20px;
+  left: -20px;
+  right: -20px;
   z-index: -1;
 }
 
 .message.in .msg-actions {
-  right: -85px;
+  left: 0;
 }
 
 .message.out .msg-actions {
-  left: -85px;
+  right: 0;
 }
 
 .message:hover .msg-actions,
