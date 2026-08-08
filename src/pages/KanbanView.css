@@ -1035,24 +1035,25 @@
 /* ---- Responsive Mobile ---- */
 @media (max-width: 767px) {
   .kanban-view-root {
-    padding: 16px;
+    padding: 12px;
+    height: 100%;
   }
 
   .kanban-header {
     flex-direction: column;
     align-items: stretch;
-    gap: 16px;
-    margin-bottom: 16px;
+    gap: 10px;
+    margin-bottom: 12px;
   }
 
   .kanban-header h2 {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
   }
 
   .kanban-header-left {
     flex-direction: column;
     align-items: stretch;
-    gap: 12px;
+    gap: 8px;
   }
 
   .kanban-search {
@@ -1060,73 +1061,75 @@
   }
 
   .kanban-search input {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+    height: 40px;
   }
 
   .kb-btn-new-col {
     width: 100%;
     justify-content: center;
-    height: 48px;
-  }
-
-  .kanban-board {
-    gap: 12px;
-    padding-bottom: 12px;
-  }
-
-  .kanban-column {
-    min-width: 280px;
-    max-width: 280px;
-  }
-
-  .column-header {
-    padding: 12px;
-  }
-
-  .column-title-row h3 {
-    font-size: 0.95rem;
-  }
-
-  .task-count {
+    height: 40px;
     font-size: 0.85rem;
   }
 
+  .kanban-board {
+    gap: 10px;
+    padding-bottom: 10px;
+  }
+
+  .kanban-column {
+    min-width: 260px;
+    max-width: 260px;
+  }
+
+  .column-header {
+    padding: 10px;
+  }
+
+  .column-title-row h3 {
+    font-size: 0.85rem;
+  }
+
+  .task-count {
+    font-size: 0.75rem;
+  }
+
   .task-list {
-    padding: 8px;
-    gap: 8px;
+    padding: 6px;
+    gap: 6px;
   }
 
   .task-card {
-    padding: 12px;
+    padding: 10px;
   }
 
   .task-name {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
   }
 
   .task-phone {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
   }
 
   .task-preview {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
   }
 
   .task-time {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
   }
 
   .flow-step-label {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
   }
 
   .kb-settings-btn {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
   }
 
   .kb-col-drag-handle {
-    padding: 4px;
+    padding: 2px;
   }
 
   /* Scrollbar styling for horizontal scroll */
@@ -1150,7 +1153,7 @@
     max-height: none;
     border-radius: 0;
     width: 100vw;
-    height: 100vh;
+    height: 100%;
   }
 
   .kb-modal-backdrop {
@@ -1158,19 +1161,19 @@
   }
 
   .kb-modal-header {
-    padding: 16px;
+    padding: 12px;
   }
 
   .kb-modal-body {
-    padding: 16px;
+    padding: 12px;
   }
 
   .kb-field input,
   .kb-field select,
   .kb-field textarea {
-    height: 48px;
-    min-height: 48px;
-    font-size: 1rem;
+    height: 40px;
+    min-height: 40px;
+    font-size: 0.85rem;
   }
 
   .kb-field textarea {

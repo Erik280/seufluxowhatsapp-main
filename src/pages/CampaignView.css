@@ -312,47 +312,47 @@
 /* ---- Responsive Mobile ---- */
 @media (max-width: 767px) {
   .cv-root {
-    padding: 16px;
-    gap: 16px;
+    padding: 12px;
+    gap: 12px;
+    height: 100%;
   }
 
   .cv-header {
     flex-direction: column;
     align-items: stretch;
-    gap: 12px;
+    gap: 10px;
   }
 
   .cv-header-left h1 {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
   }
 
   .cv-btn-primary {
     width: 100%;
-    height: 48px;
+    height: 40px;
     justify-content: center;
-    font-size: 1rem;
+    font-size: 0.85rem;
   }
 
   .cv-form-card {
-    padding: 16px;
-    gap: 16px;
+    padding: 12px;
+    gap: 12px;
   }
 
   .cv-form-card h3 {
-    font-size: 1rem;
+    font-size: 0.95rem;
   }
 
   .cv-field input,
   .cv-field select,
   .cv-field textarea {
-    height: 48px;
-    min-height: 48px;
-    font-size: 1rem;
+    height: 40px;
+    min-height: 40px;
+    font-size: 0.85rem;
   }
 
   .cv-field textarea {
-    min-height: 120px;
-    padding-top: 12px;
+    min-height: 80px;
   }
 
   .cv-row {

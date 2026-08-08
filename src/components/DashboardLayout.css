@@ -14,10 +14,13 @@
 .mobile-header {
   display: none;
   align-items: center;
-  padding: 16px;
+  padding: 10px 14px;
   background: rgba(7, 10, 22, 0.98);
   border-bottom: 1px solid var(--color-border);
-  z-index: 20;
+  z-index: 100;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
 }
 
 .mobile-menu-btn {
@@ -28,7 +31,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px;
+  padding: 6px;
   border-radius: 8px;
   transition: background var(--transition-fast);
 }
@@ -38,7 +41,9 @@
 }
 
 .mobile-logo {
-  margin-left: 16px;
+  margin-left: 12px;
+  display: flex;
+  align-items: center;
 }
 
 /* ---- Mobile Backdrop ---- */
@@ -69,8 +74,8 @@
   border: none;
   color: var(--color-text-muted);
   cursor: pointer;
-  padding: 12px;
-  margin-bottom: 16px;
+  padding: 10px;
+  margin-bottom: 12px;
   border-radius: 8px;
   transition: all var(--transition-fast);
 }
@@ -149,12 +154,15 @@
   flex-direction: column;
   overflow: hidden;
   position: relative;
+  height: 100%;
 }
 
 /* ---- Responsive Mobile ---- */
 @media (max-width: 767px) {
   .dashboard-root {
     flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
   }
 
   .mobile-header {
@@ -170,12 +178,13 @@
     left: 0;
     top: 0;
     height: 100vh;
-    width: 280px;
+    height: 100dvh;
+    width: 250px;
     transform: translateX(-100%);
-    padding: 20px;
+    padding: 16px;
     align-items: stretch;
     border-right: 1px solid var(--color-border);
-    z-index: 30;
+    z-index: 200;
   }
 
   .dashboard-sidebar.mobile-open {
@@ -192,25 +201,27 @@
   }
 
   .sidebar-nav {
-    gap: 8px;
+    gap: 6px;
   }
 
   .nav-btn {
     width: 100%;
-    height: 52px;
+    height: 42px;
     justify-content: flex-start;
-    padding: 0 16px;
-    border-radius: 12px;
-    gap: 12px;
+    padding: 0 12px;
+    border-radius: 10px;
+    gap: 10px;
   }
 
   .nav-btn svg {
     flex-shrink: 0;
+    width: 18px;
+    height: 18px;
   }
 
   .nav-btn::after {
     content: attr(title);
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     font-weight: 500;
   }
 
@@ -220,18 +231,25 @@
 
   .logout-btn {
     width: 100%;
+    height: 42px;
     justify-content: flex-start;
-    padding: 0 16px;
-    gap: 12px;
+    padding: 0 12px;
+    gap: 10px;
+  }
+
+  .logout-btn svg {
+    width: 18px;
+    height: 18px;
   }
 
   .logout-btn::after {
     content: 'Sair';
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     font-weight: 500;
   }
 
   .dashboard-content {
     padding-top: 0;
+    height: calc(100% - 50px);
   }
 }
