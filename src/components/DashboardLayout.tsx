@@ -15,6 +15,12 @@ export default function DashboardLayout({ children, activeView, onViewChange }: 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
+    const handleOpenMenu = () => setIsMobileMenuOpen(true);
+    window.addEventListener('open-mobile-menu', handleOpenMenu);
+    return () => window.removeEventListener('open-mobile-menu', handleOpenMenu);
+  }, []);
+
+  useEffect(() => {
     // Check auth
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {

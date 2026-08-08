@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { FolderOpen, Plus, Mic, Trash2, Send, FileText, Zap, Filter, ArrowLeft, Smile, Forward, Search, Check, Pencil, AlertTriangle, X, Square } from 'lucide-react';
+import { FolderOpen, Plus, Mic, Trash2, Send, FileText, Zap, Filter, ArrowLeft, Smile, Forward, Search, Check, Pencil, AlertTriangle, X, Square, Menu } from 'lucide-react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
 import ContactCrmModal from '../components/ContactCrmModal';
 import CustomConfirmModal, { ConfirmModalConfig } from '../components/CustomConfirmModal';
@@ -1214,7 +1214,17 @@ export default function ChatView() {
       {/* Column 1: Chat List */}
       <section className="chat-list-col">
         <header className="chat-list-header">
-          <h2>Conversas</h2>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <h2 style={{ margin: 0 }}>Conversas</h2>
+            <button 
+              className="mobile-menu-btn-in-header"
+              onClick={() => window.dispatchEvent(new Event('open-mobile-menu'))}
+              title="Abrir menu de navegação"
+              aria-label="Abrir menu"
+            >
+              <Menu size={22} />
+            </button>
+          </div>
           <div className="search-row">
             <div className="search-bar">
               <input
