@@ -560,10 +560,10 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, overflow: 'hidden' }}>
       <div 
         className="messages-container" 
-        style={{ flex: 1, padding: '16px', overflowY: 'auto', position: 'relative' }}
+        style={{ flex: 1, minHeight: 0, padding: '16px', overflowY: 'auto', position: 'relative' }}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
@@ -609,7 +609,7 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
         <div ref={messagesEndRef} />
       </div>
       
-      <footer className="message-input-area" style={{ padding: '12px' }}>
+      <footer className="message-input-area" style={{ flexShrink: 0, padding: '10px 12px', paddingBottom: 'max(10px, env(safe-area-inset-bottom))' }}>
         {isRecording ? (
           <div className="recording-bar" style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', background: 'rgba(255,255,255,0.05)', padding: '8px 12px', borderRadius: '12px' }}>
             <button className="recording-cancel-btn" onClick={cancelRecording} style={{ background: 'transparent', border: 'none', color: '#ff6b6b', cursor: 'pointer' }}>

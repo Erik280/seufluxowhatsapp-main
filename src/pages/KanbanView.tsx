@@ -1224,15 +1224,15 @@ export default function KanbanView() {
       
       {isQuickChatOpen && selectedContact && (
         <div className="crm-modal-overlay" onClick={() => setIsQuickChatOpen(false)} style={{ zIndex: 10000 }}>
-          <div className="crm-modal-content" onClick={e => e.stopPropagation()} style={{ padding: 0, height: '90vh', display: 'flex', flexDirection: 'column' }}>
-            <div className="quick-chat-header" style={{ padding: '16px', borderBottom: '1px solid #233554', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="crm-modal-content quick-chat-modal" onClick={e => e.stopPropagation()} style={{ padding: 0, height: '100%', maxHeight: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div className="quick-chat-header" style={{ padding: '12px 16px', borderBottom: '1px solid #233554', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
               <div className="quick-chat-user-info">
-                <h3 onClick={() => setShowCrmModal(true)} style={{ cursor: 'pointer', display: 'inline-block', color: '#e6f1ff', margin: 0 }}>
+                <h3 onClick={() => setShowCrmModal(true)} style={{ cursor: 'pointer', display: 'inline-block', color: '#e6f1ff', margin: 0, fontSize: '1rem' }}>
                   {selectedContact.name || selectedContact.phone}
                 </h3>
-                {selectedContact.name && <div className="quick-chat-phone" style={{ color: '#8892b0', fontSize: '0.85rem' }}>{selectedContact.phone}</div>}
+                {selectedContact.name && <div className="quick-chat-phone" style={{ color: '#8892b0', fontSize: '0.8rem' }}>{selectedContact.phone}</div>}
               </div>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 {selectedContact.flow_current_flow_id && (
                   <button
                     className="stop-flow-btn"
@@ -1244,14 +1244,14 @@ export default function KanbanView() {
                   </button>
                 )}
                 <button className="crm-btn" onClick={() => setShowCrmModal(true)} title="Abrir Detalhes do Lead (CRM)" style={{ background: 'transparent', border: 'none', color: '#8892b0', cursor: 'pointer', display: 'flex', padding: '4px' }}>
-                  <FileText size={20} />
+                  <FileText size={18} />
                 </button>
                 <button className="close-quick-chat" onClick={() => setIsQuickChatOpen(false)} style={{ background: 'transparent', border: 'none', color: '#8892b0', cursor: 'pointer', display: 'flex', padding: '4px' }}>
                   <X size={20} />
                 </button>
               </div>
             </div>
-            <div className="quick-chat-body" style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+            <div className="quick-chat-body" style={{ flex: 1, minHeight: 0, overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column' }}>
               <QuickChat contactId={selectedContact.id} companyId={companyId} />
             </div>
           </div>
