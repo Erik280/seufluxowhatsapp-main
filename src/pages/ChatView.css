@@ -1548,7 +1548,19 @@
   }
 
   .chat-list-header {
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #070a16;
     padding: 12px 14px;
+  }
+
+  .chat-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .chat-list-header h2 {

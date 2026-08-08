@@ -104,6 +104,12 @@ export default function ChatView() {
   // Custom confirm modal
   const [confirmModalConfig, setConfirmModalConfig] = useState<ConfirmModalConfig | null>(null);
 
+  // Reset window scroll on mobile view changes to prevent iOS Safari scroll displacement
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    document.body.scrollTop = 0;
+  }, [mobileView, selectedContact]);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Drag-and-drop state

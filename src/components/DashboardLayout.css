@@ -160,13 +160,30 @@
 /* ---- Responsive Mobile ---- */
 @media (max-width: 767px) {
   .dashboard-root {
+    display: flex;
     flex-direction: column;
     height: 100vh;
     height: 100dvh;
+    width: 100%;
+    overflow: hidden;
+    position: fixed;
+    inset: 0;
   }
 
   .mobile-header {
     display: flex;
+    align-items: center;
+    height: 50px;
+    min-height: 50px;
+    padding: 0 14px;
+    background: rgba(7, 10, 22, 0.98);
+    border-bottom: 1px solid var(--color-border);
+    z-index: 100;
+    flex-shrink: 0;
+    position: relative;
+    top: 0;
+    left: 0;
+    right: 0;
   }
 
   .mobile-backdrop {
