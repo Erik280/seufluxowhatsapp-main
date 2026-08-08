@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
-import { Send, FolderOpen, Plus, Mic, Trash2, FileText } from 'lucide-react';
+import { Send, FolderOpen, Plus, Mic, Trash2, FileText, PenTool } from 'lucide-react';
 import '../pages/ChatView.css'; // Reusing chat styles
 
 interface Message {
@@ -18,6 +18,8 @@ interface QuickReply {
   id: string;
   shortcut: string;
   content: string;
+  media_url?: string | null;
+  media_type?: string | null;
 }
 
 interface QuickChatProps {
@@ -30,6 +32,21 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // User & Signature state
+  const [currentUser, setCurrentUser] = useState<{ name: string | null; signature: string | null } | null>(null);
+  const [useSignature, setUseSignature] = useState(() => {
+    const saved = localStorage.getItem('chat_use_signature');
+    return saved !== null ? saved === 'true' : true;
+  });
+
+  const toggleSignature = () => {
+    setUseSignature(prev => {
+      const next = !prev;
+      localStorage.setItem('chat_use_signature', String(next));
+      return next;
+    });
+  };
 
   // Media Library state
   const [showMediaModal, setShowMediaModal] = useState(false);
@@ -64,6 +81,22 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
   const [filteredQRs, setFilteredQRs] = useState<QuickReply[]>([]);
 
   useEffect(() => {
+    // Fetch Current User for Signature
+    const fetchCurrentUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('name, signature')
+          .eq('auth_id', session.user.id)
+          .single();
+        if (userData) {
+          setCurrentUser({ name: userData.name || null, signature: userData.signature || null });
+        }
+      }
+    };
+    fetchCurrentUser();
+
     const fetchMessages = async () => {
       setLoading(true);
       const { data } = await supabase
@@ -135,7 +168,25 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
 
   const handleSend = async () => {
     if (!inputValue.trim()) return;
-    const text = inputValue.trim();
+    const rawText = inputValue.trim();
+
+    // Se for um atalho iniciado com '/' e corresponder a uma QuickReply de mídia, dispara envio de mídia
+    if (rawText.startsWith('/')) {
+      const search = rawText.substring(1).toLowerCase();
+      const matched = quickReplies.find(qr => qr.shortcut.toLowerCase() === search);
+      if (matched && matched.media_url && matched.media_type) {
+        await handleSelectQuickReply(matched);
+        return;
+      }
+    }
+
+    // ── Build final text with optional signature ──
+    let text = rawText;
+    if (useSignature && currentUser) {
+      const sigName = currentUser.name || 'Atendente';
+      text = `*${sigName}:*\n${rawText}`;
+    }
+
     setInputValue('');
     setShowQRMenu(false);
 
@@ -295,9 +346,54 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
     }, 3000);
   };
 
-  const handleSelectQuickReply = (qr: QuickReply) => {
-    setInputValue(qr.content);
+  const handleSelectQuickReply = async (qr: QuickReply) => {
     setShowQRMenu(false);
+
+    if (qr.media_url && qr.media_type) {
+      const friendlyName = qr.shortcut ? `${qr.shortcut}` : "midia";
+      
+      const tempId = `temp-qr-media-${Date.now()}`;
+      const optimisticMsg: any = {
+        id: tempId,
+        temp_id: tempId,
+        direction: 'out',
+        content: qr.content || `[${qr.media_type.toUpperCase()}] ${friendlyName}`,
+        media_url: qr.media_url,
+        media_type: qr.media_type,
+        created_at: new Date().toISOString(),
+        status: 'pending'
+      };
+      setMessages(prev => [...prev, optimisticMsg]);
+      setInputValue(''); // Clear "/shortcut"
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/messages/send/media_url`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contact_id: contactId,
+            company_id: companyId,
+            media_url: qr.media_url,
+            media_type: qr.media_type,
+            media_name: friendlyName
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setMessages(prev => prev.map(m => (m as any).temp_id === tempId ? { ...data, status: 'success' } : m));
+        } else {
+          setMessages(prev => prev.map(m => (m as any).temp_id === tempId ? { ...m, status: 'error' } : m));
+          alert('Erro ao enviar resposta rápida de mídia.');
+        }
+      } catch (error) {
+        console.error("Failed to send media quick reply", error);
+        setMessages(prev => prev.map(m => (m as any).temp_id === tempId ? { ...m, status: 'error' } : m));
+        alert('Falha ao enviar resposta rápida de mídia.');
+      }
+    } else {
+      setInputValue(qr.content);
+    }
   };
 
   const startRecording = async () => {
@@ -535,6 +631,14 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
         ) : (
           <>
             <button 
+              className={`signature-toggle-btn ${useSignature ? 'active' : ''}`}
+              onClick={toggleSignature}
+              title={useSignature ? `Assinatura ativa: ${currentUser?.name || 'Atendente'}` : 'Ativar assinatura'}
+              disabled={isUploading}
+            >
+              <PenTool size={16} />
+            </button>
+            <button 
               className="attach-btn" 
               onClick={() => setShowMediaModal(true)} 
               title="Biblioteca"
@@ -558,7 +662,7 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
             </label>
             <input 
               type="text" 
-              placeholder="Digite uma mensagem..." 
+              placeholder={useSignature && currentUser ? `Mensagem (assinado como ${currentUser.name || 'Atendente'})` : 'Digite uma mensagem...'} 
               value={inputValue}
               onChange={e => handleTyping(e.target.value)}
               onKeyDown={e => {
@@ -583,7 +687,9 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
             {filteredQRs.map(qr => (
               <div key={qr.id} className="qr-popup-item" onClick={() => handleSelectQuickReply(qr)} style={{ padding: '10px 15px', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: '10px' }}>
                 <span style={{ color: '#00E5CC', fontWeight: 'bold' }}>/{qr.shortcut}</span>
-                <span style={{ color: '#8892b0', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{qr.content}</span>
+                <span style={{ color: '#8892b0', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {qr.media_url ? `[${(qr.media_type || 'MIDIA').toUpperCase()}] ${qr.content || qr.shortcut}` : qr.content}
+                </span>
               </div>
             ))}
           </div>
