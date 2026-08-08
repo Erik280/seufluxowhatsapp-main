@@ -924,6 +924,46 @@ export default function KanbanView() {
                           </div>
                         )}
 
+                        {/* ── Flow Timeline ── */}
+                        {(() => {
+                          const flowId = contact.flow_current_flow_id;
+                          const currentStep = contact.flow_current_step_index;
+                          const totalSteps = flowId ? flowStepsMap[flowId] : 0;
+                          const isRunning = !!flowId && totalSteps > 0 && currentStep !== null && currentStep !== undefined;
+                          if (!isRunning) return null;
+
+                          return (
+                            <>
+                              <div className="flow-timeline" title={`Passo ${currentStep + 1} de ${totalSteps}`}>
+                                {Array.from({ length: totalSteps }).map((_, i) => (
+                                  <span
+                                    key={i}
+                                    className={`flow-dot ${
+                                      i < currentStep ? 'done' : i === currentStep ? 'current' : 'pending'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              <div className="flow-step-label-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}>
+                                <div className="flow-step-label">
+                                  Passo {currentStep + 1}/{totalSteps}
+                                </div>
+                                <button 
+                                  className="kb-cancel-flow-btn" 
+                                  title="Parar envio automático de mensagens (Stop Fluxo)"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    cancelFlow(contact.id);
+                                  }}
+                                >
+                                  <Square size={10} fill="#ff4b4b" style={{ color: '#ff4b4b' }} />
+                                  <span>Parar Fluxo</span>
+                                </button>
+                              </div>
+                            </>
+                          );
+                        })()}
+
                         {contact.contact_tags && contact.contact_tags.length > 0 && (
                           <div className="kanban-card-tags" style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '6px' }}>
                             {contact.contact_tags.map(ct => ct.tags).filter(Boolean).map(tag => (
