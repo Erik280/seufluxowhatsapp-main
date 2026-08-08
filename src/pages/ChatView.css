@@ -1490,48 +1490,51 @@
 
   .message-header {
     flex-shrink: 0;
-    padding: 10px 14px;
+    padding: 6px 10px;
     z-index: 10;
+    background: rgba(7, 10, 22, 0.98);
   }
 
   .header-info h3 {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
   }
 
   .header-info .status {
-    font-size: 0.7rem;
+    font-size: 0.68rem;
   }
 
   .message-input-area {
     flex-shrink: 0;
-    padding: 8px 10px;
-    padding-bottom: max(8px, env(safe-area-inset-bottom));
-    gap: 6px;
+    padding: 6px 8px;
+    padding-bottom: max(14px, env(safe-area-inset-bottom));
+    gap: 4px;
     z-index: 10;
+    background: rgba(7, 10, 22, 0.98);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
   }
 
   .message-input-area input,
   .message-input-area button {
-    height: 40px;
-    min-height: 40px;
-    font-size: 0.85rem;
+    height: 36px;
+    min-height: 36px;
+    font-size: 0.82rem;
   }
 
   .attach-btn {
-    width: 38px;
-    height: 40px;
+    width: 34px;
+    height: 36px;
   }
 
   .signature-toggle-btn {
-    width: 34px;
-    height: 34px;
+    width: 32px;
+    height: 32px;
   }
 
   .send-btn,
   .mic-btn {
-    padding: 0 14px;
-    font-size: 0.825rem;
-    height: 40px;
+    padding: 0 10px;
+    font-size: 0.8rem;
+    height: 36px;
   }
 
   .messages-container {

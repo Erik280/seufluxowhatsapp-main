@@ -20,6 +20,21 @@ export default function DashboardLayout({ children, activeView, onViewChange }: 
     return () => window.removeEventListener('open-mobile-menu', handleOpenMenu);
   }, []);
 
+  // Compute real innerHeight for mobile viewports (--vh)
+  useEffect(() => {
+    const updateVh = () => {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+    };
+    updateVh();
+    window.addEventListener('resize', updateVh);
+    window.addEventListener('orientationchange', updateVh);
+    return () => {
+      window.removeEventListener('resize', updateVh);
+      window.removeEventListener('orientationchange', updateVh);
+    };
+  }, []);
+
   useEffect(() => {
     // Check auth
     supabase.auth.getSession().then(({ data: { session } }) => {
