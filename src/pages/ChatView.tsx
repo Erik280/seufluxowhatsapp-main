@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { FolderOpen, Plus, Mic, Trash2, Send, FileText, Zap, Filter, ArrowLeft, Smile, Forward, Search, Check, Pencil, AlertTriangle, X, Square } from 'lucide-react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
 import ContactCrmModal from '../components/ContactCrmModal';
+import CustomConfirmModal, { ConfirmModalConfig } from '../components/CustomConfirmModal';
 import './ChatView.css';
 
 interface Contact {
@@ -99,6 +100,9 @@ export default function ChatView() {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const [visualizerData, setVisualizerData] = useState<number[]>(new Array(10).fill(10));
+
+  // Custom confirm modal
+  const [confirmModalConfig, setConfirmModalConfig] = useState<ConfirmModalConfig | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -965,38 +969,65 @@ export default function ChatView() {
 
 
 
-  const handleDeleteContact = async (contactId: string, e: React.MouseEvent) => {
+  const handleDeleteContact = (contactId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!window.confirm("Tem certeza que deseja apagar essa conversa e todo o histórico do lead? Essa ação não pode ser desfeita.")) {
-      return;
-    }
-
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/contacts/${contactId}`, {
-        method: 'DELETE'
-      });
-      if (res.ok) {
-        showToast('Conversa apagada com sucesso!');
-        setContacts(contacts.filter(c => c.id !== contactId));
-        if (selectedContact?.id === contactId) {
-          setSelectedContact(null);
+    setConfirmModalConfig({
+      isOpen: true,
+      title: 'Excluir Conversa',
+      message: 'Tem certeza que deseja apagar essa conversa e todo o histórico do lead? Essa ação não pode ser desfeita.',
+      confirmText: 'Sim, Apagar Lead',
+      cancelText: 'Cancelar',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`${API_BASE_URL}/api/contacts/${contactId}`, {
+            method: 'DELETE'
+          });
+          if (res.ok) {
+            showToast('Conversa apagada com sucesso!');
+            setContacts(contacts.filter(c => c.id !== contactId));
+            if (selectedContact?.id === contactId) {
+              setSelectedContact(null);
+            }
+          } else {
+            showToast('Erro ao apagar conversa.', 'error');
+          }
+        } catch (err) {
+          console.error(err);
+          showToast('Erro ao apagar conversa.', 'error');
         }
-      } else {
-        showToast('Erro ao apagar conversa.', 'error');
       }
-    } catch (err) {
-      console.error(err);
-      showToast('Erro ao apagar conversa.', 'error');
-    }
+    });
   };
 
-  const handleDeleteMessage = async (messageId: string) => {
-    if (!window.confirm("Tem certeza que deseja apagar essa mensagem? Ela será excluída da conversa e do banco de dados.")) {
-      return;
-    }
-    
-    // Optimistic delete
-    setMessages(prev => prev.filter(m => m.id !== messageId));
+  const handleDeleteMessage = (messageId: string) => {
+    setConfirmModalConfig({
+      isOpen: true,
+      title: 'Excluir Mensagem',
+      message: 'Tem certeza que deseja apagar essa mensagem? Ela será excluída da conversa e do banco de dados.',
+      confirmText: 'Sim, Apagar',
+      cancelText: 'Cancelar',
+      variant: 'danger',
+      onConfirm: async () => {
+        // Optimistic delete
+        setMessages(prev => prev.filter(m => m.id !== messageId));
+
+        try {
+          const res = await fetch(`${API_BASE_URL}/api/messages/${messageId}`, {
+            method: 'DELETE'
+          });
+          if (res.ok) {
+            showToast('Mensagem excluída.');
+          } else {
+            showToast('Erro ao excluir mensagem.', 'error');
+          }
+        } catch (err) {
+          console.error('Failed to delete message', err);
+          showToast('Erro de conexão ao excluir.', 'error');
+        }
+      }
+    });
+  };
 
     try {
       const res = await fetch(`${API_BASE_URL}/api/messages/${messageId}`, {

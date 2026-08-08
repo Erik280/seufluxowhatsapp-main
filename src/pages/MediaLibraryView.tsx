@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
+import CustomConfirmModal, { ConfirmModalConfig } from '../components/CustomConfirmModal';
 import './MediaLibraryView.css';
 
 interface MediaItem {
@@ -12,7 +13,8 @@ interface MediaItem {
 
 export default function MediaLibraryView() {
   const [mediaList, setMediaList] = useState<MediaItem[]>([]);
-  const [companyId, setCompanyId] = useState<string>('');
+  const [companyId, setCompanyId] = useState<string | null>(null);
+  const [confirmModalConfig, setConfirmModalConfig] = useState<ConfirmModalConfig | null>(null);
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -71,16 +73,26 @@ export default function MediaLibraryView() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Tem certeza que deseja apagar esta mídia? Se ela estiver sendo usada em um Fluxo, o robô vai dar erro.")) return;
+  const handleDelete = (id: string) => {
+    const item = mediaList.find(m => m.id === id);
+    const mediaName = item ? item.name : 'esta mídia';
 
-    try {
-      await fetch(`${API_BASE_URL}/api/media/${id}`, { method: 'DELETE' });
-      setMediaList(prev => prev.filter(m => m.id !== id));
-    } catch (error) {
-      console.error(error);
-      alert("Erro ao deletar.");
-    }
+    setConfirmModalConfig({
+      isOpen: true,
+      title: 'Excluir Mídia da Biblioteca',
+      message: `Tem certeza que deseja apagar "${mediaName}"? Se ela estiver sendo usada em um Fluxo, o envio falhará.`,
+      confirmText: 'Sim, Apagar Mídia',
+      cancelText: 'Cancelar',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await fetch(`${API_BASE_URL}/api/media/${id}`, { method: 'DELETE' });
+          setMediaList(prev => prev.filter(m => m.id !== id));
+        } catch (error) {
+          console.error(error);
+        }
+      }
+    });
   };
 
   return (
@@ -130,6 +142,11 @@ export default function MediaLibraryView() {
           <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#8892b0' }}>Nenhuma mídia salva ainda.</p>
         )}
       </div>
+      {/* Custom Confirm Modal */}
+      <CustomConfirmModal
+        config={confirmModalConfig}
+        onClose={() => setConfirmModalConfig(null)}
+      />
     </div>
   );
 }

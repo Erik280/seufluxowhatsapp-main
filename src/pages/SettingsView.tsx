@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
 import { Smartphone, Tags, Zap, Users, ShieldAlert, Book, FileText, Trash2, UploadCloud, UserCircle, Eye } from 'lucide-react';
+import CustomConfirmModal, { ConfirmModalConfig } from '../components/CustomConfirmModal';
 import './SettingsView.css';
 
 interface Company {
@@ -20,6 +21,7 @@ interface KnowledgeItem {
 
 export default function SettingsView() {
   const [activeTab, setActiveTab] = useState<'whatsapp' | 'tags' | 'flows' | 'team' | 'knowledge' | 'profile'>('whatsapp');
+  const [confirmModalConfig, setConfirmModalConfig] = useState<ConfirmModalConfig | null>(null);
   const [company, setCompany] = useState<Company | null>(null);
 
   // Profile states
@@ -238,14 +240,26 @@ export default function SettingsView() {
     setKnowledgeLoading(false);
   };
 
-  const handleDeleteKnowledge = async (id: string) => {
-    if (!confirm('Deseja realmente excluir este conhecimento? O Agente não terá mais acesso a ele.')) return;
-    try {
-      await fetch(`${API_BASE_URL}/api/knowledge/${id}`, { method: 'DELETE' });
-      setKnowledgeItems(prev => prev.filter(k => k.id !== id));
-    } catch (e) {
-      console.error(e);
-    }
+  const handleDeleteKnowledge = (id: string) => {
+    const item = knowledgeItems.find(k => k.id === id);
+    const titleText = item ? item.title : 'este conhecimento';
+
+    setConfirmModalConfig({
+      isOpen: true,
+      title: 'Excluir Conhecimento da IA',
+      message: `Deseja realmente excluir "${titleText}"? O Agente IA não terá mais acesso a estas informações.`,
+      confirmText: 'Sim, Excluir',
+      cancelText: 'Cancelar',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await fetch(`${API_BASE_URL}/api/knowledge/${id}`, { method: 'DELETE' });
+          setKnowledgeItems(prev => prev.filter(k => k.id !== id));
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    });
   };
 
   return (
@@ -576,6 +590,11 @@ export default function SettingsView() {
           )}
         </main>
       </div>
+      {/* Custom Confirm Modal */}
+      <CustomConfirmModal
+        config={confirmModalConfig}
+        onClose={() => setConfirmModalConfig(null)}
+      />
     </div>
   );
 }

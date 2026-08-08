@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
+import CustomConfirmModal, { ConfirmModalConfig } from '../components/CustomConfirmModal';
 import { Plus, Megaphone, Trash2, Clock, Tag, Users, CheckCircle, XCircle, Play } from 'lucide-react';
 import './CampaignView.css';
 
@@ -40,6 +41,7 @@ const STATUS_LABEL: Record<string, { label: string; color: string }> = {
 export default function CampaignView() {
   const [companyId, setCompanyId] = useState('');
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [confirmModalConfig, setConfirmModalConfig] = useState<ConfirmModalConfig | null>(null);
   const [tags, setTags] = useState<Tag[]>([]);
   const [flows, setFlows] = useState<Flow[]>([]);
   const [showNew, setShowNew] = useState(false);
@@ -125,10 +127,22 @@ export default function CampaignView() {
     }
   };
 
-  const cancelCampaign = async (id: string) => {
-    if (!confirm('Cancelar esta campanha?')) return;
-    await fetch(`${API_BASE_URL}/api/campaigns/${id}`, { method: 'DELETE' });
-    setCampaigns(prev => prev.map(c => c.id === id ? { ...c, status: 'cancelled' } : c));
+  const cancelCampaign = (id: string) => {
+    const camp = campaigns.find(c => c.id === id);
+    const campName = camp ? camp.name : 'esta campanha';
+
+    setConfirmModalConfig({
+      isOpen: true,
+      title: 'Cancelar Campanha',
+      message: `Deseja realmente cancelar "${campName}"? Os disparos futuros agendados serão interrompidos.`,
+      confirmText: 'Sim, Cancelar Campanha',
+      cancelText: 'Voltar',
+      variant: 'danger',
+      onConfirm: async () => {
+        await fetch(`${API_BASE_URL}/api/campaigns/${id}`, { method: 'DELETE' });
+        setCampaigns(prev => prev.map(c => c.id === id ? { ...c, status: 'cancelled' } : c));
+      }
+    });
   };
 
   return (
@@ -290,6 +304,11 @@ export default function CampaignView() {
           </div>
         )}
       </div>
+      {/* Custom Confirm Modal */}
+      <CustomConfirmModal
+        config={confirmModalConfig}
+        onClose={() => setConfirmModalConfig(null)}
+      />
     </div>
   );
 }

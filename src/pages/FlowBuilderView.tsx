@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
+import CustomConfirmModal, { ConfirmModalConfig } from '../components/CustomConfirmModal';
 import {
   Plus, Trash2, GripVertical, ChevronDown, ChevronUp, Copy,
   MessageSquare, Mic, Image, Video, Clock, Keyboard, Radio,
@@ -70,6 +71,7 @@ export default function FlowBuilderView() {
   const [stepSaving, setStepSaving] = useState<string | null>(null);
   const [stepUploading, setStepUploading] = useState<string | null>(null); // stepId being uploaded
   const [toast, setToast] = useState<{ msg: string; type: 'ok' | 'err' } | null>(null);
+  const [confirmModalConfig, setConfirmModalConfig] = useState<ConfirmModalConfig | null>(null);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   // One hidden file input ref per step (keyed by stepId)
@@ -271,12 +273,25 @@ export default function FlowBuilderView() {
     }
   };
 
-  const deleteFlow = async (flowId: string) => {
-    if (!confirm('Apagar este fluxo e todos os seus passos?')) return;
-    await supabase.from('flow_steps').delete().eq('flow_id', flowId);
-    await supabase.from('chat_flows').delete().eq('id', flowId);
-    setFlows(prev => prev.filter(f => f.id !== flowId));
-    if (selectedFlow?.id === flowId) { setSelectedFlow(null); setSteps([]); }
+  const deleteFlow = (flowId: string) => {
+    const flowObj = flows.find(f => f.id === flowId);
+    const flowName = flowObj ? flowObj.name : 'este fluxo';
+
+    setConfirmModalConfig({
+      isOpen: true,
+      title: 'Excluir Fluxo de Automação',
+      message: `Tem certeza que deseja apagar "${flowName}" e todos os seus passos? Essa ação não pode ser desfeita.`,
+      confirmText: 'Sim, Apagar Fluxo',
+      cancelText: 'Cancelar',
+      variant: 'danger',
+      onConfirm: async () => {
+        await supabase.from('flow_steps').delete().eq('flow_id', flowId);
+        await supabase.from('chat_flows').delete().eq('id', flowId);
+        setFlows(prev => prev.filter(f => f.id !== flowId));
+        if (selectedFlow?.id === flowId) { setSelectedFlow(null); setSteps([]); }
+        showToast('Fluxo apagado com sucesso!');
+      }
+    });
   };
 
   const duplicateFlow = async (flow: Flow) => {
@@ -833,6 +848,11 @@ export default function FlowBuilderView() {
           </div>
         </main>
       )}
+      {/* Custom Confirm Modal */}
+      <CustomConfirmModal
+        config={confirmModalConfig}
+        onClose={() => setConfirmModalConfig(null)}
+      />
     </div>
   );
 }

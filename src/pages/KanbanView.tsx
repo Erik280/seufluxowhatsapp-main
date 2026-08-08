@@ -3,6 +3,7 @@ import { supabase, API_BASE_URL } from '../supabaseClient';
 import { Zap, Settings, X, ToggleLeft, ToggleRight, Plus, Trash2, GripVertical, AlertTriangle, Search, FileText, Square } from 'lucide-react';
 import QuickChat from '../components/QuickChat';
 import ContactCrmModal from '../components/ContactCrmModal';
+import CustomConfirmModal, { ConfirmModalConfig } from '../components/CustomConfirmModal';
 import './KanbanView.css';
 
 interface KanbanStage {
@@ -394,12 +395,15 @@ export default function KanbanView() {
   // Automation confirm modal
   const [confirmPending, setConfirmPending] = useState<{
     contactId: string;
+    contactName: string;
     stageId: string;
     prevStageId: string | null;
-    contactName: string;
     stageName: string;
     flowName: string;
   } | null>(null);
+
+  // Custom Confirm Modal config
+  const [confirmModalConfig, setConfirmModalConfig] = useState<ConfirmModalConfig | null>(null);
 
   // ── Card drag state ────────────────────────────────────────────────────────
   const [draggedCardId, setDraggedCardId] = useState<string | null>(null);
@@ -655,20 +659,31 @@ export default function KanbanView() {
 
   // ── Cancelar fluxo em andamento/travado ──────────────────────────────────
   const cancelFlow = async (contactId: string) => {
-    if (!confirm('Deseja realmente cancelar e finalizar o status do fluxo inacabado para este lead?')) return;
-    
-    // Atualização otimista
-    setContacts(prev => prev.map(c => 
-      c.id === contactId 
-        ? { ...c, flow_current_flow_id: null, flow_current_step_index: null } 
-        : c
-    ));
-    
-    try {
-      await fetch(`${API_BASE_URL}/api/contacts/${contactId}/cancel-flow`, { method: 'POST' });
-    } catch (err) {
-      console.error('Failed to cancel flow', err);
-    }
+    const contact = contacts.find(c => c.id === contactId);
+    const leadName = contact ? (contact.name || contact.phone) : 'este lead';
+
+    setConfirmModalConfig({
+      isOpen: true,
+      title: 'Interromper Fluxo',
+      message: `Deseja realmente cancelar e finalizar o envio do fluxo inacabado para ${leadName}?`,
+      confirmText: 'Sim, Parar Fluxo',
+      cancelText: 'Voltar',
+      variant: 'danger',
+      onConfirm: async () => {
+        // Atualização otimista
+        setContacts(prev => prev.map(c => 
+          c.id === contactId 
+            ? { ...c, flow_current_flow_id: null, flow_current_step_index: null } 
+            : c
+        ));
+        
+        try {
+          await fetch(`${API_BASE_URL}/api/contacts/${contactId}/cancel-flow`, { method: 'POST' });
+        } catch (err) {
+          console.error('Failed to cancel flow', err);
+        }
+      }
+    });
   };
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -1275,6 +1290,12 @@ export default function KanbanView() {
           onCancel={handleAutomationCancel}
         />
       )}
+
+      {/* Global Custom Confirm/Alert Modal */}
+      <CustomConfirmModal
+        config={confirmModalConfig}
+        onClose={() => setConfirmModalConfig(null)}
+      />
     </div>
   );
 }

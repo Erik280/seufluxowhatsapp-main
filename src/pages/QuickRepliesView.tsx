@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Trash2, Plus, Zap } from 'lucide-react';
 import { API_BASE_URL, supabase } from '../supabaseClient';
+import CustomConfirmModal, { ConfirmModalConfig } from '../components/CustomConfirmModal';
 import './QuickRepliesView.css';
 
 interface QuickReply {
@@ -30,6 +31,7 @@ export default function QuickRepliesView() {
 
   // Toast
   const [toast, setToast] = useState<{message: string, type: 'success'|'error'} | null>(null);
+  const [confirmModalConfig, setConfirmModalConfig] = useState<ConfirmModalConfig | null>(null);
 
   const [companyId, setCompanyId] = useState<string | null>(null);
 
@@ -155,22 +157,34 @@ export default function QuickRepliesView() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Deseja realmente excluir este atalho?')) return;
-    
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/quick-replies/${id}`, {
-        method: 'DELETE'
-      });
-      if (res.ok) {
-        showToast('Excluído com sucesso!');
-        setReplies(replies.filter(r => r.id !== id));
-      } else {
-        showToast('Erro ao excluir', 'error');
+  const handleDelete = (id: string) => {
+    const item = replies.find(r => r.id === id);
+    const shortcutText = item ? item.shortcut : 'este atalho';
+
+    setConfirmModalConfig({
+      isOpen: true,
+      title: 'Excluir Resposta Rápida',
+      message: `Deseja realmente excluir o atalho "/${shortcutText}"?`,
+      confirmText: 'Sim, Excluir',
+      cancelText: 'Cancelar',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`${API_BASE_URL}/api/quick-replies/${id}`, {
+            method: 'DELETE'
+          });
+          if (res.ok) {
+            showToast('Excluído com sucesso!');
+            setReplies(replies.filter(r => r.id !== id));
+          } else {
+            showToast('Erro ao excluir', 'error');
+          }
+        } catch (err) {
+          console.error(err);
+          showToast('Erro de conexão', 'error');
+        }
       }
-    } catch (err) {
-      showToast('Erro de conexão', 'error');
-    }
+    });
   };
 
   return (
@@ -344,6 +358,11 @@ export default function QuickRepliesView() {
           {toast.message}
         </div>
       )}
+      {/* Custom Confirm Modal */}
+      <CustomConfirmModal
+        config={confirmModalConfig}
+        onClose={() => setConfirmModalConfig(null)}
+      />
     </div>
   );
 }
