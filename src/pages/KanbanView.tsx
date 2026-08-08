@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
-import { Zap, Settings, X, ToggleLeft, ToggleRight, Plus, Trash2, GripVertical, AlertTriangle, Search, FileText } from 'lucide-react';
+import { Zap, Settings, X, ToggleLeft, ToggleRight, Plus, Trash2, GripVertical, AlertTriangle, Search, FileText, Square } from 'lucide-react';
 import QuickChat from '../components/QuickChat';
 import ContactCrmModal from '../components/ContactCrmModal';
 import './KanbanView.css';
@@ -1104,13 +1104,15 @@ export default function KanbanView() {
                           </div>
                           <button 
                             className="kb-cancel-flow-btn" 
-                            title="Finalizar/Cancelar fluxo em andamento"
+                            title="Parar envio automático de mensagens (Stop Fluxo)"
                             onClick={(e) => {
                               e.stopPropagation();
                               cancelFlow(contact.id);
                             }}
+                            style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '2px 6px', background: 'rgba(255, 75, 75, 0.15)', border: '1px solid rgba(255, 75, 75, 0.4)', borderRadius: '4px', color: '#ff4b4b', cursor: 'pointer', fontWeight: 600, fontSize: '0.7rem' }}
                           >
-                            <X size={12} />
+                            <Square size={10} fill="#ff4b4b" style={{ color: '#ff4b4b' }} />
+                            <span>Parar Fluxo</span>
                           </button>
                         </div>
                       )}
@@ -1175,7 +1177,17 @@ export default function KanbanView() {
                 </h3>
                 {selectedContact.name && <div className="quick-chat-phone" style={{ color: '#8892b0', fontSize: '0.85rem' }}>{selectedContact.phone}</div>}
               </div>
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                {selectedContact.flow_current_flow_id && (
+                  <button
+                    className="stop-flow-btn"
+                    onClick={() => cancelFlow(selectedContact.id)}
+                    title="Parar envio automático de mensagens (Stop Fluxo)"
+                  >
+                    <Square size={12} fill="#ff4b4b" style={{ color: '#ff4b4b' }} />
+                    <span>Parar Fluxo</span>
+                  </button>
+                )}
                 <button className="crm-btn" onClick={() => setShowCrmModal(true)} title="Abrir Detalhes do Lead (CRM)" style={{ background: 'transparent', border: 'none', color: '#8892b0', cursor: 'pointer', display: 'flex', padding: '4px' }}>
                   <FileText size={20} />
                 </button>

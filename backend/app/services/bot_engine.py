@@ -102,6 +102,15 @@ async def execute_flow(
         logger.warning(f"Não foi possível registrar início do fluxo no contato: {e}")
 
     for idx, step in enumerate(steps):
+        # ── Verificar se o fluxo foi interrompido pelo usuário (Parar Fluxo) ──
+        try:
+            chk = db.table("contacts").select("flow_current_flow_id").eq("id", contact_id).execute()
+            if chk.data and not chk.data[0].get("flow_current_flow_id"):
+                logger.info(f"Fluxo interrompido/cancelado pelo usuário para o contato {contact_phone}")
+                return
+        except Exception as e:
+            logger.warning(f"Erro ao verificar se fluxo foi cancelado: {e}")
+
         # ── Atualizar step atual no contato ────────────────────────────────
         try:
             db.table("contacts").update({
@@ -135,9 +144,17 @@ async def execute_flow(
                 logger.warning("React step content (emoji) is empty. Skipping.")
                 continue
 
-            # Aguarda o delay configurado antes de reagir
+            # Aguarda o delay configurado antes de reagir (com verificação de interrupção)
             if delay > 0:
-                await asyncio.sleep(delay)
+                for _ in range(int(delay)):
+                    await asyncio.sleep(1)
+                    try:
+                        chk = db.table("contacts").select("flow_current_flow_id").eq("id", contact_id).execute()
+                        if chk.data and not chk.data[0].get("flow_current_flow_id"):
+                            logger.info(f"Fluxo cancelado durante o delay para {contact_phone}")
+                            return
+                    except Exception:
+                        pass
 
             target_msg_id = trigger_message_id
             

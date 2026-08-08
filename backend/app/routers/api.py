@@ -180,13 +180,17 @@ async def dismiss_flow_alert(contact_id: str):
 
 @router.post("/contacts/{contact_id}/cancel-flow")
 async def cancel_flow(contact_id: str):
-    """Limpa o status do fluxo em andamento do contato (usado para cancelar fluxos travados)."""
+    """Limpa o status do fluxo em andamento do contato (usado para interromper cadências automáticas)."""
     db = get_supabase()
     result = (
         db.table("contacts")
         .update({
             "flow_current_flow_id": None,
             "flow_current_step_index": None,
+            "flow_alert": False,
+            "flow_alert_step": None,
+            "flow_alert_message": None,
+            "flow_failed_at": None,
         })
         .eq("id", contact_id)
         .execute()

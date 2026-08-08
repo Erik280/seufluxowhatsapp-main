@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
-import { X, Calendar, Trash2, Copy, Check, Zap } from 'lucide-react';
+import { X, Calendar, Trash2, Copy, Check, Zap, Square } from 'lucide-react';
 import '../pages/ChatView.css';
 
 interface Contact {
@@ -13,6 +13,7 @@ interface Contact {
   chat_status: string;
   stage_id: string;
   contact_tags?: any[];
+  flow_current_flow_id?: string | null;
 }
 
 interface Tag {
@@ -227,6 +228,18 @@ export default function ContactCrmModal({ contactId, companyId, onClose }: Conta
     }
   };
 
+  const handleCancelFlow = async () => {
+    if (!contact) return;
+    try {
+      setContact(prev => prev ? { ...prev, flow_current_flow_id: null } : null);
+      await fetch(`${API_BASE_URL}/api/contacts/${contact.id}/cancel-flow`, { method: 'POST' });
+      alert('Fluxo automático interrompido com sucesso!');
+    } catch (e) {
+      console.error(e);
+      alert('Erro ao interromper o fluxo.');
+    }
+  };
+
   const setScheduleOffset = (hours: number) => {
     const d = new Date();
     d.setHours(d.getHours() + hours);
@@ -341,6 +354,34 @@ export default function ContactCrmModal({ contactId, companyId, onClose }: Conta
             >
               {contact.chat_status === 'bot' ? 'Pausar Fluxo' : 'Ativar Fluxo'}
             </button>
+
+            {/* Botão Parar Fluxo em Andamento (Stop Fluxo) */}
+            {contact.flow_current_flow_id && (
+              <button
+                onClick={handleCancelFlow}
+                title="Interromper envio automático de mensagens agora (Stop Fluxo)"
+                style={{
+                  width: '100%',
+                  marginTop: '10px',
+                  background: 'rgba(255, 75, 75, 0.15)',
+                  color: '#ff4b4b',
+                  border: '1px solid rgba(255, 75, 75, 0.4)',
+                  padding: '10px 16px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justify-content: 'center',
+                  gap: '8px',
+                  fontSize: '0.85rem',
+                  boxShadow: '0 0 12px rgba(255, 75, 75, 0.25)'
+                }}
+              >
+                <Square size={13} fill="#ff4b4b" style={{ color: '#ff4b4b' }} />
+                <span>Parar Fluxo (Stop Fluxo)</span>
+              </button>
+            )}
 
             {/* Botão Enviar Fluxo Manual */}
             <button

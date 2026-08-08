@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { FolderOpen, Plus, Mic, Trash2, Send, FileText, Zap, Filter, ArrowLeft, Smile, Forward, Search, Check, Pencil, AlertTriangle, X } from 'lucide-react';
+import { FolderOpen, Plus, Mic, Trash2, Send, FileText, Zap, Filter, ArrowLeft, Smile, Forward, Search, Check, Pencil, AlertTriangle, X, Square } from 'lucide-react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
 import ContactCrmModal from '../components/ContactCrmModal';
 import './ChatView.css';
@@ -21,6 +21,9 @@ interface Contact {
   flow_alert_step?: string | null;
   flow_alert_message?: string | null;
   flow_failed_at?: string | null;
+  // Status de fluxo ativo
+  flow_current_flow_id?: string | null;
+  flow_current_step_index?: number | null;
 }
 
 interface Message {
@@ -1071,6 +1074,24 @@ export default function ChatView() {
     }
   };
 
+  const handleCancelFlow = async (contactId: string) => {
+    try {
+      setContacts(prev => prev.map(c => 
+        c.id === contactId 
+          ? { ...c, flow_current_flow_id: null, flow_current_step_index: null, flow_alert: false } 
+          : c
+      ));
+      if (selectedContact && selectedContact.id === contactId) {
+        setSelectedContact(prev => prev ? { ...prev, flow_current_flow_id: null, flow_current_step_index: null, flow_alert: false } : null);
+      }
+      await fetch(`${API_BASE_URL}/api/contacts/${contactId}/cancel-flow`, { method: 'POST' });
+      showToast('Fluxo automático interrompido!');
+    } catch (e) {
+      console.error('Erro ao cancelar fluxo', e);
+      showToast('Erro ao interromper o fluxo.', 'error');
+    }
+  };
+
   const handleSaveQuickReply = async () => {
     if (!saveQRShortcut.trim()) {
       showToast('Digite um atalho.', 'error');
@@ -1378,6 +1399,18 @@ export default function ChatView() {
                   {selectedContact.chat_status === 'bot' ? 'Online (Bot Ativo)' : 'Atendimento Humano'}
                 </span>
               </div>
+
+              {selectedContact.flow_current_flow_id && (
+                <button
+                  className="stop-flow-btn"
+                  onClick={() => handleCancelFlow(selectedContact.id)}
+                  title="Parar envio automático de mensagens (Stop Fluxo)"
+                >
+                  <Square size={12} fill="#ff4b4b" style={{ color: '#ff4b4b' }} />
+                  <span>Parar Fluxo</span>
+                </button>
+              )}
+
               <button
                 className="crm-btn"
                 onClick={() => setShowCrmModal(true)}
