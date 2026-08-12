@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Trash2, Plus, Zap } from 'lucide-react';
 import { API_BASE_URL, supabase } from '../supabaseClient';
-import CustomConfirmModal, { ConfirmModalConfig } from '../components/CustomConfirmModal';
+import CustomConfirmModal, { type ConfirmModalConfig } from '../components/CustomConfirmModal';
 import './QuickRepliesView.css';
 
 interface QuickReply {

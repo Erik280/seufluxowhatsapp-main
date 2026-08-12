@@ -3,7 +3,7 @@ import { supabase, API_BASE_URL } from '../supabaseClient';
 import { Zap, Settings, X, ToggleLeft, ToggleRight, Plus, Trash2, GripVertical, AlertTriangle, Search, FileText, Square } from 'lucide-react';
 import QuickChat from '../components/QuickChat';
 import ContactCrmModal from '../components/ContactCrmModal';
-import CustomConfirmModal, { ConfirmModalConfig } from '../components/CustomConfirmModal';
+import CustomConfirmModal, { type ConfirmModalConfig } from '../components/CustomConfirmModal';
 import './KanbanView.css';
 
 interface KanbanStage {
@@ -943,7 +943,8 @@ export default function KanbanView() {
                         {(() => {
                           const flowId = contact.flow_current_flow_id;
                           const currentStep = contact.flow_current_step_index;
-                          const totalSteps = flowId ? flowStepsMap[flowId] : 0;
+                          const flowStepsMap: Record<string, number> = {};
+                          const totalSteps = flowId ? (flowStepsMap[flowId] || 5) : 0;
                           const isRunning = !!flowId && totalSteps > 0 && currentStep !== null && currentStep !== undefined;
                           if (!isRunning) return null;
 

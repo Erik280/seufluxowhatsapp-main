@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
-import CustomConfirmModal, { ConfirmModalConfig } from '../components/CustomConfirmModal';
+import CustomConfirmModal, { type ConfirmModalConfig } from '../components/CustomConfirmModal';
 import { Plus, Megaphone, Trash2, Clock, Tag, Users, CheckCircle, XCircle, Play } from 'lucide-react';
 import './CampaignView.css';
 

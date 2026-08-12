@@ -372,10 +372,10 @@ export default function ContactCrmModal({ contactId, companyId, onClose }: Conta
                   fontWeight: 'bold',
                   display: 'flex',
                   alignItems: 'center',
-                  justify-content: 'center',
+                  justifyContent: 'center',
                   gap: '8px',
                   fontSize: '0.85rem',
-                  boxShadow: '0 0 12px rgba(255, 75, 75, 0.25)'
+                  boxShadow: '0 0 12px rgba(255, 75, 75, 0.25)',
                 }}
               >
                 <Square size={13} fill="#ff4b4b" style={{ color: '#ff4b4b' }} />

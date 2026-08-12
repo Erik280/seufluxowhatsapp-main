@@ -1,4 +1,3 @@
-import React from 'react';
 import { AlertTriangle, CheckCircle, Trash2, X, Zap } from 'lucide-react';
 import './CustomConfirmModal.css';
 

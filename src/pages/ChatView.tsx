@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { FolderOpen, Plus, Mic, Trash2, Send, FileText, Zap, Filter, ArrowLeft, Smile, Forward, Search, Check, Pencil, AlertTriangle, X, Square, Menu } from 'lucide-react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
 import ContactCrmModal from '../components/ContactCrmModal';
-import CustomConfirmModal, { ConfirmModalConfig } from '../components/CustomConfirmModal';
+import CustomConfirmModal, { type ConfirmModalConfig } from '../components/CustomConfirmModal';
 import './ChatView.css';
 
 interface Contact {
@@ -104,6 +104,9 @@ export default function ChatView() {
   // Custom confirm modal
   const [confirmModalConfig, setConfirmModalConfig] = useState<ConfirmModalConfig | null>(null);
 
+  // Mobile view state
+  const [mobileView, setMobileView] = useState<'list' | 'messages' | 'crm'>('list');
+
   // Reset window scroll on mobile view changes to prevent iOS Safari scroll displacement
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -124,8 +127,6 @@ export default function ChatView() {
   const [saveQRShortcut, setSaveQRShortcut] = useState('');
   const [isSavingQR, setIsSavingQR] = useState(false);
 
-  // Mobile view state
-  const [mobileView, setMobileView] = useState<'list' | 'messages' | 'crm'>('list');
   const [showCrmModal, setShowCrmModal] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [selectedStageId, setSelectedStageId] = useState<string>('');
@@ -179,6 +180,18 @@ export default function ChatView() {
   const [editingContent, setEditingContent] = useState('');
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const editInputRef = useRef<HTMLTextAreaElement>(null);
+  const chatInputRef = useRef<HTMLTextAreaElement>(null);
+
+  const adjustChatInputHeight = useCallback(() => {
+    if (chatInputRef.current) {
+      chatInputRef.current.style.height = 'auto';
+      chatInputRef.current.style.height = `${Math.min(chatInputRef.current.scrollHeight, 140)}px`;
+    }
+  }, []);
+
+  useEffect(() => {
+    adjustChatInputHeight();
+  }, [inputValue, adjustChatInputHeight]);
 
   const handleEditMessage = async (messageId: string) => {
     const trimmed = editingContent.trim();
@@ -1035,39 +1048,6 @@ export default function ChatView() {
     });
   };
 
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/messages/${messageId}`, {
-        method: 'DELETE'
-      });
-      if (!res.ok) {
-        showToast('Erro ao apagar mensagem.', 'error');
-        // Rollback optimistic update
-        if (selectedContact) {
-          const { data } = await supabase
-            .from('messages')
-            .select('*')
-            .eq('contact_id', selectedContact.id)
-            .order('created_at', { ascending: true });
-          if (data) setMessages(data);
-        }
-      } else {
-        showToast('Mensagem apagada com sucesso!');
-      }
-    } catch (err) {
-      console.error(err);
-      showToast('Erro ao apagar mensagem.', 'error');
-      // Rollback optimistic update
-      if (selectedContact) {
-        const { data } = await supabase
-          .from('messages')
-          .select('*')
-          .eq('contact_id', selectedContact.id)
-          .order('created_at', { ascending: true });
-        if (data) setMessages(data);
-      }
-    }
-  };
-
   const handleCreateChat = async () => {
     if (!newChatName.trim() || !newChatPhone.trim() || !companyId) {
       showToast('Por favor, preencha nome e telefone.', 'error');
@@ -1753,32 +1733,43 @@ export default function ChatView() {
                       <span className="sig-icon">✍</span>
                     </button>
                   )}
+                  <textarea 
+                    ref={chatInputRef}
+                    rows={1}
+                    placeholder={useSignature && currentUser ? `Mensagem (assinado como ${currentUser.name || 'Atendente'})` : 'Digite uma mensagem...'} 
+                    value={inputValue}
+                    onChange={e => handleTyping(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        if (e.ctrlKey || e.shiftKey) {
+                          if (e.ctrlKey && !e.shiftKey) {
+                            e.preventDefault();
+                            const target = e.currentTarget;
+                            const start = target.selectionStart;
+                            const end = target.selectionEnd;
+                            const val = target.value;
+                            const newValue = val.substring(0, start) + '\n' + val.substring(end);
+                            setInputValue(newValue);
+                            handleTyping(newValue);
+                            setTimeout(() => {
+                              target.selectionStart = target.selectionEnd = start + 1;
+                              adjustChatInputHeight();
+                            }, 0);
+                          }
+                        } else {
+                          e.preventDefault();
+                          handleSend();
+                        }
+                      }
+                    }}
+                    disabled={isUploading}
+                  />
                   {inputValue.trim() ? (
-                    <>
-                      <input 
-                        type="text" 
-                        placeholder="Digite uma mensagem..." 
-                        value={inputValue}
-                        onChange={e => handleTyping(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && handleSend()}
-                        disabled={isUploading}
-                      />
-                      <button className="send-btn" onClick={handleSend} disabled={isUploading}>Enviar</button>
-                    </>
+                    <button className="send-btn" onClick={handleSend} disabled={isUploading}>Enviar</button>
                   ) : (
-                    <>
-                      <input 
-                        type="text" 
-                        placeholder={useSignature && currentUser ? `Mensagem (assinado como ${currentUser.name || 'Atendente'})` : 'Digite uma mensagem...'} 
-                        value={inputValue}
-                        onChange={e => handleTyping(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && handleSend()}
-                        disabled={isUploading}
-                      />
-                      <button className="mic-btn" onClick={startRecording} title="Gravar áudio" disabled={isUploading}>
-                        <Mic size={20} />
-                      </button>
-                    </>
+                    <button className="mic-btn" onClick={startRecording} title="Gravar áudio" disabled={isUploading}>
+                      <Mic size={20} />
+                    </button>
                   )}
                 </>
               )}
@@ -2076,13 +2067,19 @@ export default function ChatView() {
 
               {/* Optional note */}
               <div style={{ marginTop: '12px' }}>
-                <input
-                  type="text"
+                <textarea
+                  rows={1}
                   placeholder="Adicione uma mensagem... (opcional)"
                   value={forwardNote}
                   onChange={e => setForwardNote(e.target.value)}
-                  className="crm-input"
-                  style={{ fontSize: '0.88rem' }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && !e.ctrlKey && !e.shiftKey) {
+                      e.preventDefault();
+                      handleForward();
+                    }
+                  }}
+                  className="crm-textarea"
+                  style={{ fontSize: '0.88rem', minHeight: '38px', maxHeight: '100px', resize: 'none' }}
                 />
               </div>
             </div>
@@ -2101,6 +2098,12 @@ export default function ChatView() {
             </div>
           </div>
         </div>
+      )}
+      {confirmModalConfig?.isOpen && (
+        <CustomConfirmModal
+          config={confirmModalConfig}
+          onClose={() => setConfirmModalConfig(null)}
+        />
       )}
     </div>
   );

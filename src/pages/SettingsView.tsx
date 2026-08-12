@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
 import { Smartphone, Tags, Zap, Users, ShieldAlert, Book, FileText, Trash2, UploadCloud, UserCircle, Eye } from 'lucide-react';
-import CustomConfirmModal, { ConfirmModalConfig } from '../components/CustomConfirmModal';
+import CustomConfirmModal, { type ConfirmModalConfig } from '../components/CustomConfirmModal';
 import './SettingsView.css';
 
 interface Company {

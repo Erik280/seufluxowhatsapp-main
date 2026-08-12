@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase, API_BASE_URL } from '../supabaseClient';
-import CustomConfirmModal, { ConfirmModalConfig } from '../components/CustomConfirmModal';
+import CustomConfirmModal, { type ConfirmModalConfig } from '../components/CustomConfirmModal';
 import {
   Plus, Trash2, GripVertical, ChevronDown, ChevronUp, Copy,
   MessageSquare, Mic, Image, Video, Clock, Keyboard, Radio,

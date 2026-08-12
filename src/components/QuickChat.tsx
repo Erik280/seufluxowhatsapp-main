@@ -32,6 +32,18 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const quickChatInputRef = useRef<HTMLTextAreaElement>(null);
+
+  const adjustQuickChatInputHeight = useCallback(() => {
+    if (quickChatInputRef.current) {
+      quickChatInputRef.current.style.height = 'auto';
+      quickChatInputRef.current.style.height = `${Math.min(quickChatInputRef.current.scrollHeight, 140)}px`;
+    }
+  }, []);
+
+  useEffect(() => {
+    adjustQuickChatInputHeight();
+  }, [inputValue, adjustQuickChatInputHeight]);
 
   // User & Signature state
   const [currentUser, setCurrentUser] = useState<{ name: string | null; signature: string | null } | null>(null);
@@ -527,10 +539,20 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
   const renderMessageContent = (msg: Message) => {
     if (msg.media_url) {
       if (msg.media_type === 'image') {
-        return <img src={msg.media_url} alt="imagem" style={{ maxWidth: '100%', borderRadius: '8px', marginTop: '4px' }} />;
+        return (
+          <>
+            <img src={msg.media_url} alt="imagem" style={{ maxWidth: '100%', borderRadius: '8px', marginTop: '4px' }} />
+            {msg.content && <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', marginTop: '4px' }}>{msg.content}</div>}
+          </>
+        );
       }
       if (msg.media_type === 'video') {
-        return <video src={msg.media_url} controls style={{ maxWidth: '100%', borderRadius: '8px', marginTop: '4px' }} />;
+        return (
+          <>
+            <video src={msg.media_url} controls style={{ maxWidth: '100%', borderRadius: '8px', marginTop: '4px' }} />
+            {msg.content && <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', marginTop: '4px' }}>{msg.content}</div>}
+          </>
+        );
       }
       if (msg.media_type === 'audio') {
         return <audio src={msg.media_url} controls style={{ maxWidth: '100%', marginTop: '4px' }} />;
@@ -552,7 +574,7 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
         );
       }
     }
-    return <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>;
+    return <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{msg.content}</div>;
   };
 
   if (loading) {
@@ -660,13 +682,34 @@ export default function QuickChat({ contactId, companyId }: QuickChatProps) {
               />
               <Plus size={20} />
             </label>
-            <input 
-              type="text" 
+            <textarea 
+              ref={quickChatInputRef}
+              rows={1}
               placeholder={useSignature && currentUser ? `Mensagem (assinado como ${currentUser.name || 'Atendente'})` : 'Digite uma mensagem...'} 
               value={inputValue}
               onChange={e => handleTyping(e.target.value)}
               onKeyDown={e => {
-                if (e.key === 'Enter') handleSend();
+                if (e.key === 'Enter') {
+                  if (e.ctrlKey || e.shiftKey) {
+                    if (e.ctrlKey && !e.shiftKey) {
+                      e.preventDefault();
+                      const target = e.currentTarget;
+                      const start = target.selectionStart;
+                      const end = target.selectionEnd;
+                      const val = target.value;
+                      const newValue = val.substring(0, start) + '\n' + val.substring(end);
+                      setInputValue(newValue);
+                      handleTyping(newValue);
+                      setTimeout(() => {
+                        target.selectionStart = target.selectionEnd = start + 1;
+                        adjustQuickChatInputHeight();
+                      }, 0);
+                    }
+                  } else {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }
               }}
               disabled={isUploading}
             />
