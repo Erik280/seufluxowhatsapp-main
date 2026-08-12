@@ -331,8 +331,8 @@ def find_matching_flow(company_id: str, message_text: str) -> dict | None:
     """
     Busca um fluxo ativo cujas keywords batam com a mensagem recebida.
     Suporta:
-    - Campo legado `trigger_keyword` (string única)
-    - Campo novo `keywords` (array de strings)
+    - Campo `keywords` (array de strings): se presente, busca APENAS nessas keywords.
+    - Campo legado `trigger_keyword` (string única): fallback APENAS se `keywords` for None (registros antigos).
     Comparação case-insensitive.
     """
     db = get_supabase()
@@ -349,15 +349,18 @@ def find_matching_flow(company_id: str, message_text: str) -> dict | None:
     normalized = message_text.strip().lower()
 
     for flow in flows:
-        # Verificar keywords[] (novo)
-        keywords = flow.get("keywords") or []
-        for kw in keywords:
-            if kw and kw.strip().lower() in normalized:
-                return flow
+        keywords = flow.get("keywords")
 
-        # Fallback para trigger_keyword legado (string única)
-        legacy_kw = (flow.get("trigger_keyword") or "").strip().lower()
-        if legacy_kw and legacy_kw in normalized:
-            return flow
+        if isinstance(keywords, list):
+            # Se 'keywords' é uma lista (novo sistema):
+            # Testa cada palavra-chave da lista. Se a lista estiver vazia ou não bater, não dispara.
+            for kw in keywords:
+                if kw and kw.strip().lower() in normalized:
+                    return flow
+        else:
+            # Fallback para trigger_keyword legado (usado apenas se 'keywords' for None)
+            legacy_kw = (flow.get("trigger_keyword") or "").strip().lower()
+            if legacy_kw and legacy_kw in normalized:
+                return flow
 
     return None

@@ -198,7 +198,7 @@ export default function FlowBuilderView() {
     let result = await supabase.from('chat_flows').insert({
       company_id: companyId,
       name: newFlowName.trim(),
-      trigger_keyword: newFlowName.trim().toLowerCase(),
+      trigger_keyword: '',
       keywords: [],
       is_active: false,
       trigger_once: false,
@@ -209,7 +209,7 @@ export default function FlowBuilderView() {
       result = await supabase.from('chat_flows').insert({
         company_id: companyId,
         name: newFlowName.trim(),
-        trigger_keyword: newFlowName.trim().toLowerCase(),
+        trigger_keyword: '',
         is_active: false,
         trigger_once: false,
       }).select().single();
@@ -238,6 +238,7 @@ export default function FlowBuilderView() {
       let result = await supabase.from('chat_flows').update({
         name: selectedFlow.name,
         keywords: selectedFlow.keywords,
+        trigger_keyword: selectedFlow.keywords?.[0] || '',
         description: selectedFlow.description,
         is_active: selectedFlow.is_active,
         trigger_once: selectedFlow.trigger_once,
@@ -248,6 +249,7 @@ export default function FlowBuilderView() {
         console.warn('[FlowBuilder] keywords column not found, saving without it. Run migration_007.');
         result = await supabase.from('chat_flows').update({
           name: selectedFlow.name,
+          trigger_keyword: selectedFlow.keywords?.[0] || '',
           is_active: selectedFlow.is_active,
           trigger_once: selectedFlow.trigger_once,
         }).eq('id', selectedFlow.id).select();
@@ -302,7 +304,7 @@ export default function FlowBuilderView() {
     let result = await supabase.from('chat_flows').insert({
       company_id: companyId,
       name: newFlowName,
-      trigger_keyword: newFlowName.toLowerCase(),
+      trigger_keyword: (flow.keywords && flow.keywords.length > 0) ? flow.keywords[0] : '',
       keywords: flow.keywords || [],
       is_active: false,
       trigger_once: flow.trigger_once || false,
@@ -313,7 +315,7 @@ export default function FlowBuilderView() {
       result = await supabase.from('chat_flows').insert({
         company_id: companyId,
         name: newFlowName,
-        trigger_keyword: newFlowName.toLowerCase(),
+        trigger_keyword: (flow.keywords && flow.keywords.length > 0) ? flow.keywords[0] : '',
         is_active: false,
         trigger_once: flow.trigger_once || false,
         description: flow.description
